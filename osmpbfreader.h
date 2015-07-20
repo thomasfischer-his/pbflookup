@@ -16,7 +16,7 @@ public:
     OsmPbfReader();
     ~OsmPbfReader();
 
-    SwedishText::Tree* parse(std::istream &input);
+    SwedishText::Tree *parse(std::istream &input);
 
 private:
     /// Buffer for reading a compressed blob from file

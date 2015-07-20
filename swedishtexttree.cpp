@@ -34,9 +34,9 @@ bool Tree::insert(const std::string &input, uint64_t id) {
         char buffer[buffer_len];
         for (int s = num_components; result && s > num_components - 3 && s > 0; --s) {
             for (int start = 0; result && start <= num_components - s; ++start) {
-            char *cur = buffer;
+                char *cur = buffer;
                 for (int i = 0; i < s; ++i) {
-             const char *cstr = words[start + i].c_str();
+                    const char *cstr = words[start + i].c_str();
                     strncpy(cur, cstr, buffer_len - (cur - buffer));
                     cur += strlen(cstr);
                     if (i + 1 < s) {

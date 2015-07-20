@@ -9,10 +9,10 @@
 
 Error::Error()
 {
-     /// nothing
+    /// nothing
 }
 
-bool Error::useColor=true;
+bool Error::useColor = true;
 
 /// Prints a formatted message to stdout, optionally color coded
 void Error::msg(const char *format, int color, va_list args) {
