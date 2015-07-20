@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 2.8)
 aux_source_directory(. SRC_LIST)
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 
-find_library(PROTOBUF_LITE_LIBRARY protobuf-lite)
+find_package(Protobuf REQUIRED)
+
 find_package(ZLIB REQUIRED)
 
 find_path(OSMBINARY_INCLUDE_DIR osmpbf/osmpbf.h)
@@ -17,7 +18,7 @@ include_directories(
 )
 
 target_link_libraries(${PROJECT_NAME}
-  ${PROTOBUF_LIBRARY}
+  ${PROTOBUF_LITE_LIBRARIES}
   ${ZLIB_LIBRARIES}
   ${OSMBINARY_LIBRARIES}
 )
