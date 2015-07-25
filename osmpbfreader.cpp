@@ -11,7 +11,7 @@
 #endif
 
 #include "swedishtexttree.h"
-#include "nodetocoord.h"
+#include "idtree.h"
 #include "error.h"
 
 OsmPbfReader::OsmPbfReader()
@@ -31,7 +31,7 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
         return NULL;
 
     SwedishText::Tree *swedishTextTree = new SwedishText::Tree();
-    NodeToCoord *n2c = new NodeToCoord();
+    IdTree<Coord> *n2c = new IdTree<Coord>();
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -277,7 +277,7 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
                     for (int j = 0; j < maxnodes; ++j) {
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        n2c->insert(pg.nodes(j).id(), lat, lon);
+                        n2c->insert(pg.nodes(j).id(), Coord(lat, lon));
 
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
@@ -308,7 +308,7 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        n2c->insert(last_id, last_lat, last_lon);
+                        n2c->insert(last_id, Coord(last_lat, last_lon));
 
                         //debug("        dense node %u   at lat=%.6f lon=%.6f", last_id, last_lat, last_lon);
 
@@ -404,14 +404,16 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
             // unknown blob type
             Error::warn("  unknown blob type: %s", blobheader.type().c_str());
         }
-
-
     }
 
-    uint64_t nodeId = 3539685440;
-    double lat, lon;
-    n2c->retrieve(nodeId, lat, lon);
-    Error::info("Coord for %lu: %lf %lf", nodeId, lat, lon);
+    uint64_t nodeId = 3539685440; // Sweden
+    //uint64_t nodeId = 13802131; // Isle of Man
+    //uint64_t nodeId = 283479923; // Isle of Man
+    Coord c;
+    const bool found = n2c->retrieve(nodeId, c);
+    Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
+
+    delete n2c;
 
     return swedishTextTree;
 }

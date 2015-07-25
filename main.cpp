@@ -22,6 +22,7 @@ int main(int argc, char *argv[])
 
         std::cout << "Tree size=" << swedishTextTree->size() << std::endl;
 
+        /*
         while (1) {
             if (!std::cin.good()) {
                 std::cout << std::endl;
@@ -49,6 +50,7 @@ int main(int argc, char *argv[])
             }
             std::cout << "Number of hits: " << ids.size() << std::endl;
         }
+        */
 
         if (swedishTextTree != NULL)
             delete swedishTextTree;
