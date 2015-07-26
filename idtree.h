@@ -8,20 +8,9 @@ struct Coord {
         lon = lat = 0.0;
     }
 
-    Coord(const Coord &other) {
-        lon = other.lon;
-        lat = other.lat;
-    }
-
     Coord(double longitude, double latitude) {
         lon = longitude;
         lat = latitude;
-    }
-
-    Coord &operator=(const Coord &other) {
-        lon = other.lon;
-        lat = other.lat;
-        return *this;
     }
 
     double lon, lat;
