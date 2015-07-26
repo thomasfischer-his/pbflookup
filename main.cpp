@@ -13,7 +13,10 @@ int main(int argc, char *argv[])
     if (fp) {
 
         OsmPbfReader osmPbfReader;
-        SwedishText::Tree *swedishTextTree = osmPbfReader.parse(fp);
+        SwedishText::Tree *swedishTextTree;
+        IdTree<Coord> *n2c;
+        IdTree<WayNodes> *w2n;
+        const bool result = osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n);
 
         /// Clean up the protobuf lib
         google::protobuf::ShutdownProtobufLibrary();
@@ -54,6 +57,10 @@ int main(int argc, char *argv[])
 
         if (swedishTextTree != NULL)
             delete swedishTextTree;
+        if (n2c != NULL)
+            delete n2c;
+        if (w2n != NULL)
+            delete w2n;
     } else
         return 1;
 

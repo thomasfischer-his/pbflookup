@@ -26,12 +26,17 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
-    if (!input || !input.good())
-        return NULL;
+bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n) {
+    *swedishTextTree = NULL;
+    *n2c = NULL;
+    *w2n = NULL;
 
-    SwedishText::Tree *swedishTextTree = new SwedishText::Tree();
-    IdTree<Coord> *n2c = new IdTree<Coord>();
+    if (!input || !input.good())
+        return false;
+
+    *swedishTextTree = new SwedishText::Tree();
+    *n2c = new IdTree<Coord>();
+    *w2n = new IdTree<WayNodes>();
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -277,13 +282,13 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
                     for (int j = 0; j < maxnodes; ++j) {
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        n2c->insert(pg.nodes(j).id(), Coord(lat, lon));
+                        (*n2c)->insert(pg.nodes(j).id(), Coord(lat, lon));
 
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const uint64_t id = pg.nodes(j).id();
-                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.nodes(j).vals(k)),  id << 2 | NODE_NIBBLE);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)),  id << 2 | NODE_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
                             }
@@ -308,7 +313,7 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        n2c->insert(last_id, Coord(last_lat, last_lon));
+                        (*n2c)->insert(last_id, Coord(last_lat, last_lon));
 
                         //debug("        dense node %u   at lat=%.6f lon=%.6f", last_id, last_lat, last_lon);
 
@@ -327,7 +332,7 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
 
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
-                                    const bool result = swedishTextTree->insert(primblock.stringtable().s(value), last_id << 2 | NODE_NIBBLE);
+                                    const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(value), last_id << 2 | NODE_NIBBLE);
                                     if (!result)
                                         Error::warn("Cannot insert %s", primblock.stringtable().s(value).c_str());
                                 }
@@ -351,11 +356,22 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
                             const char *ckey = primblock.stringtable().s(pg.ways(i).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 uint64_t id = pg.ways(i).id();
-                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.ways(i).vals(k)), id << 2 | WAY_NIBBLE);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(i).vals(k)), id << 2 | WAY_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(i).vals(k)).c_str());
                             }
                         }
+
+                        const uint64_t wayId = pg.ways(i).id();
+                        WayNodes wn(pg.ways(i).refs_size());
+                        //Error::debug("Adding way %llu, %i nodes", wayId, pg.ways(i).refs_size());
+                        uint64_t nodeId = 0;
+                        for (int k = 0; k < pg.ways(i).refs_size(); ++k) {
+                            nodeId += pg.ways(i).refs(k);
+                            //Error::debug("  Adding node %llu at pos %i", nodeId, k);
+                            wn.nodes[k] = nodeId;
+                        }
+                        (*w2n)->insert(wayId, wn);
                     }
 
                     /*
@@ -386,7 +402,7 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 uint64_t id = pg.relations(i).id();
-                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.relations(i).vals(k)), id << 2 | RELATION_NIBBLE);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), id << 2 | RELATION_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             }
@@ -410,11 +426,30 @@ SwedishText::Tree *OsmPbfReader::parse(std::istream &input) {
     //uint64_t nodeId = 13802131; // Isle of Man
     //uint64_t nodeId = 283479923; // Isle of Man
     Coord c;
-    const bool found = n2c->retrieve(nodeId, c);
+    bool found = (*n2c)->retrieve(nodeId, c);
     Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
 
-    delete n2c;
+    nodeId = 13802131; // Isle of Man
+    //uint64_t nodeId = 283479923; // Isle of Man
+    found = (*n2c)->retrieve(nodeId, c);
+    Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
 
-    return swedishTextTree;
+    nodeId = 283479923; // Isle of Man
+    found = (*n2c)->retrieve(nodeId, c);
+    Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
+
+    uint64_t wayId = 59582052; // Isle of Man
+    WayNodes wn;
+    found = (*w2n)->retrieve(wayId, wn);
+    Error::info("Way for %llu: %i nodes", wayId, wn.num_nodes);
+    for (int i = 0; i < wn.num_nodes; ++i) {
+        const uint64_t nodeId = wn.nodes[i];
+        Error::debug("  Node %llu", nodeId);
+        Coord c;
+        (*n2c)->retrieve(nodeId, c);
+        Error::debug("     at pos %lf %lf", c.lat, c.lon);
+    }
+
+    return true;
 }
 

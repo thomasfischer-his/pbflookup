@@ -6,6 +6,8 @@
 /// This is the header to pbf format
 #include <osmpbf/osmpbf.h>
 
+#include "idtree.h"
+
 namespace SwedishText {
 class Tree;
 }
@@ -17,6 +19,7 @@ public:
     ~OsmPbfReader();
 
     SwedishText::Tree *parse(std::istream &input);
+    bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **, IdTree<WayNodes> **);
 
 private:
     /// Buffer for reading a compressed blob from file

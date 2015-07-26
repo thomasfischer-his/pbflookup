@@ -3,6 +3,26 @@
 
 #include <osmpbf/osmpbf.h>
 
+struct WayNodes {
+    WayNodes() {
+        num_nodes = 0;
+        nodes = NULL;
+    }
+
+    WayNodes(int num) {
+        num_nodes = num;
+        nodes = (uint64_t *)calloc(num, sizeof(uint64_t));
+    }
+
+    ~WayNodes() {
+        if (nodes != NULL)
+            free(nodes);
+    }
+
+    int num_nodes;
+    uint64_t *nodes;
+};
+
 struct Coord {
     Coord() {
         lon = lat = 0.0;
