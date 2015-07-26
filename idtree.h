@@ -50,7 +50,8 @@ public:
     bool retrieve(const uint64_t id, T &);
 
 private:
-    struct IdTreeNode<T> *root;
+    class Private;
+    Private *const d;
 };
 
 #include "idtree_impl.h"

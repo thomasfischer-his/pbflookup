@@ -33,32 +33,58 @@ template <typename T>
 const int IdTreeNode<T>::bitsPerId = 48;
 
 template <class T>
-IdTree<T>::IdTree()
+class IdTree<T>::Private
 {
-    root = NULL;
+private:
+    IdTree *p;
+
+public:
+    static const unsigned int num_children;
+    static const unsigned int mask;
+
+    struct IdTreeNode<T> *root;
+
+    Private(IdTree *parent)
+        : p(parent) {
+        root = NULL;
+    }
+
+    ~Private() {
+        if (root != NULL)
+            delete root;
+    }
+};
+
+template <typename T>
+const unsigned int IdTree<T>::Private::num_children = 1 << IdTreeNode<T>::bitsPerNode;
+template <typename T>
+const unsigned int IdTree<T>::Private::mask = IdTree::Private::num_children - 1;
+
+template <class T>
+IdTree<T>::IdTree()
+    : d(new IdTree<T>::Private(this))
+{
+    /// nothing
 }
 
 template <class T>
 IdTree<T>::~IdTree()
 {
-    if (root != NULL)
-        delete root;
+    delete d;
 }
 
 template <class T>
 bool IdTree<T>::insert(uint64_t id, T const &data) {
-    if (root == NULL)
-        root = new IdTreeNode<T>();
+    if (d->root == NULL)
+        d->root = new IdTreeNode<T>();
 
-    static const unsigned int num_children = 1 << IdTreeNode<T>::bitsPerNode;
-    static const unsigned int mask = num_children - 1;
-    IdTreeNode<T> *cur = root;
+    IdTreeNode<T> *cur = d->root;
     uint64_t workingId = id;
     for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
         if (cur->children == NULL)
-            cur->children = (IdTreeNode<T> **)calloc(num_children, sizeof(IdTreeNode<T> *));
+            cur->children = (IdTreeNode<T> **)calloc(IdTree::Private::num_children, sizeof(IdTreeNode<T> *));
 
-        unsigned int lowerBits = workingId & mask;
+        unsigned int lowerBits = workingId & IdTree::Private::mask;
         workingId >>= IdTreeNode<T>::bitsPerNode;
 
         if (cur->children[lowerBits] == NULL)
@@ -77,15 +103,12 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
 
 template <class T>
 bool IdTree<T>::retrieve(const uint64_t id, T &data) {
-    if (root == NULL) {
+    if (d->root == NULL) {
         Error::warn("Tree root is invalid, no id was ever added");
         return false;
     }
 
-    static const unsigned int num_children = 1 << IdTreeNode<T>::bitsPerNode;
-    static const unsigned int mask = num_children - 1;
-
-    IdTreeNode<T> *cur = root;
+    IdTreeNode<T> *cur = d->root;
     uint64_t workingId = id;
     for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
         if (cur->children == NULL) {
@@ -93,7 +116,7 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) {
             return false;
         }
 
-        const unsigned int lowerBits = workingId & mask;
+        const unsigned int lowerBits = workingId & IdTree::Private::mask;
         workingId >>= IdTreeNode<T>::bitsPerNode;
 
         if (cur->children[lowerBits] == NULL) {
