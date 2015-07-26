@@ -14,6 +14,16 @@ struct WayNodes {
         nodes = (uint64_t *)calloc(num, sizeof(uint64_t));
     }
 
+    WayNodes &operator=(const WayNodes &other) {
+        if (nodes != NULL) free(nodes);
+
+        num_nodes = other.num_nodes;
+        const size_t bytes = num_nodes * sizeof(uint64_t);
+        nodes = (uint64_t *)malloc(bytes);
+        memcpy(nodes, other.nodes, bytes);
+        return *this;
+    }
+
     ~WayNodes() {
         if (nodes != NULL)
             free(nodes);
