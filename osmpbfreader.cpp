@@ -433,6 +433,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
         }
     }
 
+    /*
     uint64_t nodeId = 3539685440; // Sweden
     //uint64_t nodeId = 13802131; // Isle of Man
     //uint64_t nodeId = 283479923; // Isle of Man
@@ -449,7 +450,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     found = (*n2c)->retrieve(nodeId, c);
     Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
 
-    uint64_t wayId = 59582052; // Isle of Man
+    uint64_t wayId = 349336142; // Isle of Man
     WayNodes wn;
     found = (*w2n)->retrieve(wayId, wn);
     if (found) {
@@ -479,7 +480,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
         }
     } else
         Error::info("Did not find a relation with id %llu", relId);
-
+    */
     return true;
 }
 
