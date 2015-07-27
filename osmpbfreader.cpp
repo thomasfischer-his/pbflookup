@@ -26,10 +26,11 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n) {
+bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem) {
     *swedishTextTree = NULL;
     *n2c = NULL;
     *w2n = NULL;
+    *relmem = NULL;
 
     if (!input || !input.good())
         return false;
@@ -37,6 +38,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     *swedishTextTree = new SwedishText::Tree();
     *n2c = new IdTree<Coord>();
     *w2n = new IdTree<WayNodes>();
+    *relmem = new IdTree<RelationMem>();
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -407,6 +409,15 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             }
                         }
+
+                        const uint64_t relId = pg.relations(i).id();
+                        RelationMem rm(pg.relations(i).memids_size());
+                        uint64_t memId = 0;
+                        for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
+                            memId += pg.relations(i).memids(k);
+                            rm.members[k] = memId;
+                        }
+                        (*relmem)->insert(relId, rm);
                     }
                 }
 
@@ -441,14 +452,33 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     uint64_t wayId = 59582052; // Isle of Man
     WayNodes wn;
     found = (*w2n)->retrieve(wayId, wn);
-    Error::info("Way for %llu: %i nodes", wayId, wn.num_nodes);
-    for (int i = 0; i < wn.num_nodes; ++i) {
-        const uint64_t nodeId = wn.nodes[i];
-        Error::debug("  Node %llu", nodeId);
-        Coord c;
-        (*n2c)->retrieve(nodeId, c);
-        Error::debug("     at pos %lf %lf", c.lat, c.lon);
-    }
+    if (found) {
+        Error::info("Way for http://www.openstreetmap.org/way/%llu : %i nodes", wayId, wn.num_nodes);
+        for (int i = 0; i < wn.num_nodes; ++i) {
+            const uint64_t nodeId = wn.nodes[i];
+            Error::debug("  Node %llu", nodeId);
+            Coord c;
+            (*n2c)->retrieve(nodeId, c);
+            Error::debug("     at pos %lf %lf", c.lat, c.lon);
+        }
+    } else
+        Error::info("Did not find a way with id %llu", wayId);
+
+    uint64_t relId = 3341682;
+    RelationMem rm;
+    found = (*relmem)->retrieve(relId, rm);
+    if (found) {
+        Error::info("Relation for http://www.openstreetmap.org/relation/%llu : %i members", relId, rm.num_members);
+        for (int i = 0; i < rm.num_members; ++i) {
+            const uint64_t memId = rm.members[i];
+            Error::debug("  Member Id %llu", memId);
+            Coord c;
+            const bool isKnownNode = (*n2c)->retrieve(memId, c);
+            if (isKnownNode)
+                Error::debug("     at pos %lf %lf", c.lat, c.lon);
+        }
+    } else
+        Error::info("Did not find a relation with id %llu", relId);
 
     return true;
 }

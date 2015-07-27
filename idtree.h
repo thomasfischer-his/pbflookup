@@ -33,6 +33,36 @@ struct WayNodes {
     uint64_t *nodes;
 };
 
+struct RelationMem {
+    RelationMem() {
+        num_members = 0;
+        members = NULL;
+    }
+
+    RelationMem(int num) {
+        num_members = num;
+        members = (uint64_t *)calloc(num, sizeof(uint64_t));
+    }
+
+    RelationMem &operator=(const RelationMem &other) {
+        if (members != NULL) free(members);
+
+        num_members = other.num_members;
+        const size_t bytes = num_members * sizeof(uint64_t);
+        members = (uint64_t *)malloc(bytes);
+        memcpy(members, other.members, bytes);
+        return *this;
+    }
+
+    ~RelationMem() {
+        if (members != NULL)
+            free(members);
+    }
+
+    int num_members;
+    uint64_t *members;
+};
+
 struct Coord {
     Coord() {
         lon = lat = 0.0;
