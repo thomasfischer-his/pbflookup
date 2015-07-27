@@ -106,11 +106,6 @@ std::vector<uint64_t> Tree::retrieve_ids(const char *word) {
     std::vector<unsigned int> code = code_word(word);
     std::vector<uint64_t> result;
 
-    std::cout << "searching word=" << word << "  ";
-    for (unsigned int i = 0; i < code.size(); ++i)
-        std::cout << " " << code[i];
-    std::cout << std::endl;
-
     Node *cur = root;
     unsigned int pos = 0;
     while (pos < code.size()) {

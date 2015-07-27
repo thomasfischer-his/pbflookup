@@ -25,8 +25,6 @@ int main(int argc, char *argv[])
 
         fp.close();
 
-        std::cout << "Tree size=" << swedishTextTree->size() << std::endl;
-
         /*
         while (1) {
             if (!std::cin.good()) {
