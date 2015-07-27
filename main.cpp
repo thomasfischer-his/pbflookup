@@ -3,6 +3,7 @@
 
 #include "swedishtexttree.h"
 #include "osmpbfreader.h"
+#include "tokenizer.h"
 
 using namespace std;
 
@@ -55,6 +56,33 @@ int main(int argc, char *argv[])
             std::cout << "Number of hits: " << ids.size() << std::endl;
         }
         */
+
+        std::ifstream textfile("input.txt");
+        if (textfile.is_open()) {
+            Tokenizer tokenizer;
+            std::vector<std::string> words;
+            tokenizer.read_words(textfile, words);
+            textfile.close();
+
+            static const size_t combined_len = 1020;
+            char combined[combined_len + 4];
+            for (int s = 3; s >= 1; --s) {
+                for (int i = 0; i <= words.size() - s; ++i) {
+                    char *p = combined;
+                    for (int k = 0; k < s; ++k) {
+                        if (k > 0)
+                            p += snprintf(p, combined_len - (p - combined), " ");
+                        p += snprintf(p, combined_len - (p - combined), "%s", words[i + k].c_str());
+                    }
+
+                    std::vector<uint64_t> id_list = swedishTextTree->retrieve_ids(combined);
+                    if (!id_list.empty()) {
+                        Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
+                    }
+                }
+            }
+        }
+
 
         if (swedishTextTree != NULL)
             delete swedishTextTree;
