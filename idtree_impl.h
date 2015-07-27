@@ -112,7 +112,7 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) {
     uint64_t workingId = id;
     for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
         if (cur->children == NULL) {
-            Error::warn("id=%llu   s=%d", id, s);
+            //Error::warn("id=%llu   s=%d", id, s);
             return false;
         }
 
@@ -120,7 +120,7 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) {
         workingId >>= IdTreeNode<T>::bitsPerNode;
 
         if (cur->children[lowerBits] == NULL) {
-            Error::warn("id=%llu   s=%d lowerBits=%d  workingId=%llu", id, s, lowerBits, workingId);
+            //Error::warn("id=%llu   s=%d lowerBits=%d  workingId=%llu", id, s, lowerBits, workingId);
             return false;
         }
 
