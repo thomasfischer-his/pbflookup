@@ -76,6 +76,24 @@ int main(int argc, char *argv[])
                     std::vector<uint64_t> id_list = swedishTextTree->retrieve_ids(combined);
                     if (!id_list.empty()) {
                         Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
+                        for (int l = 0; l < id_list.size(); ++l) {
+                            const uint64_t id = id_list[l] >> 2;
+                            Error::debug("  id=%llu", id);
+                            const int lowerBits = id_list[l] & 3;
+                            if (lowerBits == NODE_NIBBLE) {
+                                Coord c;
+                                const bool found = n2c->retrieve(id, c);
+                                if (found)
+                                    Error::debug("       lat=%lf lon=%lf (found=%i)", c.lat, c.lon);
+                                else
+                                    Error::debug("    is unknown Node");
+                            } else if (lowerBits == WAY_NIBBLE)
+                                Error::debug("    is Way");
+                            else if (lowerBits == RELATION_NIBBLE)
+                                Error::debug("    is Relation");
+                            else
+                                Error::info("  Neither node, way, nor relation");
+                        }
                     }
                 }
             }
