@@ -290,7 +290,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const uint64_t id = pg.nodes(j).id();
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)),  id << 2 | NODE_NIBBLE);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), id << 2 | NODE_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
                             }

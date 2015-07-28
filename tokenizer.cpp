@@ -61,7 +61,6 @@ public:
         return c;
     }
 
-
 };
 
 Tokenizer::Tokenizer()
