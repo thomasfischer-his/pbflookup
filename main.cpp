@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
             tokenizer.read_words(textfile, words);
             textfile.close();
 
-            static const size_t combined_len = 1020;
+            static const size_t combined_len = 8188;
             char combined[combined_len + 4];
             for (int s = 3; s >= 1; --s) {
                 for (int i = 0; i <= words.size() - s; ++i) {
