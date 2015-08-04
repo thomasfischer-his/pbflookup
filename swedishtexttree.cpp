@@ -119,6 +119,8 @@ std::vector<uint64_t> Tree::retrieve_ids(const char *word) {
     Node *cur = root;
     unsigned int pos = 0;
     while (pos < code.size()) {
+        if (cur->children == NULL)
+            return result;
         Node *next = cur->children[code[pos]];
         if (next == NULL)
             return result;
