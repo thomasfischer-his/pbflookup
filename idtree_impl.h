@@ -1,5 +1,3 @@
-#include "error.h"
-
 template <typename T>
 struct IdTreeNode {
     static const int bitsPerNode;
@@ -64,7 +62,8 @@ template <class T>
 IdTree<T>::IdTree()
     : d(new IdTree<T>::Private(this))
 {
-    /// nothing
+    if (d == NULL)
+        Error::err("Could not allocate memory for IdTree<T>::Private");
 }
 
 template <class T>
@@ -75,21 +74,29 @@ IdTree<T>::~IdTree()
 
 template <class T>
 bool IdTree<T>::insert(uint64_t id, T const &data) {
-    if (d->root == NULL)
+    if (d->root == NULL) {
         d->root = new IdTreeNode<T>();
+        if (d->root == NULL)
+            Error::err("Could not allocate memory for IdTree::root");
+    }
 
     IdTreeNode<T> *cur = d->root;
     uint64_t workingId = id;
     for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
-        if (cur->children == NULL)
+        if (cur->children == NULL) {
             cur->children = (IdTreeNode<T> **)calloc(IdTree::Private::num_children, sizeof(IdTreeNode<T> *));
+            if (cur->children == NULL)
+                Error::err("Could not allocate memory for cur->children");
+        }
 
         unsigned int lowerBits = workingId & IdTree::Private::mask;
         workingId >>= IdTreeNode<T>::bitsPerNode;
 
-        if (cur->children[lowerBits] == NULL)
+        if (cur->children[lowerBits] == NULL) {
             cur->children[lowerBits] = new IdTreeNode<T>();
-        else if (s == 0)
+            if (cur->children[lowerBits] == NULL)
+                Error::err("Could not allocate memory for cur->children[lowerBits]");
+        } else if (s == 0)
             Error::err("Leaf already in use: %llu != %llu", id, cur->children[lowerBits]->id);
 
         cur = cur->children[lowerBits];

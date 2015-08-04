@@ -3,6 +3,8 @@
 
 #include <osmpbf/osmpbf.h>
 
+#include "error.h"
+
 struct WayNodes {
     WayNodes() {
         num_nodes = 0;
@@ -12,6 +14,8 @@ struct WayNodes {
     WayNodes(int num) {
         num_nodes = num;
         nodes = (uint64_t *)calloc(num, sizeof(uint64_t));
+        if (nodes == NULL)
+            Error::err("Could not allocate memory for WayNodes::nodes");
     }
 
     WayNodes &operator=(const WayNodes &other) {
@@ -20,6 +24,8 @@ struct WayNodes {
         num_nodes = other.num_nodes;
         const size_t bytes = num_nodes * sizeof(uint64_t);
         nodes = (uint64_t *)malloc(bytes);
+        if (nodes == NULL)
+            Error::err("Could not allocate memory for WayNodes::nodes");
         memcpy(nodes, other.nodes, bytes);
         return *this;
     }
@@ -42,6 +48,8 @@ struct RelationMem {
     RelationMem(int num) {
         num_members = num;
         members = (uint64_t *)calloc(num, sizeof(uint64_t));
+        if (members == NULL)
+            Error::err("Could not allocate memory for RelationMem::members");
     }
 
     RelationMem &operator=(const RelationMem &other) {
@@ -50,6 +58,8 @@ struct RelationMem {
         num_members = other.num_members;
         const size_t bytes = num_members * sizeof(uint64_t);
         members = (uint64_t *)malloc(bytes);
+        if (members == NULL)
+            Error::err("Could not allocate memory for RelationMem::members");
         memcpy(members, other.members, bytes);
         return *this;
     }

@@ -1,5 +1,7 @@
 #include "swedishtexttree.h"
 
+#include "error.h"
+
 namespace SwedishText {
 
 const int Tree::num_codes = 48;
@@ -66,14 +68,18 @@ bool Tree::internal_insert(const char *word, uint64_t id) {
         const unsigned int nc = code[pos];
         if (cur->children == NULL) {
             cur->children = (Node **)calloc(num_codes, sizeof(Node *));
-            if (cur->children == NULL)
+            if (cur->children == NULL) {
+                Error::err("Could not allocate memory for cur->children");
                 return false;
+            }
         }
         Node *next = cur->children[nc];
         if (next == NULL) {
             next = cur->children[nc] = new Node();
-            if (next == NULL)
+            if (next == NULL) {
+                Error::err("Could not allocate memory for next Node");
                 return false;
+            }
         }
         ++pos;
         cur = next;
@@ -81,8 +87,10 @@ bool Tree::internal_insert(const char *word, uint64_t id) {
 
     if (cur->ids == NULL) {
         cur->ids = (uint64_t *)calloc(default_num_indices, sizeof(uint64_t));
-        if (cur->ids == NULL)
+        if (cur->ids == NULL) {
+            Error::err("Could not allocate memory for cur->ids");
             return false;
+        }
         cur->ids[0] = default_num_indices;
     }
     unsigned int idx = 1;
@@ -90,8 +98,10 @@ bool Tree::internal_insert(const char *word, uint64_t id) {
     if (idx >= cur->ids[0]) {
         const uint64_t new_size = cur->ids[0] + default_num_indices;
         uint64_t *new_array = (uint64_t *)calloc(new_size, sizeof(uint64_t));
-        if (new_array == NULL)
+        if (new_array == NULL) {
+            Error::err("Could not allocate memory for new_array");
             return false;
+        }
         new_array[0] = new_size;
         memcpy(new_array + 1, cur->ids + 1, (cur->ids[0] - 1)*sizeof(uint64_t));
         free(cur->ids);

@@ -3,6 +3,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "error.h"
+
 class Tokenizer::Private
 {
 private:
@@ -65,7 +67,8 @@ public:
 
 Tokenizer::Tokenizer()
     : d(new Tokenizer::Private(this)) {
-    /// nothing
+    if (d == NULL)
+        Error::err("Could not allocate memory for Tokenizer::Private");
 }
 
 Tokenizer::~Tokenizer() {

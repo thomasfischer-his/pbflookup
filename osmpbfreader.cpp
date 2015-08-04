@@ -17,7 +17,11 @@
 OsmPbfReader::OsmPbfReader()
 {
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
+    if (buffer == NULL)
+        Error::err("Could not allocate memory for OsmPbfReader::buffer");
     unpack_buffer = new char[OSMPBF::max_uncompressed_blob_size];
+    if (unpack_buffer == NULL)
+        Error::err("Could not allocate memory for OsmPbfReader::unpack_buffer");
 }
 
 OsmPbfReader::~OsmPbfReader()
@@ -37,8 +41,14 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
     *swedishTextTree = new SwedishText::Tree();
     *n2c = new IdTree<Coord>();
+    if (n2c == NULL)
+        Error::err("Could not allocate memory for n2c");
     *w2n = new IdTree<WayNodes>();
+    if (w2n == NULL)
+        Error::err("Could not allocate memory for w2n");
     *relmem = new IdTree<RelationMem>();
+    if (relmem == NULL)
+        Error::err("Could not allocate memory for relmem");
 
     /// Read while the file has not reached its end
     while (input.good()) {
