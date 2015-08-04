@@ -102,7 +102,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
         input.read(buffer, sz);
         if (input.gcount() != sz || input.fail()) {
             Error::err("unable to read blob from file");
-        }
+        } else
+            Error::debug("Read %u bytes", input.gcount());
 
         // parse the blob from the read-buffer
         if (!blob.ParseFromArray(buffer, sz)) {
