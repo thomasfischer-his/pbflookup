@@ -7,19 +7,17 @@ find_package(Protobuf REQUIRED)
 
 find_package(ZLIB REQUIRED)
 
-find_path(OSMBINARY_INCLUDE_DIR osmpbf/osmpbf.h)
-
-find_library(OSMBINARY_LIBRARIES NAMES libosmpbf.a)
+find_package(Osmpbf REQUIRED)
 
 include_directories(
   ${PROTOBUF_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIRS}
-  ${OSMBINARY_INCLUDE_DIR}
+  ${OSMPBF_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
   ${PROTOBUF_LITE_LIBRARIES}
   ${ZLIB_LIBRARIES}
-  ${OSMBINARY_LIBRARIES}
+  ${OSMPBF_LIBRARIES}
 )
 
