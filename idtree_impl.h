@@ -56,7 +56,7 @@ public:
 template <typename T>
 const unsigned int IdTree<T>::Private::num_children = 1 << IdTreeNode<T>::bitsPerNode;
 template <typename T>
-const unsigned int IdTree<T>::Private::mask = IdTree::Private::num_children - 1;
+const unsigned int IdTree<T>::Private::mask = (1 << IdTreeNode<T>::bitsPerNode) - 1;
 
 template <class T>
 IdTree<T>::IdTree()
