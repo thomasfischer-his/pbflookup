@@ -364,23 +364,23 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     }*/
 
                     const int maxways = pg.ways_size();// > list_limit ? list_limit : pg.ways_size();
-                    for (int i = 0; i < maxways; ++i) {
-                        for (int k = 0; k < pg.ways(i).keys_size(); ++k) {
-                            const char *ckey = primblock.stringtable().s(pg.ways(i).keys(k)).c_str();
+                    for (int w = 0; w < maxways; ++w) {
+                        for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
+                            const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                uint64_t id = pg.ways(i).id();
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(i).vals(k)), id << 2 | WAY_NIBBLE);
+                                uint64_t id = pg.ways(w).id();
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), id << 2 | WAY_NIBBLE);
                                 if (!result)
-                                    Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(i).vals(k)).c_str());
+                                    Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
                             }
                         }
 
-                        const uint64_t wayId = pg.ways(i).id();
-                        WayNodes wn(pg.ways(i).refs_size());
-                        //Error::debug("Adding way %llu, %i nodes", wayId, pg.ways(i).refs_size());
+                        const uint64_t wayId = pg.ways(w).id();
+                        WayNodes wn(pg.ways(w).refs_size());
+                        //Error::debug("Adding way %llu, %i nodes", wayId, pg.ways(w).refs_size());
                         uint64_t nodeId = 0;
-                        for (int k = 0; k < pg.ways(i).refs_size(); ++k) {
-                            nodeId += pg.ways(i).refs(k);
+                        for (int k = 0; k < pg.ways(w).refs_size(); ++k) {
+                            nodeId += pg.ways(w).refs(k);
                             //Error::debug("  Adding node %llu at pos %i", nodeId, k);
                             wn.nodes[k] = nodeId;
                         }
@@ -392,9 +392,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     const uint64_t wayId = pg.ways(wayIndex).id();
                     Error::info("Way id: %d", wayId);
                     uint64_t nodeId = 0;
-                    for (int i = 0; i < pg.ways(wayIndex).refs_size(); ++i) {
-                        nodeId += pg.ways(wayIndex).refs(i);
-                        Error::info("  Node %i id: %ld", i, nodeId);
+                    for (int w = 0; w < pg.ways(wayIndex).refs_size(); ++w) {
+                        nodeId += pg.ways(wayIndex).refs(w);
+                        Error::info("  Node %i id: %ld", w, nodeId);
                     }
                     */
                 }
