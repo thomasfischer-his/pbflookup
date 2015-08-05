@@ -83,6 +83,12 @@ struct Coord {
         lat = latitude;
     }
 
+    Coord &operator=(const Coord &other) {
+        lon = other.lon;
+        lat = other.lat;
+        return *this;
+    }
+
     double lon, lat;
 };
 
