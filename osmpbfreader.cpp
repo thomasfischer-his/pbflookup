@@ -103,7 +103,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
         if (input.gcount() != sz || input.fail()) {
             Error::err("unable to read blob from file");
         } else
-            Error::debug("Read %u bytes", input.gcount());
+            std::cout << (sz > (1 << 18) ? "*" : (sz > (1 << 16) ? ":" : ".")) << std::flush;
 
         // parse the blob from the read-buffer
         if (!blob.ParseFromArray(buffer, sz)) {
@@ -443,6 +443,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
             Error::warn("  unknown blob type: %s", blobheader.type().c_str());
         }
     }
+
+    /// Line break after series of dots
+    std::cout << std::endl;
 
     /*
     uint64_t nodeId = 3539685440; // Sweden
