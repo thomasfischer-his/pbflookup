@@ -1,3 +1,4 @@
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 
@@ -13,9 +14,11 @@ int main(int argc, char *argv[])
     Error::debug("DEBUG flag enabled");
 #endif // DEBUG
 
+    const char *tempdir = getenv("TEMPDIR") == NULL || getenv("TEMPDIR")[0] == '\0' ? "/tmp" : getenv("TEMPDIR");
+
     char filenamebuffer[1024];
     const char *country = (argc < 2) ? "sweden" : argv[argc - 1];
-    snprintf(filenamebuffer, 1024, "/home/fish/git/pbflookup/%s.osm.pbf", country);
+    snprintf(filenamebuffer, 1024, "%s/git/pbflookup/%s.osm.pbf", getenv("HOME"), country);
     ifstream fp(filenamebuffer, ifstream::in | ifstream::binary);
     if (fp) {
         SwedishText::Tree *swedishTextTree = NULL;
@@ -23,7 +26,7 @@ int main(int argc, char *argv[])
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
 
-        snprintf(filenamebuffer, 1024, "/tmp/%s.texttree", country);
+        snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, country);
         ifstream fileteststream(filenamebuffer);
         if (fileteststream && fileteststream.good()) {
             fileteststream.seekg(0, fileteststream.end);
@@ -44,52 +47,52 @@ int main(int argc, char *argv[])
         fp.close();
 
         if (swedishTextTree != NULL) {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.texttree", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, country);
             Error::debug("Writing %s", filenamebuffer);
             ofstream swedishtexttreefile(filenamebuffer);
             swedishTextTree->write(swedishtexttreefile);
             swedishtexttreefile.close();
         } else {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.texttree", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, country);
             Error::debug("Reading %s", filenamebuffer);
             ifstream swedishtexttreefile(filenamebuffer);
             swedishTextTree = new SwedishText::Tree(swedishtexttreefile);
             swedishtexttreefile.close();
         }
         if (n2c != NULL) {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.n2c", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, country);
             Error::debug("Writing %s", filenamebuffer);
             ofstream n2cfile(filenamebuffer);
             n2c->write(n2cfile);
             n2cfile.close();
         } else {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.n2c", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, country);
             Error::debug("Reading %s", filenamebuffer);
             ifstream n2cfile(filenamebuffer);
             n2c = new IdTree<Coord>(n2cfile);
             n2cfile.close();
         }
         if (w2n != NULL) {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.w2n", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, country);
             Error::debug("Writing %s", filenamebuffer);
             ofstream w2nfile(filenamebuffer);
             w2n->write(w2nfile);
             w2nfile.close();
         } else {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.w2n", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, country);
             Error::debug("Reading %s", filenamebuffer);
             ifstream w2nfile(filenamebuffer);
             w2n = new IdTree<WayNodes>(w2nfile);
             w2nfile.close();
         }
         if (relmem != NULL) {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.relmem", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, country);
             Error::debug("Writing %s", filenamebuffer);
             ofstream relmemfile(filenamebuffer);
             relmem->write(relmemfile);
             relmemfile.close();
         } else {
-            snprintf(filenamebuffer, 1024, "/tmp/%s.relmem", country);
+            snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, country);
             Error::debug("Reading %s", filenamebuffer);
             ifstream relmemfile(filenamebuffer);
             relmem = new IdTree<RelationMem>(relmemfile);
