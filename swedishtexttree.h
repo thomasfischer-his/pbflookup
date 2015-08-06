@@ -17,12 +17,15 @@ struct Node;
 class Tree {
 public:
     explicit Tree();
+    explicit Tree(std::istream &input);
     ~Tree();
 
     bool insert(const std::string &input, uint64_t id);
     std::vector<uint64_t> retrieve_ids(const char *word);
 
     size_t size() const;
+
+    std::ostream &write(std::ostream &output);
 
     static const int num_codes;
     static const unsigned int default_num_indices;
@@ -43,12 +46,11 @@ private:
 };
 
 struct Node {
-    explicit Node() {
-        children = NULL;
-        ids = NULL;
-    }
-
+    explicit Node();
+    explicit Node(std::istream &input);
     ~Node();
+
+    std::ostream &write(std::ostream &output);
 
     Node **children;
     uint64_t *ids;

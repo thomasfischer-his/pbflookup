@@ -9,6 +9,47 @@ const unsigned int Tree::default_num_indices = 8;
 const int Tree::code_word_sep = Tree::num_codes - 2;
 const int Tree::code_unknown = Tree::num_codes - 1;
 
+Node::Node() {
+    children = NULL;
+    ids = NULL;
+}
+
+Node::Node(std::istream &input) {
+    char chr;
+
+    input.read((char *)&chr, sizeof(chr));
+    if (chr == 'N') {
+        children = NULL;
+    } else if (chr == 'C') {
+        const size_t bytes = Tree::num_codes * sizeof(Node *);
+        children = (Node **)malloc(bytes);
+
+        for (int i = 0; i < Tree::num_codes; ++i) {
+            input.read((char *)&chr, sizeof(chr));
+            if (chr == '0') {
+                /// No child at this position
+                children[i] = NULL;
+            } else if (chr == '1') {
+                children[i] = new Node(input);
+            } else
+                Error::warn("Expected '0' or '1', got '%02x'", chr);
+        }
+    } else
+        Error::warn("Expected 'N' or 'C', got '%02x'", chr);
+
+    input.read((char *)&chr, sizeof(chr));
+    if (chr == 'n') {
+        ids = NULL;
+    } else if (chr == 'i') {
+        uint64_t firstId;
+        input.read((char *)&firstId, sizeof(firstId));
+        ids = (uint64_t *)malloc(firstId * sizeof(uint64_t));
+        ids[0] = firstId;
+        input.read((char *)(ids + 1), (firstId - 1)*sizeof(uint64_t));
+    } else
+        Error::warn("Expected 'n' or 'i', got '%02x'", chr);
+}
+
 Node::~Node() {
     if (children != NULL) {
         for (int i = 0; i < Tree::num_codes; ++i)
@@ -18,13 +59,55 @@ Node::~Node() {
     if (ids != NULL) free(ids);
 }
 
+std::ostream &Node::write(std::ostream &output) {
+    char chr = '\0';
+    if (children == NULL) {
+        chr = 'N';
+        output.write((char *)&chr, sizeof(chr));
+    } else {
+        chr = 'C';
+        output.write((char *)&chr, sizeof(chr));
+        for (int i = 0; i < Tree::num_codes; ++i) {
+            if (children[i] == NULL) {
+                chr = '0';
+                output.write((char *)&chr, sizeof(chr));
+            } else {
+                chr = '1';
+                output.write((char *)&chr, sizeof(chr));
+                children[i]->write(output);
+            }
+        }
+    }
+
+    if (ids == NULL) {
+        chr = 'n';
+        output.write((char *)&chr, sizeof(chr));
+    } else {
+        chr = 'i';
+        output.write((char *)&chr, sizeof(chr));
+        output.write((char *)ids, ids[0] * sizeof(uint64_t));
+    }
+
+    return output;
+}
+
+
 Tree::Tree() {
     root = new Node();
     _size = 0;
 }
 
+Tree::Tree(std::istream &input) {
+    root = new Node(input);
+    _size = 0;
+}
+
 Tree::~Tree() {
     delete root;
+}
+
+std::ostream &Tree::write(std::ostream &output) {
+    return root->write(output);
 }
 
 bool Tree::insert(const std::string &input, uint64_t id) {
