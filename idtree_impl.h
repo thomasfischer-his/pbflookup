@@ -128,6 +128,11 @@ IdTree<T>::IdTree()
 {
     if (d == NULL)
         Error::err("Could not allocate memory for IdTree<T>::Private");
+#ifdef REVERSE_ID_TREE
+    Error::debug("Using most significant bits as first sorting critera in IdTree");
+#else // REVERSE_ID_TREE
+    Error::debug("Using least significant bits as first sorting critera in IdTree");
+#endif // REVERSE_ID_TREE
 }
 
 template <class T>
@@ -160,8 +165,14 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
                 Error::err("Could not allocate memory for cur->children");
         }
 
-        unsigned int lowerBits = workingId & IdTree::Private::mask;
+#ifdef REVERSE_ID_TREE
+        static const int shiftOffset = 64 - IdTreeNode<T>::bitsPerNode;
+        const unsigned int lowerBits = (workingId & (IdTree::Private::mask << shiftOffset)) >> shiftOffset;
+        workingId <<= IdTreeNode<T>::bitsPerNode;
+#else // REVERSE_ID_TREE
+        const unsigned int lowerBits = workingId & IdTree::Private::mask;
         workingId >>= IdTreeNode<T>::bitsPerNode;
+#endif // REVERSE_ID_TREE
 
         if (cur->children[lowerBits] == NULL) {
             cur->children[lowerBits] = new IdTreeNode<T>();
@@ -199,8 +210,14 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) {
             return false;
         }
 
+#ifdef REVERSE_ID_TREE
+        static const int shiftOffset = 64 - IdTreeNode<T>::bitsPerNode;
+        const unsigned int lowerBits = (workingId & (IdTree::Private::mask << shiftOffset)) >> shiftOffset;
+        workingId <<= IdTreeNode<T>::bitsPerNode;
+#else // REVERSE_ID_TREE
         const unsigned int lowerBits = workingId & IdTree::Private::mask;
         workingId >>= IdTreeNode<T>::bitsPerNode;
+#endif // REVERSE_ID_TREE
 
         if (cur->children[lowerBits] == NULL) {
             //Error::warn("id=%llu   s=%d lowerBits=%d  workingId=%llu", id, s, lowerBits, workingId);
