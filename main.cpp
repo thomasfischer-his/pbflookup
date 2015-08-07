@@ -139,6 +139,7 @@ int main(int argc, char *argv[])
                                 Error::debug("  id=%llu", id);
                                 const int lowerBits = id_list[l] & 3;
                                 if (lowerBits == NODE_NIBBLE) {
+                                    Error::debug("    is Node: http://www.openstreetmap.org/node/%llu", id);
                                     Coord c;
                                     const bool found = n2c->retrieve(id, c);
                                     if (found)
@@ -146,9 +147,9 @@ int main(int argc, char *argv[])
                                     else
                                         Error::debug("    is unknown Node");
                                 } else if (lowerBits == WAY_NIBBLE)
-                                    Error::debug("    is Way");
+                                    Error::debug("    is Way: http://www.openstreetmap.org/way/%llu", id);
                                 else if (lowerBits == RELATION_NIBBLE)
-                                    Error::debug("    is Relation");
+                                    Error::debug("    is Relation: http://www.openstreetmap.org/relation/%llu", id);
                                 else
                                     Error::info("  Neither node, way, nor relation");
                             }
