@@ -48,52 +48,52 @@ int main(int argc, char *argv[])
 
         if (swedishTextTree != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, country);
-            Error::debug("Writing %s", filenamebuffer);
+            Error::debug("Writing to '%s'", filenamebuffer);
             ofstream swedishtexttreefile(filenamebuffer);
             swedishTextTree->write(swedishtexttreefile);
             swedishtexttreefile.close();
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, country);
-            Error::debug("Reading %s", filenamebuffer);
+            Error::debug("Reading from '%s'", filenamebuffer);
             ifstream swedishtexttreefile(filenamebuffer);
             swedishTextTree = new SwedishText::Tree(swedishtexttreefile);
             swedishtexttreefile.close();
         }
         if (n2c != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, country);
-            Error::debug("Writing %s", filenamebuffer);
+            Error::debug("Writing to '%s'", filenamebuffer);
             ofstream n2cfile(filenamebuffer);
             n2c->write(n2cfile);
             n2cfile.close();
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, country);
-            Error::debug("Reading %s", filenamebuffer);
+            Error::debug("Reading from '%s'", filenamebuffer);
             ifstream n2cfile(filenamebuffer);
             n2c = new IdTree<Coord>(n2cfile);
             n2cfile.close();
         }
         if (w2n != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, country);
-            Error::debug("Writing %s", filenamebuffer);
+            Error::debug("Writing to '%s'", filenamebuffer);
             ofstream w2nfile(filenamebuffer);
             w2n->write(w2nfile);
             w2nfile.close();
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, country);
-            Error::debug("Reading %s", filenamebuffer);
+            Error::debug("Reading from '%s'", filenamebuffer);
             ifstream w2nfile(filenamebuffer);
             w2n = new IdTree<WayNodes>(w2nfile);
             w2nfile.close();
         }
         if (relmem != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, country);
-            Error::debug("Writing %s", filenamebuffer);
+            Error::debug("Writing to '%s'", filenamebuffer);
             ofstream relmemfile(filenamebuffer);
             relmem->write(relmemfile);
             relmemfile.close();
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, country);
-            Error::debug("Reading %s", filenamebuffer);
+            Error::debug("Reading from '%s'", filenamebuffer);
             ifstream relmemfile(filenamebuffer);
             relmem = new IdTree<RelationMem>(relmemfile);
             relmemfile.close();
