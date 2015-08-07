@@ -99,8 +99,10 @@ int main(int argc, char *argv[])
             relmemfile.close();
         }
 
-        std::ifstream textfile("input.txt");
+        snprintf(filenamebuffer, 1024, "input-%s.txt", country);
+        std::ifstream textfile(filenamebuffer);
         if (textfile.is_open()) {
+            Error::debug("Reading token from '%s'", filenamebuffer);
             Tokenizer tokenizer;
             std::vector<std::string> words;
             tokenizer.read_words(textfile, words);
