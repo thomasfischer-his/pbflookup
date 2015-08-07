@@ -5,6 +5,7 @@
 #include "swedishtexttree.h"
 #include "osmpbfreader.h"
 #include "tokenizer.h"
+#include "timer.h"
 
 using namespace std;
 
@@ -34,18 +35,25 @@ int main(int argc, char *argv[])
             fileteststream.seekg(0, fileteststream.beg);
 
             if (length < 10) {
+                Timer timer;
                 OsmPbfReader osmPbfReader;
                 osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem);
+                const int64_t elapsed = timer.elapsed();
+                Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
             }
         } else {
+            Timer timer;
             OsmPbfReader osmPbfReader;
             osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem);
+            const int64_t elapsed = timer.elapsed();
+            Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
         }
         fileteststream.close();
         /// Clean up the protobuf lib
         google::protobuf::ShutdownProtobufLibrary();
         fp.close();
 
+        Timer timer;
         if (swedishTextTree != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, country);
             Error::debug("Writing to '%s'", filenamebuffer);
@@ -98,6 +106,8 @@ int main(int argc, char *argv[])
             relmem = new IdTree<RelationMem>(relmemfile);
             relmemfile.close();
         }
+        int64_t elapsed = timer.elapsed();
+        Error::info("Spent %li us (CPU) to read/write own files", elapsed);
 
         snprintf(filenamebuffer, 1024, "input-%s.txt", country);
         std::ifstream textfile(filenamebuffer);
@@ -105,6 +115,7 @@ int main(int argc, char *argv[])
             Error::debug("Reading token from '%s'", filenamebuffer);
             Tokenizer tokenizer;
             std::vector<std::string> words;
+            timer.start();
             tokenizer.read_words(textfile, words);
             textfile.close();
 
@@ -145,9 +156,12 @@ int main(int argc, char *argv[])
                     }
                 }
             }
+
+            elapsed = timer.elapsed();
+            Error::info("Spent %li us (CPU) to tokenize and to search in data", elapsed);
         }
 
-
+        timer.start();
         if (swedishTextTree != NULL)
             delete swedishTextTree;
         if (n2c != NULL)
@@ -156,6 +170,8 @@ int main(int argc, char *argv[])
             delete w2n;
         if (relmem != NULL)
             delete relmem;
+        elapsed = timer.elapsed();
+        Error::info("Spent %li us (CPU) to free memory", elapsed);
     } else
         return 1;
 
