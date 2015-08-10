@@ -120,7 +120,7 @@ struct RelationMem {
         return output;
     }
 
-    int num_members;
+    uint32_t num_members;
     uint64_t *members;
 };
 
