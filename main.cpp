@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 
 #include "swedishtexttree.h"
 #include "osmpbfreader.h"
@@ -9,6 +10,12 @@
 #include "weightednodeset.h"
 
 using namespace std;
+
+inline bool ends_with(std::string const &value, std::string const &ending)
+{
+    if (ending.size() > value.size()) return false;
+    return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
 
 int main(int argc, char *argv[])
 {
@@ -175,6 +182,9 @@ int main(int argc, char *argv[])
                             }
                         }
                     }
+
+                    std::sort(wns.begin(), wns.end(), greater<WeightedNode>());
+                    wns.dump();
                 }
 
                 elapsed = timer.elapsed();
