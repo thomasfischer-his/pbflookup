@@ -6,6 +6,7 @@
 #include "osmpbfreader.h"
 #include "tokenizer.h"
 #include "timer.h"
+#include "weightednodeset.h"
 
 using namespace std;
 
@@ -109,17 +110,28 @@ int main(int argc, char *argv[])
         int64_t elapsed = timer.elapsed();
         Error::info("Spent %li us (CPU) to read/write own files", elapsed);
 
-        snprintf(filenamebuffer, 1024, "input-%s.txt", country);
-        std::ifstream textfile(filenamebuffer);
-        if (textfile.is_open()) {
-            Error::debug("Reading token from '%s'", filenamebuffer);
-            Tokenizer tokenizer;
-            std::vector<std::string> words;
-            timer.start();
-            tokenizer.read_words(textfile, words);
-            textfile.close();
+        if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL) {
+            snprintf(filenamebuffer, 1024, "input-%s.txt", country);
+            std::ifstream textfile(filenamebuffer);
+            if (textfile.is_open()) {
+                Error::debug("Reading token from '%s'", filenamebuffer);
+                Tokenizer tokenizer;
+                std::vector<std::string> words;
+                timer.start();
+                tokenizer.read_words(textfile, words);
+                textfile.close();
 
-            if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL) {
+                static const std::string ends_with_colon_s = ":s";
+                static const std::string ends_with_s = "s";
+                for (std::vector<std::string>::iterator it = words.begin(); it != words.end(); ++it) {
+                    if (ends_with(*it, ends_with_colon_s))
+                        it = words.insert(it, (*it).substr(0, (*it).length() - ends_with_colon_s.length()));
+                    else if (ends_with(*it, ends_with_s))
+                        it = words.insert(it, (*it).substr(0, (*it).length() - ends_with_s.length()));
+                }
+
+                WeightedNodeSet wns(n2c, w2n, relmem);
+
                 static const size_t combined_len = 8188;
                 char combined[combined_len + 4];
                 for (int s = 3; s >= 1; --s) {
@@ -133,33 +145,41 @@ int main(int argc, char *argv[])
 
                         std::vector<uint64_t> id_list = swedishTextTree->retrieve_ids(combined);
                         if (!id_list.empty()) {
-                            Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                            for (int l = 0; l < id_list.size(); ++l) {
-                                const uint64_t id = id_list[l] >> 2;
-                                Error::debug("  id=%llu", id);
-                                const int lowerBits = id_list[l] & 3;
-                                if (lowerBits == NODE_NIBBLE) {
-                                    Error::debug("    is Node: http://www.openstreetmap.org/node/%llu", id);
-                                    Coord c;
-                                    const bool found = n2c->retrieve(id, c);
-                                    if (found)
-                                        Error::debug("       lat=%lf lon=%lf (found=%i)", c.lat, c.lon);
-                                    else
-                                        Error::debug("    is unknown Node");
-                                } else if (lowerBits == WAY_NIBBLE)
-                                    Error::debug("    is Way: http://www.openstreetmap.org/way/%llu", id);
-                                else if (lowerBits == RELATION_NIBBLE)
-                                    Error::debug("    is Relation: http://www.openstreetmap.org/relation/%llu", id);
-                                else
-                                    Error::info("  Neither node, way, nor relation");
+                            if (id_list.size() > 100)
+                                Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
+                            else {
+                                Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
+                                for (int l = 0; l < id_list.size(); ++l) {
+                                    const uint64_t id = id_list[l] >> 2;
+                                    Error::debug("  id=%llu", id);
+                                    const int lowerBits = id_list[l] & 3;
+                                    if (lowerBits == NODE_NIBBLE) {
+                                        wns.appendNode(id, s);
+                                        /*
+                                                Coord c;
+                                        const bool found = n2c->retrieve(id, c);
+                                        if (found)
+                                            Error::debug("       lat=%lf lon=%lf (found=%i)", c.lat, c.lon);
+                                        else
+                                            Error::debug("    is unknown Node");
+                                            */
+                                    } else if (lowerBits == WAY_NIBBLE) {
+                                        wns.appendWay(id);
+                                        //Error::debug("    is Way");
+                                    } else if (lowerBits == RELATION_NIBBLE) {
+                                        wns.appendRelation(id);
+                                        //Error::debug("    is Relation");
+                                    } else
+                                        Error::info("  Neither node, way, nor relation");
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            elapsed = timer.elapsed();
-            Error::info("Spent %li us (CPU) to tokenize and to search in data", elapsed);
+                elapsed = timer.elapsed();
+                Error::info("Spent %li us (CPU) to tokenize and to search in data", elapsed);
+            }
         }
 
         timer.start();
