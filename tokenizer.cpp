@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 
 #include "error.h"
 
@@ -92,9 +93,10 @@ Tokenizer::~Tokenizer() {
 }
 
 
-int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words) {
+int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity) {
     std::string line, lastword;
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
+    std::unordered_set<std::string> known_words;
 
     while (getline(input, line))
     {
@@ -107,15 +109,27 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words) 
                 lastword.append((char *)(&c), 1);
                 prev_c = c;
             } else if (!lastword.empty()) {
-                if (!d->is_stopword(lastword))
-                    words.push_back(lastword);
+                if (!d->is_stopword(lastword)) {
+                    if (multiplicity == Duplicates)
+                        words.push_back(lastword);
+                    else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                        words.push_back(lastword);
+                        known_words.insert(lastword);
+                    }
+                }
                 lastword.clear();
                 prev_c = 0;
             }
         }
         if (!lastword.empty()) {
-            if (!d->is_stopword(lastword))
-                words.push_back(lastword);
+            if (!d->is_stopword(lastword)) {
+                if (multiplicity == Duplicates)
+                    words.push_back(lastword);
+                else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                    words.push_back(lastword);
+                    known_words.insert(lastword);
+                }
+            }
             lastword.clear();
         }
     }
