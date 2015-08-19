@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
             relmemfile.close();
         }
         int64_t elapsed = timer.elapsed();
-        Error::info("Spent %li us (CPU) to read/write own files", elapsed);
+        Error::info("Spent CPU time to read/write own files: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
         if (strcmp(mapname, "isle-of-man") == 0) {
             /// Isle of man
@@ -239,7 +239,7 @@ int main(int argc, char *argv[])
                 }
 
                 elapsed = timer.elapsed();
-                Error::info("Spent %li us (CPU) to tokenize and to search in data", elapsed);
+                Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
             }
         }
 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
         if (relmem != NULL)
             delete relmem;
         elapsed = timer.elapsed();
-        Error::info("Spent %li us (CPU) to free memory", elapsed);
+        Error::info("Spent CPU time to free memory: %lius == %.1fs", elapsed, elapsed / 1000000.0);
     } else
         return 1;
 
