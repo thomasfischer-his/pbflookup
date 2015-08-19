@@ -179,15 +179,6 @@ int main(int argc, char *argv[])
                 tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 
-                static const std::string ends_with_colon_s = ":s";
-                static const std::string ends_with_s = "s";
-                for (std::vector<std::string>::iterator it = words.begin(); it != words.end(); ++it) {
-                    if (ends_with(*it, ends_with_colon_s))
-                        it = words.insert(it, (*it).substr(0, (*it).length() - ends_with_colon_s.length()));
-                    else if (ends_with(*it, ends_with_s))
-                        it = words.insert(it, (*it).substr(0, (*it).length() - ends_with_s.length()));
-                }
-
                 WeightedNodeSet wns(n2c, w2n, relmem);
                 wns.setMinMaxLatLon(minlat, maxlat, minlon, maxlon);
 
