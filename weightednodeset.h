@@ -58,10 +58,17 @@ public:
 
     void dump();
 
+    void setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon);
+
 private:
     IdTree<Coord> *m_n2c;
     IdTree<WayNodes> *m_w2n;
     IdTree<RelationMem> *m_relmem;
+
+    double m_minlat;
+    double m_maxlat;
+    double m_minlon;
+    double m_maxlon;
 };
 
 #endif // WEIGHTED_NODE_SET_H

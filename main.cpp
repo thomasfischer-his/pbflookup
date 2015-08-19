@@ -50,6 +50,10 @@ int main(int argc, char *argv[])
         IdTree<Coord> *n2c = NULL;
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
+        double minlat = 1000.0;
+        double maxlat = -1000.0;
+        double minlon = 1000.0;
+        double maxlon = -1000.0;
 
 
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
@@ -65,6 +69,12 @@ int main(int argc, char *argv[])
                 osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem);
                 const int64_t elapsed = timer.elapsed();
                 Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
+
+                minlat = osmPbfReader.min_lat();
+                maxlat = osmPbfReader.max_lat();
+                minlon = osmPbfReader.min_lon();
+                maxlon = osmPbfReader.max_lon();
+                Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
             }
         } else {
             Timer timer;
@@ -72,6 +82,12 @@ int main(int argc, char *argv[])
             osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem);
             const int64_t elapsed = timer.elapsed();
             Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
+
+            minlat = osmPbfReader.min_lat();
+            maxlat = osmPbfReader.max_lat();
+            minlon = osmPbfReader.min_lon();
+            maxlon = osmPbfReader.max_lon();
+            Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
         }
         fileteststream.close();
         /// Clean up the protobuf lib
@@ -133,6 +149,24 @@ int main(int argc, char *argv[])
         }
         int64_t elapsed = timer.elapsed();
         Error::info("Spent %li us (CPU) to read/write own files", elapsed);
+
+        if (strcmp(mapname, "isle-of-man") == 0) {
+            /// Isle of man
+            minlat = 54.0;
+            minlon = -5.0;
+            maxlat = 54.5;
+            maxlon = -4.0;
+        } else if (strcmp(mapname, "sweden") == 0) {
+            /// Sweden
+            minlat = 53.8;
+            minlon = 4.4;
+            maxlat = 71.2;
+            maxlon = 31.2;
+        }
+        if (minlat < -500 || minlat > 500)
+            Error::warn("Unknown min/max for latitudes and longitudes");
+        else
+            Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
 
         if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL) {
             snprintf(filenamebuffer, 1024, "input-%s.txt", country);

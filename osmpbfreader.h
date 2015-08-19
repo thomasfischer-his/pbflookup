@@ -60,6 +60,11 @@ public:
     SwedishText::Tree *parse(std::istream &input);
     bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **, IdTree<WayNodes> **, IdTree<RelationMem> **);
 
+    double min_lat() const;
+    double max_lat() const;
+    double min_lon() const;
+    double max_lon() const;
+
 private:
     /// Buffer for reading a compressed blob from file
     char *buffer;
@@ -77,6 +82,8 @@ private:
 
     // pbf struct of an OSM PrimitiveBlock
     OSMPBF::PrimitiveBlock primblock;
+
+    double minlat, minlon, maxlat, maxlon;
 };
 
 #endif // OSMPBFREADER_H

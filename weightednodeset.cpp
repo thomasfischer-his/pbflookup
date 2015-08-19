@@ -21,7 +21,7 @@
 #include "error.h"
 
 WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem)
-    : m_n2c(n2c), m_w2n(w2n), m_relmem(relmem)
+    : m_n2c(n2c), m_w2n(w2n), m_relmem(relmem), m_minlat(1000.0), m_maxlat(-1000.0), m_minlon(1000.0), m_maxlon(1000)
 {
     /// nothing
 }
@@ -93,3 +93,11 @@ void WeightedNodeSet::dump() {
             Error::info("Node %5i, id=%8llu, weight=%5.3f, lat=%8.4f, lon=%8.4f", i, wn.id, wn.weight, wn.lat, wn.lon);
     }
 }
+
+void WeightedNodeSet::setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon) {
+    m_minlat = minlat;
+    m_maxlat = maxlat;
+    m_minlon = minlon;
+    m_maxlon = maxlon;
+}
+
