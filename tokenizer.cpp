@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <cstdlib>
 #include <unordered_set>
 
 #include "error.h"
