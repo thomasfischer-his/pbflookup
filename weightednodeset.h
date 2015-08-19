@@ -60,6 +60,8 @@ public:
 
     void setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon);
 
+    void powerCluster(double alpha, double p);
+
 private:
     IdTree<Coord> *m_n2c;
     IdTree<WayNodes> *m_w2n;

@@ -216,6 +216,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
+                wns.powerCluster(2.0, 2.0 / wns.size());
                 std::sort(wns.begin(), wns.end(), greater<WeightedNode>());
                 wns.dump();
 

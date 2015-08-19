@@ -103,3 +103,33 @@ void WeightedNodeSet::setMinMaxLatLon(double minlat, double maxlat, double minlo
     m_maxlon = maxlon;
 }
 
+void WeightedNodeSet::powerCluster(double alpha, double p) {
+    double change[size()];
+    for (int i = size(); i >= 0; --i)
+        change[i] = 0;
+
+    static const double relationlatlonlen = 0.5;
+    Error::info("alpha=%.7f  p=%.7f", alpha, p);
+    const double delta_latbound = (m_maxlat - m_minlat) * relationlatlonlen;
+    const double delta_lonbound = (m_maxlon - m_minlon);
+    const double max_dist = sqrt(delta_latbound * delta_latbound + delta_lonbound * delta_lonbound);
+    for (int i = size() - 2; i >= 0; --i) {
+        for (unsigned int j = i + 1; j < size(); ++j) {
+            const double delta_lat = (at(i).lat - at(j).lat) * relationlatlonlen;
+            const double delta_lon = at(i).lon - at(j).lon;
+            const double dist = sqrt(delta_lat * delta_lat + delta_lon * delta_lon);
+            if (dist >= max_dist) {
+                Error::warn("Distance is larger than max_dist");
+            }
+            const double reldist = (max_dist - dist) / max_dist;
+            const double poweredreldist = exp(log(reldist) * alpha) * p;
+            change[i] += poweredreldist;
+            change[j] += poweredreldist;
+        }
+    }
+
+    for (int i = size() - 1; i >= 0; --i) {
+        WeightedNode &wn = at(i);
+        wn.weight += change[i];
+    }
+}
