@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
                 Tokenizer tokenizer(mapname);
                 std::vector<std::string> words;
                 timer.start();
-                tokenizer.read_words(textfile, words);
+                tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 
                 static const std::string ends_with_colon_s = ":s";
@@ -189,6 +189,7 @@ int main(int argc, char *argv[])
                 }
 
                 WeightedNodeSet wns(n2c, w2n, relmem);
+                wns.setMinMaxLatLon(minlat, maxlat, minlon, maxlon);
 
                 static const size_t combined_len = 8188;
                 char combined[combined_len + 4];
