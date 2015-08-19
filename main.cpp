@@ -204,14 +204,6 @@ int main(int argc, char *argv[])
                                     const int lowerBits = id_list[l] & 3;
                                     if (lowerBits == NODE_NIBBLE) {
                                         wns.appendNode(id, s);
-                                        /*
-                                                Coord c;
-                                        const bool found = n2c->retrieve(id, c);
-                                        if (found)
-                                            Error::debug("       lat=%lf lon=%lf (found=%i)", c.lat, c.lon);
-                                        else
-                                            Error::debug("    is unknown Node");
-                                            */
                                     } else if (lowerBits == WAY_NIBBLE) {
                                         wns.appendWay(id, s);
                                     } else if (lowerBits == RELATION_NIBBLE) {
