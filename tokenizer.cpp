@@ -110,7 +110,7 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
         unsigned char prev_c = 0;
         for (std::string::iterator it = line.begin(); it != line.end(); ++it) {
             if (gap.find(*it) == std::string::npos) {
-                unsigned char c = Private::utf8tolower(prev_c, *it);
+                const unsigned char c = Private::utf8tolower(prev_c, *it);
                 lastword.append((char *)(&c), 1);
                 prev_c = c;
             } else if (!lastword.empty()) {

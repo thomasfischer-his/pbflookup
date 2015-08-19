@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
                 static const size_t combined_len = 8188;
                 char combined[combined_len + 4];
                 for (int s = 3; s >= 1; --s) {
-                    for (int i = 0; i <= words.size() - s; ++i) {
+                    for (unsigned int i = 0; i <= words.size() - s; ++i) {
                         char *p = combined;
                         for (int k = 0; k < s; ++k) {
                             if (k > 0)
@@ -208,7 +208,7 @@ int main(int argc, char *argv[])
                                 Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
                             else {
                                 Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                                for (int l = 0; l < id_list.size(); ++l) {
+                                for (unsigned int l = 0; l < id_list.size(); ++l) {
                                     const uint64_t id = id_list[l] >> 2;
                                     Error::debug("  id=%llu", id);
                                     const int lowerBits = id_list[l] & 3;
