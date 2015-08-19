@@ -169,11 +169,11 @@ int main(int argc, char *argv[])
             Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
 
         if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL) {
-            snprintf(filenamebuffer, 1024, "input-%s.txt", country);
+            snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
             if (textfile.is_open()) {
-                Error::debug("Reading token from '%s'", filenamebuffer);
-                Tokenizer tokenizer;
+                Error::info("Reading token from '%s'", filenamebuffer);
+                Tokenizer tokenizer(mapname);
                 std::vector<std::string> words;
                 timer.start();
                 tokenizer.read_words(textfile, words);

@@ -29,26 +29,30 @@ private:
 
     std::vector<std::string> stopwords;
 
-    void load_stopwords() {
+    void load_stopwords(const char *stopwordfilename) {
         stopwords.clear();
 
         /// Stopword file has to be sorted with
         ///   LC_ALL=C sort -u ...
-        std::ifstream stopwordsfile("stopwords.txt");
+        std::ifstream stopwordsfile(stopwordfilename);
         if (stopwordsfile.is_open()) {
+            Error::info("Reading stopword file: %s", stopwordfilename);
             std::string line;
             while (getline(stopwordsfile, line)) {
                 if (line[0] == 0 || line[0] == '#') continue; // skip empty lines and comments
                 stopwords.push_back(line);
             }
             stopwordsfile.close();
-        }
+        } else
+            Error::warn("Could not open stopword file: %s", stopwordfilename);
     }
 
 public:
-    Private(Tokenizer *parent)
+    Private(Tokenizer *parent, const char *mapname)
         : p(parent) {
-        load_stopwords();
+        char filenamebuffer[1024];
+        snprintf(filenamebuffer, 1024, "%s/git/pbflookup/stopwords-%s.txt", getenv("HOME"), mapname);
+        load_stopwords(filenamebuffer);
     }
 
     ~Private() {
@@ -82,8 +86,8 @@ public:
 
 };
 
-Tokenizer::Tokenizer()
-    : d(new Tokenizer::Private(this)) {
+Tokenizer::Tokenizer(const char *mapname)
+    : d(new Tokenizer::Private(this, mapname)) {
     if (d == NULL)
         Error::err("Could not allocate memory for Tokenizer::Private");
 }
