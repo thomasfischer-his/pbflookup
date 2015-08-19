@@ -201,7 +201,6 @@ int main(int argc, char *argv[])
                                 Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
                                 for (unsigned int l = 0; l < id_list.size(); ++l) {
                                     const uint64_t id = id_list[l] >> 2;
-                                    Error::debug("  id=%llu", id);
                                     const int lowerBits = id_list[l] & 3;
                                     if (lowerBits == NODE_NIBBLE) {
                                         wns.appendNode(id, s);
@@ -214,13 +213,11 @@ int main(int argc, char *argv[])
                                             Error::debug("    is unknown Node");
                                             */
                                     } else if (lowerBits == WAY_NIBBLE) {
-                                        wns.appendWay(id);
-                                        //Error::debug("    is Way");
+                                        wns.appendWay(id, s);
                                     } else if (lowerBits == RELATION_NIBBLE) {
-                                        wns.appendRelation(id);
-                                        //Error::debug("    is Relation");
+                                        wns.appendRelation(id, s);
                                     } else
-                                        Error::info("  Neither node, way, nor relation");
+                                        Error::warn("  Neither node, way, nor relation: %llu", id);
                                 }
                             }
                         }
