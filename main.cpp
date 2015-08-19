@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 
                         std::vector<uint64_t> id_list = swedishTextTree->retrieve_ids(combined);
                         if (!id_list.empty()) {
-                            if (id_list.size() > 100)
+                            if (id_list.size() > 1000)
                                 Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
                             else {
                                 Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);

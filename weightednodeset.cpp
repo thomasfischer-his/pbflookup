@@ -87,7 +87,7 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
 
 void WeightedNodeSet::dump() {
     int i = 0;
-    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 30; ++it, ++i) {
+    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 10; ++it, ++i) {
         const WeightedNode &wn = *it;
         if (wn.weight > 0.01) {
             Error::info("Node %5i, id=%8llu, weight=%5.3f, lat=%8.4f, lon=%8.4f", i, wn.id, wn.weight, wn.lat, wn.lon);
