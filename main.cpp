@@ -214,10 +214,10 @@ int main(int argc, char *argv[])
                             }
                         }
                     }
-
-                    std::sort(wns.begin(), wns.end(), greater<WeightedNode>());
-                    wns.dump();
                 }
+
+                std::sort(wns.begin(), wns.end(), greater<WeightedNode>());
+                wns.dump();
 
                 elapsed = timer.elapsed();
                 Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
