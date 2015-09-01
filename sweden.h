@@ -19,6 +19,7 @@ public:
     void insertSCBcode(const int code, uint64_t relid);
     int insideSCBcode(uint64_t nodeid);
     void insertNUTS3code(const int code, uint64_t relid);
+    int insideNUTS3code(uint64_t nodeid);
 
 private:
 
@@ -31,10 +32,6 @@ private:
         std::map<int, std::string> municipalities;
     };
     std::map<int, Land> lands;
-
-    std::map<int, uint64_t> scbcode_to_relationid;
-    std::map<int, std::vector<std::pair<int, int> > > scbcode_to_polygon;
-    std::map<int, uint64_t> nuts3code_to_relationid;
 
 private:
     class Private;
