@@ -25,18 +25,6 @@ public:
     int insideNUTS3code(uint64_t nodeid);
 
 private:
-
-    struct Land {
-        Land(const std::string &_label)
-            : label(_label) {}
-        Land() {}
-
-        std::string label;
-        std::map<int, std::string> municipalities;
-    };
-    std::map<int, Land> lands;
-
-private:
     class Private;
     Private *const d;
 };
