@@ -253,6 +253,25 @@ int main(int argc, char *argv[])
 
                 elapsed = timer.elapsed();
                 Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+
+                if (sweden != NULL) {
+                    timer.start();
+                    uint64_t id = 798695652;
+                    const int scbcode = sweden->insideSCBcode(id);
+                    if (scbcode > 0) {
+                        Error::info("SCB code for node %llu is %i", id, scbcode);
+                        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                    } else
+                        Error::warn("No SCB code found for node %llu", id);
+                    const int nuts3code = sweden->insideNUTS3code(id);
+                    if (nuts3code > 0) {
+                        Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
+                        Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
+                    } else
+                        Error::warn("No NUTS3 code found for node %llu", id);
+                    elapsed = timer.elapsed();
+                    Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+                }
             }
         }
 
