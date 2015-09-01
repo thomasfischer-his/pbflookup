@@ -162,7 +162,7 @@ int main(int argc, char *argv[])
             maxlat = 71.2;
             maxlon = 31.2;
         } else if (strcmp(mapname, "goteborg") == 0) {
-            /// Sweden
+            /// Gothenburg
             minlat = 56.9;
             minlon = 11.4;
             maxlat = 59.4;
