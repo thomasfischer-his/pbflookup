@@ -242,7 +242,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     for (int j = 0; j < maxnodes; ++j) {
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        (*n2c)->insert(pg.nodes(j).id(), Coord(lat, lon));
+                        (*n2c)->insert(pg.nodes(j).id(), Coord(lon, lat));
                         if (lat > maxlat) maxlat = lat;
                         if (lat < minlat) minlat = lat;
                         if (lon > maxlon) maxlon = lon;
@@ -271,7 +271,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        (*n2c)->insert(last_id, Coord(last_lat, last_lon));
+                        (*n2c)->insert(last_id, Coord(last_lon, last_lat));
                         if (last_lat > maxlat) maxlat = last_lat;
                         if (last_lat < minlat) minlat = last_lat;
                         if (last_lon > maxlon) maxlon = last_lon;
