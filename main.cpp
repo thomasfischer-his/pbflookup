@@ -210,10 +210,19 @@ int main(int argc, char *argv[])
                                     const uint64_t id = id_list[l] >> 2;
                                     const int lowerBits = id_list[l] & 3;
                                     if (lowerBits == NODE_NIBBLE) {
+#ifdef DEBUG
+                                        Error::debug("   https://www.openstreetmap.org/node/%llu", id);
+#endif // DEBUG
                                         wns.appendNode(id, s, wordlen);
                                     } else if (lowerBits == WAY_NIBBLE) {
+#ifdef DEBUG
+                                        Error::debug("   https://www.openstreetmap.org/way/%llu", id);
+#endif // DEBUG
                                         wns.appendWay(id, s, wordlen);
                                     } else if (lowerBits == RELATION_NIBBLE) {
+#ifdef DEBUG
+                                        Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
+#endif // DEBUG
                                         wns.appendRelation(id, s, wordlen);
                                     } else
                                         Error::warn("  Neither node, way, nor relation: %llu", id);
