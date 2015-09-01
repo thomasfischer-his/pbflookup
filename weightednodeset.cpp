@@ -28,8 +28,8 @@ WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTr
     /// nothing
 }
 
-bool WeightedNodeSet::appendNode(uint64_t id, int s) {
-    const double weight = 1.0 * exp(log(s) * 1.2);
+bool WeightedNodeSet::appendNode(uint64_t id, int s, size_t wordlen) {
+    const double weight = 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
     return appendNode(id, weight);
 }
 
@@ -50,8 +50,8 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
         return false;
 }
 
-bool WeightedNodeSet::appendWay(uint64_t id, int s) {
-    const double weight = 1.0 * exp(log(s) * 1.2);
+bool WeightedNodeSet::appendWay(uint64_t id, int s, size_t wordlen) {
+    const double weight = 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
     return appendWay(id, weight);
 }
 
@@ -67,8 +67,8 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
         return false;
 }
 
-bool WeightedNodeSet::appendRelation(uint64_t id, int s) {
-    const double weight = 1.0 * exp(log(s) * 1.2);
+bool WeightedNodeSet::appendRelation(uint64_t id, int s, size_t wordlen) {
+    const double weight = 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
     return appendRelation(id, weight);
 }
 

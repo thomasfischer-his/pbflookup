@@ -49,11 +49,11 @@ struct WeightedNode {
 class WeightedNodeSet : public std::vector<WeightedNode> {
 public:
     WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem);
-    bool appendNode(uint64_t id, int s);
+    bool appendNode(uint64_t id, int s, size_t wordlen);
     bool appendNode(uint64_t id, double weight = 1.0);
-    bool appendWay(uint64_t id, int s);
+    bool appendWay(uint64_t id, int s, size_t wordlen);
     bool appendWay(uint64_t id, double weight = 1.0);
-    bool appendRelation(uint64_t id, int s);
+    bool appendRelation(uint64_t id, int s, size_t wordlen);
     bool appendRelation(uint64_t id, double weight = 1.0);
 
     void dump();

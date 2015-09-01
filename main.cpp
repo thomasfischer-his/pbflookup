@@ -199,6 +199,7 @@ int main(int argc, char *argv[])
                             p += snprintf(p, combined_len - (p - combined), "%s", words[i + k].c_str());
                         }
 
+                        const size_t wordlen = strlen(combined);
                         std::vector<uint64_t> id_list = swedishTextTree->retrieve_ids(combined);
                         if (!id_list.empty()) {
                             if (id_list.size() > 1000)
@@ -209,11 +210,11 @@ int main(int argc, char *argv[])
                                     const uint64_t id = id_list[l] >> 2;
                                     const int lowerBits = id_list[l] & 3;
                                     if (lowerBits == NODE_NIBBLE) {
-                                        wns.appendNode(id, s);
+                                        wns.appendNode(id, s, wordlen);
                                     } else if (lowerBits == WAY_NIBBLE) {
-                                        wns.appendWay(id, s);
+                                        wns.appendWay(id, s, wordlen);
                                     } else if (lowerBits == RELATION_NIBBLE) {
-                                        wns.appendRelation(id, s);
+                                        wns.appendRelation(id, s, wordlen);
                                     } else
                                         Error::warn("  Neither node, way, nor relation: %llu", id);
                                 }
