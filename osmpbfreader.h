@@ -46,6 +46,7 @@
 #include <osmpbf/osmpbf.h>
 
 #include "idtree.h"
+#include "sweden.h"
 
 namespace SwedishText {
 class Tree;
@@ -58,7 +59,7 @@ public:
     ~OsmPbfReader();
 
     SwedishText::Tree *parse(std::istream &input);
-    bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **, IdTree<WayNodes> **, IdTree<RelationMem> **);
+    bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **, IdTree<WayNodes> **, IdTree<RelationMem> **, Sweden &sweden);
 
     double min_lat() const;
     double max_lat() const;

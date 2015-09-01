@@ -51,7 +51,7 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem) {
+bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem, Sweden &sweden) {
     *swedishTextTree = NULL;
     *n2c = NULL;
     *w2n = NULL;
@@ -410,47 +410,35 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
                         const uint64_t wayId = pg.ways(w).id();
                         WayNodes wn(pg.ways(w).refs_size());
-                        //Error::debug("Adding way %llu, %i nodes", wayId, pg.ways(w).refs_size());
                         uint64_t nodeId = 0;
                         for (int k = 0; k < pg.ways(w).refs_size(); ++k) {
                             nodeId += pg.ways(w).refs(k);
-                            //Error::debug("  Adding node %llu at pos %i", nodeId, k);
                             wn.nodes[k] = nodeId;
                         }
                         (*w2n)->insert(wayId, wn);
                     }
-
-                    /*
-                    const int wayIndex = 0;
-                    const uint64_t wayId = pg.ways(wayIndex).id();
-                    Error::info("Way id: %d", wayId);
-                    uint64_t nodeId = 0;
-                    for (int w = 0; w < pg.ways(wayIndex).refs_size(); ++w) {
-                        nodeId += pg.ways(wayIndex).refs(w);
-                        Error::info("  Node %i id: %ld", w, nodeId);
-                    }
-                    */
                 }
 
                 // tell about relations
                 if (pg.relations_size() > 0) {
                     found_items = true;
 
-                    //debug("      relations: %d", pg.relations_size());
-                    /*if (pg.relations(0).has_info()) {
-                        debug("        with meta-info");
-                    }*/
-
                     const int maxrelations = pg.relations_size();
                     for (int i = 0; i < maxrelations; ++i) {
                         const int maxkv = pg.relations(i).keys_size();
                         for (int k = 0; k < maxkv; ++k) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
+                            const uint64_t id = pg.relations(i).id();
                             if (strcmp("name", ckey) == 0) {
-                                uint64_t id = pg.relations(i).id();
                                 const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), id << 2 | RELATION_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
+                            } else if (strcmp("ref:scb", ckey) == 0) {
+                                /// Found SCB reference (two digits for lands, four digits for municipalities
+                                sweden.insertSCBcode(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), id);
+                            } else if (strcmp("ref:nuts:3", ckey) == 0) {
+                                /// Found three-digit NUTS reference (SEnnn)
+                                sweden.insertNUTS3code(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), id);
                             }
                         }
 

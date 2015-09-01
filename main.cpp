@@ -23,6 +23,7 @@
 #include "tokenizer.h"
 #include "timer.h"
 #include "weightednodeset.h"
+#include "sweden.h"
 
 using namespace std;
 
@@ -49,6 +50,7 @@ int main(int argc, char *argv[])
         IdTree<Coord> *n2c = NULL;
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
+        Sweden sweden;
         double minlat = 1000.0;
         double maxlat = -1000.0;
         double minlon = 1000.0;
@@ -65,7 +67,7 @@ int main(int argc, char *argv[])
             if (length < 10) {
                 Timer timer;
                 OsmPbfReader osmPbfReader;
-                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem);
+                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, sweden);
                 const int64_t elapsed = timer.elapsed();
                 Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
 
@@ -78,7 +80,7 @@ int main(int argc, char *argv[])
         } else {
             Timer timer;
             OsmPbfReader osmPbfReader;
-            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem);
+            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, sweden);
             const int64_t elapsed = timer.elapsed();
             Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
 
