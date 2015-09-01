@@ -18,6 +18,8 @@
 
 #include "cmath"
 
+#include <algorithm>
+
 #include "error.h"
 
 WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem)
@@ -93,6 +95,16 @@ void WeightedNodeSet::dump() {
             Error::info("Node %5i, id=%8llu, weight=%5.3f, lat=%8.4f, lon=%8.4f", i, wn.id, wn.weight, wn.lat, wn.lon);
             Error::debug("  http://www.openstreetmap.org/node/%llu", wn.id);
         }
+    }
+}
+
+void WeightedNodeSet::normalize() {
+    /// Sort by weight, heaviest first
+    std::sort(begin(), end(), std::greater<WeightedNode>());
+
+    const double max_weight = (*begin()).weight;
+    for (iterator it = begin(); it != end(); ++it) {
+        (*it).weight /= max_weight;
     }
 }
 

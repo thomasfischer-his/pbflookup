@@ -57,6 +57,7 @@ public:
     bool appendRelation(uint64_t id, double weight = 1.0);
 
     void dump();
+    void normalize();
 
     void setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon);
 
