@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         IdTree<Coord> *n2c = NULL;
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
-        Sweden sweden(n2c, w2n, relmem);
+        Sweden *sweden = NULL;
         double minlat = 1000.0;
         double maxlat = -1000.0;
         double minlon = 1000.0;
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
             if (length < 10) {
                 Timer timer;
                 OsmPbfReader osmPbfReader;
-                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, sweden);
+                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
                 const int64_t elapsed = timer.elapsed();
                 Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
 
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
         } else {
             Timer timer;
             OsmPbfReader osmPbfReader;
-            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, sweden);
+            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
             const int64_t elapsed = timer.elapsed();
             Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
 
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
             maxlat = 59.4;
             maxlon = 14.5;
         }
-        sweden.setMinMaxLatLon(minlat, minlon, maxlat, maxlon);
+        sweden->setMinMaxLatLon(minlat, minlon, maxlat, maxlon);
 
         if (minlat < -500 || minlat > 500)
             Error::warn("Unknown min/max for latitudes and longitudes");
@@ -252,6 +252,8 @@ int main(int argc, char *argv[])
             delete w2n;
         if (relmem != NULL)
             delete relmem;
+        if (sweden != NULL)
+            delete sweden;
         elapsed = timer.elapsed();
         Error::info("Spent CPU time to free memory: %lius == %.1fs", elapsed, elapsed / 1000000.0);
     } else

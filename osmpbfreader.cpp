@@ -50,11 +50,12 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem, Sweden &sweden) {
+bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem, Sweden **sweden) {
     *swedishTextTree = NULL;
     *n2c = NULL;
     *w2n = NULL;
     *relmem = NULL;
+    *sweden = NULL;
     minlat = 1000.0;
     minlon = 1000.0;
     maxlat = -1000.0;
@@ -73,6 +74,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     *relmem = new IdTree<RelationMem>();
     if (relmem == NULL)
         Error::err("Could not allocate memory for relmem");
+    *sweden = new Sweden(*n2c, *w2n, *relmem);
+    if (sweden == NULL)
+        Error::err("Could not allocate memory for Sweden");
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -343,10 +347,10 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             } else if (strcmp("ref:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
-                                sweden.insertSCBcode(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), id);
+                                (*sweden)->insertSCBcode(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), id);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
-                                sweden.insertNUTS3code(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), id);
+                                (*sweden)->insertNUTS3code(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), id);
                             }
                         }
 
