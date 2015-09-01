@@ -77,38 +77,89 @@ public:
         }
 
         return -1;
+    }
 
+    void loadSCBcodeNames() {
+        char filenamebuffer[1024];
+        snprintf(filenamebuffer, 1024, "%s/git/pbflookup/scb-lan-kommuner-kod.csv", getenv("HOME"));
+        std::ifstream fp(filenamebuffer, std::ifstream::in | std::ifstream::binary);
+        if (fp) {
+            std::map<int, Land>::iterator nextLand = lands.begin();
+            std::string codeStr;
+            while (std::getline(fp, codeStr, ';')) {
+                const int code = std::stoi(codeStr);
+                std::string label;
+                std::getline(fp, label);
+
+                if (code >= 100) {
+                    /// Municipality
+                    const int land = code / 100;
+                    lands[land].municipalities.insert(lands[land].municipalities.begin(), std::pair<int, std::string>(code, label));
+                } else if (code > 0) {
+                    /// Land
+                    Land land(label);
+                    nextLand = lands.insert(nextLand, std::pair<int, Land>(code, land));
+                } else
+                    Error::err("Invalid code for label '%s'", label.c_str());
+            }
+            fp.close();
+        } else
+            Error::err("Could not open list of muncipalities and lands: %s", filenamebuffer);
+    }
+
+    void dumpSCBcodeNames()const {
+        for (std::map<int, Land>::const_iterator itLand = lands.cbegin(); itLand != lands.cend(); ++itLand) {
+            Error::info("Land=%02i %s", (*itLand).first, (*itLand).second.label.c_str());
+            for (std::map<int, std::string>::const_iterator itMun = (*itLand).second.municipalities.cbegin(); itMun != (*itLand).second.municipalities.cend(); ++itMun) {
+                Error::info("  Municipality=%04i %s", (*itMun).first, (*itMun).second.c_str());
+            }
+        }
     }
 };
 
 Sweden::Sweden(IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem)
     : d(new Sweden::Private(this, coords, waynodes, relmem))
 {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/git/pbflookup/scb-lan-kommuner-kod.csv", getenv("HOME"));
-    std::ifstream fp(filenamebuffer, std::ifstream::in | std::ifstream::binary);
-    if (fp) {
-        std::map<int, Land>::iterator nextLand = lands.begin();
-        std::string codeStr;
-        while (std::getline(fp, codeStr, ';')) {
-            const int code = std::stoi(codeStr);
-            std::string label;
-            std::getline(fp, label);
+    d->loadSCBcodeNames();
+}
 
-            if (code >= 100) {
-                /// Municipality
-                const int land = code / 100;
-                lands[land].municipalities.insert(lands[land].municipalities.begin(), std::pair<int, std::string>(code, label));
-            } else if (code > 0) {
-                /// Land
-                Land land(label);
-                nextLand = lands.insert(nextLand, std::pair<int, Land>(code, land));
-            } else
-                Error::err("Invalid code for label '%s'", label.c_str());
+Sweden::Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem)
+    : d(new Sweden::Private(this, coords, waynodes, relmem))
+{
+    d->loadSCBcodeNames();
+
+    char chr = '\0';
+    input.read((char *)&chr, sizeof(chr));
+    if (chr == 'S') {
+        size_t  num_elements;
+        input.read((char *)&num_elements, sizeof(num_elements));
+        for (size_t i = 0; i < num_elements; ++i) {
+            int code;
+            input.read((char *)&code, sizeof(int));
+            uint64_t nodeid;
+            input.read((char *)&nodeid, sizeof(uint64_t));
+            d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, nodeid));
         }
-        fp.close();
     } else
-        Error::err("Could not open list of muncipalities and lands: %s", filenamebuffer);
+        Error::warn("Expected 'S', got '0x%02x'", chr);
+
+    input.read((char *)&chr, sizeof(chr));
+    if (chr == 'n') {
+        size_t  num_elements;
+        input.read((char *)&num_elements, sizeof(num_elements));
+        for (size_t i = 0; i < num_elements; ++i) {
+            int code;
+            input.read((char *)&code, sizeof(int));
+            uint64_t nodeid;
+            input.read((char *)&nodeid, sizeof(uint64_t));
+            d->nuts3code_to_relationid.insert(std::pair<int, uint64_t>(code, nodeid));
+        }
+    } else
+        Error::warn("Expected 'n', got '0x%02x'", chr);
+
+    input.read((char *)&chr, sizeof(chr));
+    if (chr != '_')
+        Error::warn("Expected '_', got '0x%02x'", chr);
 }
 
 Sweden::~Sweden()
@@ -124,12 +175,31 @@ void Sweden::setMinMaxLatLon(double min_lat, double min_lon, double max_lat, dou
 }
 
 void Sweden::dump() {
-    for (std::map<int, Land>::const_iterator itLand = lands.cbegin(); itLand != lands.cend(); ++itLand) {
-        Error::info("Land=%02i %s", (*itLand).first, (*itLand).second.label.c_str());
-        for (std::map<int, std::string>::const_iterator itMun = (*itLand).second.municipalities.cbegin(); itMun != (*itLand).second.municipalities.cend(); ++itMun) {
-            Error::info("  Municipality=%04i %s", (*itMun).first, (*itMun).second.c_str());
-        }
+    d->dumpSCBcodeNames();
+}
+
+std::ostream &Sweden::write(std::ostream &output) {
+    char chr = 'S';
+    output.write((char *)&chr, sizeof(chr));
+    size_t  num_elements = d->scbcode_to_relationid.size();
+    output.write((char *)&num_elements, sizeof(num_elements));
+    for (std::map<int, uint64_t>::const_iterator it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
+        output.write((char *) & ((*it).first), sizeof(int));
+        output.write((char *) & ((*it).second), sizeof(uint64_t));
     }
+
+    chr = 'n';
+    output.write((char *)&chr, sizeof(chr));
+    num_elements = d->nuts3code_to_relationid.size();
+    output.write((char *)&num_elements, sizeof(num_elements));
+    for (std::map<int, uint64_t>::const_iterator it = d->nuts3code_to_relationid.cbegin(); it != d->nuts3code_to_relationid.cend(); ++it) {
+        output.write((char *) & ((*it).first), sizeof(int));
+        output.write((char *) & ((*it).second), sizeof(uint64_t));
+    }
+    chr = '_';
+    output.write((char *)&chr, sizeof(chr));
+
+    return output;
 }
 
 void Sweden::insertSCBcode(const int code, uint64_t relid) {

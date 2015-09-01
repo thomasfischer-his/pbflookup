@@ -147,6 +147,19 @@ int main(int argc, char *argv[])
             relmem = new IdTree<RelationMem>(relmemfile);
             relmemfile.close();
         }
+        if (sweden != NULL) {
+            snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
+            Error::debug("Writing to '%s'", filenamebuffer);
+            ofstream swedenfile(filenamebuffer);
+            sweden->write(swedenfile);
+            swedenfile.close();
+        } else {
+            snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
+            Error::debug("Reading from '%s'", filenamebuffer);
+            ifstream swedenfile(filenamebuffer);
+            sweden = new Sweden(swedenfile, n2c, w2n, relmem);
+            swedenfile.close();
+        }
         int64_t elapsed = timer.elapsed();
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
