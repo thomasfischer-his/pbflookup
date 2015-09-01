@@ -105,18 +105,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
             Error::err("unable to parse blob header");
         }
 
-        // tell about the blob-header
-        //info("\nBlobHeader (%d bytes)", sz);
-        //debug("  type = %s", blobheader.type().c_str());
-
         // size of the following blob
         sz = blobheader.datasize();
         //debug("  datasize = %u", sz);
-
-        // optional indexdata
-        /*if (blobheader.has_indexdata()) {
-            debug("  indexdata = %u bytes", blobheader.indexdata().size());
-        }*/
 
         // ensure the blob is smaller then MAX_BLOB_SIZE
         if (sz > OSMPBF::max_uncompressed_blob_size) {
@@ -134,9 +125,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
         if (!blob.ParseFromArray(buffer, sz)) {
             Error::err("unable to parse blob");
         }
-
-        // tell about the blob-header
-        //info("Blob (%d bytes)", sz);
 
         // set when we find at least one data stream
         bool found_data = false;
@@ -173,10 +161,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
             // the size of the compressesd data
             sz = blob.zlib_data().size();
-
-            // tell about the compressed data
-            //debug("  contains zlib-compressed data: %u bytes", sz);
-            //debug("  uncompressed size: %u bytes", blob.raw_size());
 
             // zlib information
             z_stream z;
@@ -222,10 +206,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
             // we have at least one datastream
             found_data = true;
 
-            // tell about the compressed data
-            //debug("  contains lzma-compressed data: %u bytes", blob.lzma_data().size());
-            //debug("  uncompressed size: %u bytes", blob.raw_size());
-
             // issue a warning, lzma compression is not yet supported
             Error::err("  lzma-decompression is not supported");
         }
@@ -237,67 +217,15 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
         // switch between different blob-types
         if (blobheader.type() == "OSMHeader") {
-            // tell about the OSMHeader blob
-            //info("  OSMHeader");
-
             // parse the HeaderBlock from the blob
             if (!headerblock.ParseFromArray(unpack_buffer, sz)) {
                 Error::err("unable to parse header block");
             }
-
-            // tell about the bbox
-            if (headerblock.has_bbox()) {
-                OSMPBF::HeaderBBox bbox = headerblock.bbox();
-                /*debug("    bbox: %.7f,%.7f,%.7f,%.7f",
-                    (double)bbox.left() / OSMPBF::lonlat_resolution,
-                    (double)bbox.bottom() / OSMPBF::lonlat_resolution,
-                    (double)bbox.right() / OSMPBF::lonlat_resolution,
-                    (double)bbox.top() / OSMPBF::lonlat_resolution);*/
-            }
-
-            // tell about the required features
-            /*for (int i = 0, l = headerblock.required_features_size(); i < l; i++) {
-                debug("    required_feature: %s", headerblock.required_features(i).c_str());
-            }*/
-
-            // tell about the optional features
-            /*for (int i = 0, l = headerblock.optional_features_size(); i < l; i++) {
-                debug("    optional_feature: %s", headerblock.optional_features(i).c_str());
-            }*/
-
-            // tell about the writing program
-            /*if (headerblock.has_writingprogram()) {
-                debug("    writingprogram: %s", headerblock.writingprogram().c_str());
-            }*/
-
-            // tell about the source
-            /*if (headerblock.has_source()) {
-                debug("    source: %s", headerblock.source().c_str());
-            }*/
         } else if (blobheader.type() == "OSMData") {
-            // tell about the OSMData blob
-            //info("  OSMData");
-
             // parse the PrimitiveBlock from the blob
             if (!primblock.ParseFromArray(unpack_buffer, sz)) {
                 Error::err("unable to parse primitive block");
             }
-
-            // tell about the block's meta info
-            /*debug("    granularity: %u", primblock.granularity());
-            debug("    lat_offset: %u", primblock.lat_offset());
-            debug("    lon_offset: %u", primblock.lon_offset());
-            debug("    date_granularity: %u", primblock.date_granularity());*/
-
-            // tell about the stringtable
-            //debug("    stringtable: %u items", primblock.stringtable().s_size());
-            /*const int maxstring = primblock.stringtable().s_size() > list_limit ? list_limit : primblock.stringtable().s_size();
-            for (int i = 0; i < maxstring; ++i) {
-                debug("      string %d = '%s'", i, primblock.stringtable().s(i).c_str());
-            }*/
-
-            // number of PrimitiveGroups
-            //debug("    primitivegroups: %u groups", primblock.primitivegroup_size());
 
             // iterate over all PrimitiveGroups
             for (int i = 0, l = primblock.primitivegroup_size(); i < l; i++) {
@@ -307,14 +235,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                 bool found_items = false;
                 const double coord_scale = 0.000000001;
 
-                // tell about nodes
                 if (pg.nodes_size() > 0) {
                     found_items = true;
-
-                    //debug("      nodes: %d", pg.nodes_size());
-                    /*if (pg.nodes(0).has_info()) {
-                        debug("        with meta-info");
-                    }*/
 
                     const int maxnodes = pg.nodes_size();
                     for (int j = 0; j < maxnodes; ++j) {
@@ -338,14 +260,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     }
                 }
 
-                // tell about dense nodes
                 if (pg.has_dense()) {
                     found_items = true;
-
-                    //debug("      dense nodes: %d", pg.dense().id_size());
-                    /*if (pg.dense().has_denseinfo()) {
-                        debug("        with meta-info");
-                    }*/
 
                     uint64_t last_id = 0;
                     int last_keyvals_pos = 0;
@@ -360,8 +276,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         if (last_lat < minlat) minlat = last_lat;
                         if (last_lon > maxlon) maxlon = last_lon;
                         if (last_lon < minlon) minlon = last_lon;
-
-                        //debug("        dense node %u   at lat=%.6f lon=%.6f", last_id, last_lat, last_lon);
 
                         bool isKey = true;
                         int key = 0, value = 0;
@@ -387,16 +301,11 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     }
                 }
 
-                // tell about ways
                 if (pg.ways_size() > 0) {
                     found_items = true;
 
-                    //debug("      ways: %d", pg.ways_size());
-                    /*if (pg.ways(0).has_info()) {
-                        debug("        with meta-info");
-                    }*/
 
-                    const int maxways = pg.ways_size();// > list_limit ? list_limit : pg.ways_size();
+                    const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
@@ -468,54 +377,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     /// Line break after series of dots
     std::cout << std::endl;
 
-    /*
-    uint64_t nodeId = 3539685440; // Sweden
-    //uint64_t nodeId = 13802131; // Isle of Man
-    //uint64_t nodeId = 283479923; // Isle of Man
-    Coord c;
-    bool found = (*n2c)->retrieve(nodeId, c);
-    Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
-
-    nodeId = 13802131; // Isle of Man
-    //uint64_t nodeId = 283479923; // Isle of Man
-    found = (*n2c)->retrieve(nodeId, c);
-    Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
-
-    nodeId = 283479923; // Isle of Man
-    found = (*n2c)->retrieve(nodeId, c);
-    Error::info("Coord for %llu: %lf %lf (found=%i)", nodeId, c.lat, c.lon, (found & 0x000000ff));
-
-    uint64_t wayId = 349336142; // Isle of Man
-    WayNodes wn;
-    found = (*w2n)->retrieve(wayId, wn);
-    if (found) {
-        Error::info("Way for http://www.openstreetmap.org/way/%llu : %i nodes", wayId, wn.num_nodes);
-        for (int i = 0; i < wn.num_nodes; ++i) {
-            const uint64_t nodeId = wn.nodes[i];
-            Error::debug("  Node %llu", nodeId);
-            Coord c;
-            (*n2c)->retrieve(nodeId, c);
-            Error::debug("     at pos %lf %lf", c.lat, c.lon);
-        }
-    } else
-        Error::info("Did not find a way with id %llu", wayId);
-
-    uint64_t relId = 3341682;
-    RelationMem rm;
-    found = (*relmem)->retrieve(relId, rm);
-    if (found) {
-        Error::info("Relation for http://www.openstreetmap.org/relation/%llu : %i members", relId, rm.num_members);
-        for (int i = 0; i < rm.num_members; ++i) {
-            const uint64_t memId = rm.members[i];
-            Error::debug("  Member Id %llu", memId);
-            Coord c;
-            const bool isKnownNode = (*n2c)->retrieve(memId, c);
-            if (isKnownNode)
-                Error::debug("     at pos %lf %lf", c.lat, c.lon);
-        }
-    } else
-        Error::info("Did not find a relation with id %llu", relId);
-    */
     return true;
 }
 

@@ -56,7 +56,6 @@ int main(int argc, char *argv[])
         double minlon = 1000.0;
         double maxlon = -1000.0;
 
-
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
         ifstream fileteststream(filenamebuffer);
         if (fileteststream && fileteststream.good()) {
