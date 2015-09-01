@@ -51,10 +51,10 @@ struct IdTreeNode {
                 } else if (chr == '1') {
                     children[c] = new IdTreeNode<T>(input);
                 } else
-                    Error::warn("Expected '0' or '1', got '%02x'", chr);
+                    Error::warn("Expected '0' or '1', got '0x%02x'", chr);
             }
         } else
-            Error::warn("Expected 'N' or 'C', got '%02x'", chr);
+            Error::warn("Expected 'N' or 'C', got '0x%02x'", chr);
     }
 
     ~IdTreeNode() {

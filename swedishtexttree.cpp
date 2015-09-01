@@ -48,10 +48,10 @@ Node::Node(std::istream &input) {
             } else if (chr == '1') {
                 children[i] = new Node(input);
             } else
-                Error::warn("Expected '0' or '1', got '%02x'", chr);
+                Error::warn("Expected '0' or '1', got '0x%02x'", chr);
         }
     } else
-        Error::warn("Expected 'N' or 'C', got '%02x'", chr);
+        Error::warn("Expected 'N' or 'C', got '0x%02x'", chr);
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'n') {
@@ -63,7 +63,7 @@ Node::Node(std::istream &input) {
         ids[0] = firstId;
         input.read((char *)(ids + 1), (firstId - 1)*sizeof(uint64_t));
     } else
-        Error::warn("Expected 'n' or 'i', got '%02x'", chr);
+        Error::warn("Expected 'n' or 'i', got '0x%02x'", chr);
 }
 
 Node::~Node() {
