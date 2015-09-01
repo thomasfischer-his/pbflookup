@@ -27,7 +27,6 @@
 #endif
 
 #include "swedishtexttree.h"
-#include "idtree.h"
 #include "error.h"
 
 OsmPbfReader::OsmPbfReader()
