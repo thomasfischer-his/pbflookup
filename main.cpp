@@ -161,7 +161,14 @@ int main(int argc, char *argv[])
             minlon = 4.4;
             maxlat = 71.2;
             maxlon = 31.2;
+        } else if (strcmp(mapname, "goteborg") == 0) {
+            /// Sweden
+            minlat = 56.9;
+            minlon = 11.4;
+            maxlat = 59.4;
+            maxlon = 14.5;
         }
+
         if (minlat < -500 || minlat > 500)
             Error::warn("Unknown min/max for latitudes and longitudes");
         else
