@@ -69,6 +69,7 @@ public:
             const int y = (coord.lat - min_lat) * INT_RANGE / delta_lat;
 
             for (std::map<int, std::vector<std::pair<int, int> > >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
+                /// For a good explanation, see here: http://alienryderflex.com/polygon/
                 const std::vector<std::pair<int, int> > &polygon = (*it).second;
                 const int polyCorners = polygon.size();
                 int j = polyCorners - 1;
