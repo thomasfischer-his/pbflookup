@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
         IdTree<Coord> *n2c = NULL;
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
-        Sweden sweden;
+        Sweden sweden(n2c, w2n, relmem);
         double minlat = 1000.0;
         double maxlat = -1000.0;
         double minlon = 1000.0;
@@ -169,6 +169,7 @@ int main(int argc, char *argv[])
             maxlat = 59.4;
             maxlon = 14.5;
         }
+        sweden.setMinMaxLatLon(minlat, minlon, maxlat, maxlon);
 
         if (minlat < -500 || minlat > 500)
             Error::warn("Unknown min/max for latitudes and longitudes");
