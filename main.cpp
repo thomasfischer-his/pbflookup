@@ -175,6 +175,12 @@ int main(int argc, char *argv[])
             minlon = 4.4;
             maxlat = 71.2;
             maxlon = 31.2;
+        } else if (strcmp(mapname, "westsweden") == 0) {
+            /// West Sweden
+            minlat = 56.3;
+            minlon = 10.4;
+            maxlat = 59.9;
+            maxlon = 16.3;
         } else if (strcmp(mapname, "goteborg") == 0) {
             /// Gothenburg
             minlat = 56.9;
