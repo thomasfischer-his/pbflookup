@@ -257,7 +257,6 @@ int main(int argc, char *argv[])
                 wns.normalize();
                 //wns.dump();
             }
-            */
 
             elapsed = timer.elapsed();
             Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
