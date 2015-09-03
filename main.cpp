@@ -263,40 +263,71 @@ int main(int argc, char *argv[])
 
             if (sweden != NULL) {
                 timer.start();
-                uint64_t id = 148211478; // !!! 620855222 !!! 3335025164, ok: 3335025118
+                uint64_t id = 322746501;
                 Coord coord;
                 if (n2c->retrieve(id, coord)) {
                     Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
                 }
-
-                int scbcode = sweden->insideSCBcode(id);
-                if (scbcode > 0) {
-                    Error::info("SCB code for node %llu is %i", id, scbcode);
-                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
-                } else
+                int scbcode = sweden->insideSCBarea(id);
+                if (scbcode <= 0)
                     Error::warn("No SCB code found for node %llu", id);
-                int nuts3code = sweden->insideNUTS3code(id);
+                else if (scbcode == 2361) {
+                    Error::info("Found correct SCB code for node %llu is %i", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                } else {
+                    Error::warn("Found SCB code for node %llu is %i, should be 2361", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                }
+                int nuts3code = sweden->insideNUTS3area(id);
                 if (nuts3code > 0) {
                     Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
                     Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
                 } else
                     Error::warn("No NUTS3 code found for node %llu", id);
-                elapsed = timer.elapsed();
-                Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
-                id = 3335025164; // !!! 3335025164, ok: 3335025118
-                scbcode = sweden->insideSCBcode(id);
-                if (scbcode > 0) {
-                    Error::info("SCB code for node %llu is %i", id, scbcode);
-                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
-                } else
+                id = 541187594;
+                if (n2c->retrieve(id, coord)) {
+                    Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
+                }
+                scbcode = sweden->insideSCBarea(id);
+                if (scbcode <= 0)
                     Error::warn("No SCB code found for node %llu", id);
-                nuts3code = sweden->insideNUTS3code(id);
+                else if (scbcode == 2034) {
+                    Error::info("Found correct SCB code for node %llu is %i", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                } else {
+                    Error::warn("Found SCB code for node %llu is %i, should be 2034", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                }
+                nuts3code = sweden->insideNUTS3area(id);
                 if (nuts3code > 0) {
                     Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
                     Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
                 } else
                     Error::warn("No NUTS3 code found for node %llu", id);
+
+
+                id = 3170517078;
+                if (n2c->retrieve(id, coord)) {
+                    Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
+                }
+                scbcode = sweden->insideSCBarea(id);
+                if (scbcode <= 0)
+                    Error::warn("No SCB code found for node %llu", id);
+                else if (scbcode == 2161) {
+                    Error::info("Found correct SCB code for node %llu is %i", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                } else {
+                    Error::warn("Found SCB code for node %llu is %i, should be 2161", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                }
+                nuts3code = sweden->insideNUTS3area(id);
+                if (nuts3code > 0) {
+                    Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
+                    Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
+                } else
+                    Error::warn("No NUTS3 code found for node %llu", id);
+
                 elapsed = timer.elapsed();
                 Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
             }
