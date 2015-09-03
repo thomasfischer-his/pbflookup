@@ -253,31 +253,53 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                wns.powerCluster(2.0, 2.0 / wns.size());
+                //wns.powerCluster(2.0, 2.0 / wns.size());
                 wns.normalize();
-                wns.dump();
+                //wns.dump();
+            }
+            */
 
-                elapsed = timer.elapsed();
-                Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+            elapsed = timer.elapsed();
+            Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
-                if (sweden != NULL) {
-                    timer.start();
-                    uint64_t id = 798695652;
-                    const int scbcode = sweden->insideSCBcode(id);
-                    if (scbcode > 0) {
-                        Error::info("SCB code for node %llu is %i", id, scbcode);
-                        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
-                    } else
-                        Error::warn("No SCB code found for node %llu", id);
-                    const int nuts3code = sweden->insideNUTS3code(id);
-                    if (nuts3code > 0) {
-                        Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
-                        Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
-                    } else
-                        Error::warn("No NUTS3 code found for node %llu", id);
-                    elapsed = timer.elapsed();
-                    Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+            if (sweden != NULL) {
+                timer.start();
+                uint64_t id = 148211478; // !!! 620855222 !!! 3335025164, ok: 3335025118
+                Coord coord;
+                if (n2c->retrieve(id, coord)) {
+                    Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
                 }
+
+                int scbcode = sweden->insideSCBcode(id);
+                if (scbcode > 0) {
+                    Error::info("SCB code for node %llu is %i", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                } else
+                    Error::warn("No SCB code found for node %llu", id);
+                int nuts3code = sweden->insideNUTS3code(id);
+                if (nuts3code > 0) {
+                    Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
+                    Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
+                } else
+                    Error::warn("No NUTS3 code found for node %llu", id);
+                elapsed = timer.elapsed();
+                Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+
+                id = 3335025164; // !!! 3335025164, ok: 3335025118
+                scbcode = sweden->insideSCBcode(id);
+                if (scbcode > 0) {
+                    Error::info("SCB code for node %llu is %i", id, scbcode);
+                    Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+                } else
+                    Error::warn("No SCB code found for node %llu", id);
+                nuts3code = sweden->insideNUTS3code(id);
+                if (nuts3code > 0) {
+                    Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
+                    Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
+                } else
+                    Error::warn("No NUTS3 code found for node %llu", id);
+                elapsed = timer.elapsed();
+                Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
             }
         }
 

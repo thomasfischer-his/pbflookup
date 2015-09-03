@@ -55,31 +55,189 @@ public:
         /// nothing
     }
 
-    int nodeIdToCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::vector<std::pair<int, int> > > &code_to_polygon) {
-        static const int INT_RANGE = 0x3fffffff;
-        const double delta_lat = max_lat - min_lat;
-        const double delta_lon = max_lon - min_lon;
+    /**
+     * Adding the nodes contained in a WayNodes object to an existing
+     * polygon (list of nodes). Emphasis is put on adding a WayNode's
+     * nodes only if this way can be attached to the polygon,
+     * otherwise 'false' is returned and another WayNodes object may
+     * be tested for attachment.
+     * If the WayNodes object's nodes can be attached, they will be
+     * attached to the right end and in the right order to match the
+     * polygon.
+     * If the polygon is empty, the WayNodes object will be inserted
+     * completely into the polygon.
+     */
+    bool addWayToPolygon(const WayNodes &wn, std::deque<std::pair<int, int> > &polygon) {
+        if (polygon.empty()) {
+            /// Always add first way completely
+            for (uint32_t j = 0; j < wn.num_nodes; ++j) {
+                const uint64_t nodeid = wn.nodes[j];
+                Coord coord;
+                if (coords->retrieve(nodeid, coord)) {
+                    const int lat = lat_to_int(coord.lat);
+                    const int lon = lon_to_int(coord.lon);
+                    polygon.push_back(std::pair<int, int>(lat, lon));
+                } else
+                    Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
+            }
+            return true;
+        }
 
+        /// Retrieve the coordinates of one end of the way
+        /// as described by the WayNodes object
+        Coord coord;
+        if (!coords->retrieve(wn.nodes[0], coord)) {
+            Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[0]);
+            return false;
+        }
+        const int firstlat = lat_to_int(coord.lat);
+        const int firstlon = lon_to_int(coord.lon);
+
+        /// Test if the way can be attached to one side of the (growing) polygon
+        if (polygon[0].first == firstlat && polygon[0].second == firstlon) {
+            for (uint32_t j = 1; j < wn.num_nodes; ++j) {
+                if (coords->retrieve(wn.nodes[j], coord)) {
+                    const int lat = lat_to_int(coord.lat);
+                    const int lon = lon_to_int(coord.lon);
+                    polygon.push_front(std::pair<int, int>(lat, lon));
+                } else
+                    Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
+            }
+            return true;
+        } else
+            /// Test if the way can be attached to other side of the (growing) polygon
+            if (polygon[polygon.size() - 1].first == firstlat && polygon[polygon.size() - 1].second == firstlon) {
+                for (uint32_t j = 1; j < wn.num_nodes; ++j) {
+                    if (coords->retrieve(wn.nodes[j], coord)) {
+                        const int lat = lat_to_int(coord.lat);
+                        const int lon = lon_to_int(coord.lon);
+                        polygon.push_back(std::pair<int, int>(lat, lon));
+                    } else
+                        Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
+                }
+                return true;
+            }
+
+        /// Retrieve the coordinates of the other end of the way
+        /// as described by the WayNodes object
+        if (!coords->retrieve(wn.nodes[wn.num_nodes - 1], coord)) {
+            Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[wn.num_nodes - 1]);
+            return false;
+        }
+        const int lastlat = lat_to_int(coord.lat);
+        const int lastlon = lon_to_int(coord.lon);
+
+        /// Test if the way can be attached to one side of the (growing) polygon
+        if (polygon[0].first == lastlat && polygon[0].second == lastlon) {
+            for (int j = wn.num_nodes - 2; j >= 0; --j) {
+                if (coords->retrieve(wn.nodes[j], coord)) {
+                    const int lat = lat_to_int(coord.lat);
+                    const int lon = lon_to_int(coord.lon);
+                    polygon.push_front(std::pair<int, int>(lat, lon));
+                } else
+                    Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
+            }
+            return true;
+        } else
+            /// Test if the way can be attached to other side of the (growing) polygon
+            if (polygon[polygon.size() - 1].first == lastlat && polygon[polygon.size() - 1].second == lastlon) {
+                for (int j = wn.num_nodes - 2; j >= 0; --j) {
+                    if (coords->retrieve(wn.nodes[j], coord)) {
+                        const int lat = lat_to_int(coord.lat);
+                        const int lon = lon_to_int(coord.lon);
+                        polygon.push_back(std::pair<int, int>(lat, lon));
+                    } else
+                        Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
+                }
+                return true;
+            }
+
+        /// Way could not attached to either side of the polygon
+        /*
+                Error::debug("firstlat=%.5f  firstlon=%.5f", int_to_lat(firstlat), int_to_lon(firstlon));
+                Error::debug("lastlat=%.5f  lastlon=%.5f", int_to_lat(firstlat), int_to_lon(lastlon));
+                Error::debug("polygon[0].first=%.5f  polygon[0].second=%.5f", int_to_lat(polygon[0].first), int_to_lon(polygon[0].second));
+                Error::debug("polygon[polygon.size() - 1].first=%.5f  polygon[polygon.size() - 1].second=%.5f", int_to_lat(polygon[polygon.size() - 1].first), int_to_lon(polygon[polygon.size() - 1].second));
+                */
+        return false;
+    }
+
+    int nodeIdToCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::deque<std::pair<int, int> > > &code_to_polygon) {
         if (code_to_polygon.empty()) {
             for (std::map<int, uint64_t>::const_iterator it = code_to_relationid.cbegin(); it != code_to_relationid.cend(); ++it) {
                 const uint64_t relid = (*it).second;
                 RelationMem rel;
-                if (relmem->retrieve(relid, rel)) {
-                    std::vector<std::pair<int, int> > polygon;
-                    for (uint32_t i = 0; i < rel.num_members; ++i) {
-                        WayNodes wn;
-                        if (waynodes->retrieve(rel.members[i], wn)) {
-                            for (uint32_t j = 0; j < wn.num_nodes; ++j) {
-                                Coord coord;
-                                if (coords->retrieve(wn.nodes[j], coord)) {
-                                    const int lat = (coord.lat - min_lat) * INT_RANGE / delta_lat;
-                                    const int lon = (coord.lon - min_lon) * INT_RANGE / delta_lon;
-                                    polygon.push_back(std::pair<int, int>(lat, lon));
+                if (relmem->retrieve(relid, rel) && rel.num_members > 0) {
+                    std::deque<std::pair<int, int> > polygon;
+
+                    bool *wayattached = new bool[rel.num_members];
+                    uint32_t expected_outer_members = 0;
+                    for (int i = rel.num_members - 1; i >= 0; --i) {
+                        wayattached[i] = false;
+                        if ((rel.member_flags[i] & RelationFlags::RoleOuter) > 0) ++expected_outer_members;
+                    }
+                    Error::debug("expected_outer_members=%i  rel.num_members=%i", expected_outer_members, rel.num_members);
+
+                    uint32_t successful_additions = 0;
+                    /// 'wrap around' is neccessary, as multiple iterations over the set of ways
+                    /// may be required to identify all ways in the correct order for insertion
+                    for (uint32_t wrap_around = 0; successful_additions < expected_outer_members && wrap_around < rel.num_members + 5; ++wrap_around)
+                        for (uint32_t i = 0; i < rel.num_members && successful_additions < expected_outer_members; ++i) {
+                            if (wayattached[i]) continue;
+                            if ((rel.member_flags[i] & RelationFlags::RoleOuter) == 0) continue; ///< consider only members of role 'outer'
+
+                            WayNodes wn;
+#ifdef DEBUG
+                            Coord coord;
+#endif // DEBUG
+                            const uint64_t memid = rel.member_ids[i];
+                            if (waynodes->retrieve(memid, wn)) {
+                                if (addWayToPolygon(wn, polygon)) {
+                                    ++successful_additions;
+                                    wayattached[i] = true;
                                 }
                             }
+#ifdef DEBUG
+                            else if (coords->retrieve(rel.member_ids[i], coord)) {
+                                /// ignoring node ids
+                            } else {
+                                /// Warn about member ids that are not ways (and not nodes)
+                                Error::warn("Id %llu is member of relation %llu, but no way with this id is not known", rel.member_ids[i], relid);
+                            }
+#endif // DEBUG
                         }
+
+                    if (successful_additions < expected_outer_members) {
+                        Error::warn("The following ways could not be attached to polygon for relation %llu (%i<%i)", relid, successful_additions, expected_outer_members);
+                        Error::warn("Polyon start: %.5f, %.5f", int_to_lat((*polygon.cbegin()).first), int_to_lon((*polygon.cbegin()).second));
+                        Error::warn("Polyon end: %.5f, %.5f", int_to_lat((*(--polygon.cend())).first), int_to_lon((*(--polygon.cend())).second));
+                        for (int i = rel.num_members - 1; i >= 0; --i)
+                            if (!wayattached[i]) {
+                                Error::warn("  Way %llu", rel.member_ids[i]);
+                                WayNodes wn;
+                                if (waynodes->retrieve(rel.member_ids[i], wn)) {
+                                    Coord coord;
+                                    if (coords->retrieve(wn.nodes[0], coord)) {
+                                        Error::warn("    Start %.5f, %.5f", coord.lat, coord.lon);
+                                    }
+                                    if (coords->retrieve(wn.nodes[wn.num_nodes - 1], coord)) {
+                                        Error::warn("    End %.5f, %.5f", coord.lat, coord.lon);
+                                    }
+                                }
+                            }
                     }
-                    code_to_polygon.insert(std::pair<int, std::vector<std::pair<int, int> > >((*it).first, polygon));
+
+                    delete[] wayattached;
+
+                    if (successful_additions == expected_outer_members) {
+                        /// If all members of the relation could be attached
+                        /// to the polygon, the relation is contained completely
+                        /// in the geographic database and as such may be considered
+                        /// in the following analysis
+                        polygon.pop_back();
+                        code_to_polygon.insert(std::pair<int, std::deque<std::pair<int, int> > >((*it).first, polygon));
+                    } else
+                        Error::info("Could not insert relation %llu, not all ways found/known?", relid);
                 }
             }
         }
