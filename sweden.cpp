@@ -8,6 +8,8 @@
 
 class Sweden::Private {
 private:
+    static const int INT_RANGE;
+
     Sweden *p;
 
     struct Land {
@@ -20,12 +22,30 @@ private:
     };
     std::map<int, Land> lands;
 
+    inline int lat_to_int(const double &lat) {
+        return (lat - min_lat) * INT_RANGE / delta_lat + 0.5;
+    }
+
+    inline double int_to_lat(const int &lat) {
+        return ((lat - 0.5) * delta_lat / INT_RANGE) + min_lat;
+    }
+
+    inline int lon_to_int(const double &lon) {
+        return (lon - min_lon) * INT_RANGE / delta_lon + 0.5;
+    }
+
+    inline double int_to_lon(const int &lon) {
+        return ((lon - 0.5) * delta_lon / INT_RANGE) + min_lon;
+    }
+
+
 public:
+    double min_lat = 1000.0, min_lon = 1000.0, max_lat = -1000.0, max_lon = -1000.0;
+    double delta_lat = 0.0, delta_lon = 0.0;
+
     IdTree<Coord> *coords;
     IdTree<WayNodes> *waynodes;
     IdTree<RelationMem> *relmem;
-
-    double min_lat = 1000.0, min_lon = 1000.0, max_lat = -1000.0, max_lon = -1000.0;
 
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
     std::map<int, std::deque<std::pair<int, int> > > scbcode_to_polygon, nuts3code_to_polygon;
@@ -66,8 +86,8 @@ public:
 
         Coord coord;
         if (coords->retrieve(nodeid, coord)) {
-            const int x = (coord.lon - min_lon) * INT_RANGE / delta_lon;
-            const int y = (coord.lat - min_lat) * INT_RANGE / delta_lat;
+            const int x = lon_to_int(coord.lon);
+            const int y = lat_to_int(coord.lat);
 
             for (std::map<int, std::deque<std::pair<int, int> > >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
                 /// For a good explanation, see here: http://alienryderflex.com/polygon/
@@ -129,6 +149,8 @@ public:
     }
 };
 
+const int Sweden::Private::INT_RANGE = 0x3fffffff;
+
 Sweden::Sweden(IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem)
     : d(new Sweden::Private(this, coords, waynodes, relmem))
 {
@@ -184,6 +206,8 @@ void Sweden::setMinMaxLatLon(double min_lat, double min_lon, double max_lat, dou
     d->max_lat = max_lat;
     d->min_lon = min_lon;
     d->max_lon = max_lon;
+    d->delta_lat =  d->max_lat - d->min_lat;
+    d->delta_lon =  d->max_lon - d->min_lon;
 }
 
 void Sweden::dump() {
