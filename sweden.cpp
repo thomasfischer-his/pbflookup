@@ -162,7 +162,7 @@ public:
         return false;
     }
 
-    int nodeIdToCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::deque<std::pair<int, int> > > &code_to_polygon) {
+    int nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::deque<std::pair<int, int> > > &code_to_polygon) {
         if (code_to_polygon.empty()) {
             for (std::map<int, uint64_t>::const_iterator it = code_to_relationid.cbegin(); it != code_to_relationid.cend(); ++it) {
                 const uint64_t relid = (*it).second;
