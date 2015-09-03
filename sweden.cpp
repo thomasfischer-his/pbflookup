@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <deque>
 
 #include "error.h"
 
@@ -27,7 +28,7 @@ public:
     double min_lat = 1000.0, min_lon = 1000.0, max_lat = -1000.0, max_lon = -1000.0;
 
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
-    std::map<int, std::vector<std::pair<int, int> > > scbcode_to_polygon, nuts3code_to_polygon;
+    std::map<int, std::deque<std::pair<int, int> > > scbcode_to_polygon, nuts3code_to_polygon;
 
     explicit Private(Sweden *parent, IdTree<Coord> *_coords, IdTree<WayNodes> *_waynodes, IdTree<RelationMem> *_relmem)
         : p(parent), coords(_coords), waynodes(_waynodes), relmem(_relmem) {
@@ -68,9 +69,9 @@ public:
             const int x = (coord.lon - min_lon) * INT_RANGE / delta_lon;
             const int y = (coord.lat - min_lat) * INT_RANGE / delta_lat;
 
-            for (std::map<int, std::vector<std::pair<int, int> > >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
+            for (std::map<int, std::deque<std::pair<int, int> > >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
                 /// For a good explanation, see here: http://alienryderflex.com/polygon/
-                const std::vector<std::pair<int, int> > &polygon = (*it).second;
+                const std::deque<std::pair<int, int> > &polygon = (*it).second;
                 const int polyCorners = polygon.size();
                 int j = polyCorners - 1;
                 bool oddNodes = false;
