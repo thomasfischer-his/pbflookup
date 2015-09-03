@@ -357,8 +357,8 @@ void Sweden::setMinMaxLatLon(double min_lat, double min_lon, double max_lat, dou
     d->max_lat = max_lat;
     d->min_lon = min_lon;
     d->max_lon = max_lon;
-    d->delta_lat =  d->max_lat - d->min_lat;
-    d->delta_lon =  d->max_lon - d->min_lon;
+    d->delta_lat = d->max_lat - d->min_lat;
+    d->delta_lon = d->max_lon - d->min_lon;
 }
 
 void Sweden::dump() {

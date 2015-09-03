@@ -160,6 +160,7 @@ int main(int argc, char *argv[])
             sweden = new Sweden(swedenfile, n2c, w2n, relmem);
             swedenfile.close();
         }
+
         int64_t elapsed = timer.elapsed();
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
