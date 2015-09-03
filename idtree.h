@@ -82,28 +82,45 @@ struct WayNodes {
     uint64_t *nodes;
 };
 
+enum RelationFlags {RoleOuter = 1};
+
 struct RelationMem {
     RelationMem() {
         num_members = 0;
-        members = NULL;
+        member_ids = NULL;
+        member_flags = NULL;
     }
 
     RelationMem(int num) {
         num_members = num;
-        members = (uint64_t *)calloc(num, sizeof(uint64_t));
-        if (members == NULL)
-            Error::err("Could not allocate memory for RelationMem::members");
+        member_ids = (uint64_t *)calloc(num, sizeof(uint64_t));
+        if (member_ids == NULL)
+            Error::err("Could not allocate memory for RelationMem::member_ids");
+        member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
+        if (member_flags == NULL)
+            Error::err("Could not allocate memory for RelationMem::member_flags");
     }
 
     RelationMem &operator=(const RelationMem &other) {
-        if (members != NULL) free(members);
+        if (member_ids != NULL)
+            free(member_ids);
+        if (member_flags != NULL)
+            free(member_flags);
 
         num_members = other.num_members;
-        const size_t bytes = num_members * sizeof(uint64_t);
-        members = (uint64_t *)malloc(bytes);
-        if (members == NULL)
-            Error::err("Could not allocate memory for RelationMem::members");
-        memcpy(members, other.members, bytes);
+
+        const size_t bytesIds = num_members * sizeof(uint64_t);
+        member_ids = (uint64_t *)malloc(bytesIds);
+        if (member_ids == NULL)
+            Error::err("Could not allocate memory for RelationMem::member_ids");
+        memcpy(member_ids, other.member_ids, bytesIds);
+
+        const size_t bytesFlags = num_members * sizeof(uint16_t);
+        member_flags = (uint16_t *)malloc(bytesFlags);
+        if (member_flags == NULL)
+            Error::err("Could not allocate bytesFlags for RelationMem::member_flags");
+        memcpy(member_flags, other.member_flags, bytesFlags);
+
         return *this;
     }
 
@@ -111,33 +128,51 @@ struct RelationMem {
         input.read((char *)&num_members, sizeof(num_members));
         if (!input)
             Error::err("Could not read number of members from input stream");
-        const size_t bytes = num_members * sizeof(uint64_t);
-        members = (uint64_t *)malloc(bytes);
-        if (members == NULL)
-            Error::err("Could not allocate memory for RelationMem::members");
-        input.read((char *)members, bytes);
+
+        const size_t bytesIds = num_members * sizeof(uint64_t);
+        member_ids = (uint64_t *)malloc(bytesIds);
+        if (member_ids == NULL)
+            Error::err("Could not allocate memory for RelationMem::member_ids");
+        input.read((char *)member_ids, bytesIds);
+        if (!input)
+            Error::err("Could not read all members from input stream");
+
+        const size_t bytesFlags = num_members * sizeof(uint16_t);
+        member_flags = (uint16_t *)malloc(bytesFlags);
+        if (member_flags == NULL)
+            Error::err("Could not allocate memory for RelationMem::member_flags");
+        input.read((char *)member_flags, bytesFlags);
         if (!input)
             Error::err("Could not read all members from input stream");
     }
 
     ~RelationMem() {
-        if (members != NULL)
-            free(members);
+        if (member_ids != NULL)
+            free(member_ids);
+        if (member_flags != NULL)
+            free(member_flags);
     }
 
     std::ostream &write(std::ostream &output) {
         output.write((char *)&num_members, sizeof(num_members));
         if (!output)
             Error::err("Could not write number of members to output stream");
-        const size_t bytes = num_members * sizeof(uint64_t);
-        output.write((char *)members, bytes);
+
+        const size_t bytesIds = num_members * sizeof(uint64_t);
+        output.write((char *)member_ids, bytesIds);
+        if (!output)
+            Error::err("Could not write all members to output stream");
+
+        const size_t bytesFlags = num_members * sizeof(uint16_t);
+        output.write((char *)member_flags, bytesFlags);
         if (!output)
             Error::err("Could not write all members to output stream");
         return output;
     }
 
     uint32_t num_members;
-    uint64_t *members;
+    uint64_t *member_ids;
+    uint16_t *member_flags;
 };
 
 struct Coord {

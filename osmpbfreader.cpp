@@ -358,8 +358,12 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         RelationMem rm(pg.relations(i).memids_size());
                         uint64_t memId = 0;
                         for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
+                            uint16_t flags = 0;
                             memId += pg.relations(i).memids(k);
-                            rm.members[k] = memId;
+                            if (strcmp("outer", primblock.stringtable().s(pg.relations(i).roles_sid(k)).c_str()) == 0)
+                                flags |= RelationFlags::RoleOuter;
+                            rm.member_ids[k] = memId;
+                            rm.member_flags[k] = flags;
                         }
                         (*relmem)->insert(relId, rm);
                     }

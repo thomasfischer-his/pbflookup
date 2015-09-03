@@ -78,8 +78,8 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
     if (found) {
         const double weightPerMember = weight / rm.num_members;
         for (uint32_t i = 0; i < rm.num_members; ++i) {
-            if (appendNode(rm.members[i], weightPerMember)) continue;
-            if (appendWay(rm.members[i], weightPerMember)) continue;
+            if (appendNode(rm.member_ids[i], weightPerMember)) continue;
+            if (appendWay(rm.member_ids[i], weightPerMember)) continue;
             break;
         }
         return true;
