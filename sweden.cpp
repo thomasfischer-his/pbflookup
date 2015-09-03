@@ -98,7 +98,7 @@ public:
 
                 for (int i = 0; i < polyCorners; i++) {
                     if (((polygon[i].first < y && polygon[j].first >= y) || (polygon[j].first < y && polygon[i].first >= y)) && (polygon[i].second <= x || polygon[j].second <= x)) {
-                        oddNodes ^= (polygon[i].second + (y - polygon[i].first) * (polygon[j].second - polygon[i].second) / (double)(polygon[j].first - polygon[i].first) < x);
+                        oddNodes ^= polygon[i].second + (y - polygon[i].first) * (polygon[j].second - polygon[i].second) / (double)(polygon[j].first - polygon[i].first) < x;
                     }
                     j = i;
                 }
