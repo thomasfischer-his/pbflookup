@@ -198,7 +198,7 @@ Sweden::Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *way
 
 Sweden::~Sweden()
 {
-    /// nothing
+    delete d;
 }
 
 void Sweden::setMinMaxLatLon(double min_lat, double min_lon, double max_lat, double max_lon) {
