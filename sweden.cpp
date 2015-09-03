@@ -153,12 +153,6 @@ public:
             }
 
         /// Way could not attached to either side of the polygon
-        /*
-                Error::debug("firstlat=%.5f  firstlon=%.5f", int_to_lat(firstlat), int_to_lon(firstlon));
-                Error::debug("lastlat=%.5f  lastlon=%.5f", int_to_lat(firstlat), int_to_lon(lastlon));
-                Error::debug("polygon[0].first=%.5f  polygon[0].second=%.5f", int_to_lat(polygon[0].first), int_to_lon(polygon[0].second));
-                Error::debug("polygon[polygon.size() - 1].first=%.5f  polygon[polygon.size() - 1].second=%.5f", int_to_lat(polygon[polygon.size() - 1].first), int_to_lon(polygon[polygon.size() - 1].second));
-                */
         return false;
     }
 
@@ -176,7 +170,6 @@ public:
                         wayattached[i] = false;
                         if ((rel.member_flags[i] & RelationFlags::RoleOuter) > 0) ++expected_outer_members;
                     }
-                    Error::debug("expected_outer_members=%i  rel.num_members=%i", expected_outer_members, rel.num_members);
 
                     uint32_t successful_additions = 0;
                     /// 'wrap around' is neccessary, as multiple iterations over the set of ways
