@@ -19,10 +19,10 @@ public:
 
     std::ostream &write(std::ostream &output);
 
-    void insertSCBcode(const int code, uint64_t relid);
-    int insideSCBcode(uint64_t nodeid);
-    void insertNUTS3code(const int code, uint64_t relid);
-    int insideNUTS3code(uint64_t nodeid);
+    void insertSCBarea(const int code, uint64_t relid);
+    int insideSCBarea(uint64_t nodeid);
+    void insertNUTS3area(const int code, uint64_t relid);
+    int insideNUTS3area(uint64_t nodeid);
 
 private:
     class Private;

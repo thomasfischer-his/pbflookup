@@ -347,10 +347,10 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             } else if (strcmp("ref:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
-                                (*sweden)->insertSCBcode(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), id);
+                                (*sweden)->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), id);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
-                                (*sweden)->insertNUTS3code(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), id);
+                                (*sweden)->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), id);
                             }
                         }
 

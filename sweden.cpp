@@ -396,18 +396,18 @@ std::ostream &Sweden::write(std::ostream &output) {
     return output;
 }
 
-void Sweden::insertSCBcode(const int code, uint64_t relid) {
+void Sweden::insertSCBarea(const int code, uint64_t relid) {
     d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
 
-int Sweden::insideSCBcode(uint64_t nodeid) {
-    return d->nodeIdToCode(nodeid, d->scbcode_to_relationid, d->scbcode_to_polygon);
+int Sweden::insideSCBarea(uint64_t nodeid) {
+    return d->nodeIdToAreaCode(nodeid, d->scbcode_to_relationid, d->scbcode_to_polygon);
 }
 
-void Sweden::insertNUTS3code(const int code, uint64_t relid) {
+void Sweden::insertNUTS3area(const int code, uint64_t relid) {
     d->nuts3code_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
 
-int Sweden::insideNUTS3code(uint64_t nodeid) {
-    return d->nodeIdToCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygon);
+int Sweden::insideNUTS3area(uint64_t nodeid) {
+    return d->nodeIdToAreaCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygon);
 }
