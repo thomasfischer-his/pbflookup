@@ -50,9 +50,30 @@ public:
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
     std::map<int, std::deque<std::pair<int, int> > > scbcode_to_polygon, nuts3code_to_polygon;
 
+    struct {
+        std::vector<uint64_t> european[100];
+        std::vector<uint64_t> national[1000];
+        std::vector<uint64_t> ** *regional[22];
+    } roads;
+    static const int EuropeanRoadNumbers[];
+
     explicit Private(Sweden *parent, IdTree<Coord> *_coords, IdTree<WayNodes> *_waynodes, IdTree<RelationMem> *_relmem)
         : p(parent), coords(_coords), waynodes(_waynodes), relmem(_relmem) {
-        /// nothing
+        for (int i = 0; i < 22; ++i)
+            roads.regional[i] = NULL;
+    }
+
+    ~Private() {
+        for (int i = 0; i < 22; ++i)
+            if (roads.regional[i] != NULL) {
+                for (int j = 0; j < 32; ++j)
+                    if (roads.regional[i][j] != NULL) {
+                        for (int k = 0; k < 32; ++k)
+                            if (roads.regional[i][j][k] != NULL) delete roads.regional[i][j][k];
+                        free(roads.regional[i][j]);
+                    }
+                free(roads.regional[i]);
+            }
     }
 
     /**
@@ -305,6 +326,7 @@ public:
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
+const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
 
 Sweden::Sweden(IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem)
     : d(new Sweden::Private(this, coords, waynodes, relmem))
@@ -347,6 +369,73 @@ Sweden::Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *way
         Error::warn("Expected 'n', got '0x%02x'", chr);
 
     input.read((char *)&chr, sizeof(chr));
+    if (chr == 'E') {
+        for (uint8_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+            size_t count;
+            input.read((char *)&count, sizeof(count));
+            uint64_t wayid;
+            for (size_t r = 0; r < count; ++r) {
+                input.read((char *)&wayid, sizeof(wayid));
+                d->roads.european[d->EuropeanRoadNumbers[i]].push_back(wayid);
+            }
+        }
+    } else
+        Error::warn("Expected 'E', got '0x%02x'", chr);
+
+    const uint8_t terminator8bit = 0xff;
+
+    input.read((char *)&chr, sizeof(chr));
+    if (chr == 'R') {
+        uint8_t road;
+        input.read((char *)&road, sizeof(road));
+        while (road != terminator8bit) {
+            size_t count;
+            input.read((char *)&count, sizeof(count));
+            uint64_t wayid;
+            for (size_t r = 0; r < count; ++r) {
+                input.read((char *)&wayid, sizeof(wayid));
+                d->roads.national[road].push_back(wayid);
+            }
+
+            input.read((char *)&road, sizeof(road));
+        }
+    } else
+        Error::warn("Expected 'R', got '0x%02x'", chr);
+
+    input.read((char *)&chr, sizeof(chr));
+    if (chr == 'L') {
+        uint8_t region;
+        input.read((char *)&region, sizeof(region));
+        while (region != terminator8bit) {
+            d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(100, sizeof(std::vector<uint64_t> **));
+            uint8_t a;
+            input.read((char *)&a, sizeof(a));
+            while (a != terminator8bit) {
+                d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(100, sizeof(std::vector<uint64_t> *));
+                uint8_t b;
+                input.read((char *)&b, sizeof(b));
+                while (b != terminator8bit) {
+                    d->roads.regional[region][a][b] = new std::vector<uint64_t>();
+                    size_t count;
+                    input.read((char *)&count, sizeof(count));
+                    uint64_t wayid;
+                    for (size_t r = 0; r < count; ++r) {
+                        input.read((char *)&wayid, sizeof(wayid));
+                        d->roads.regional[region][a][b]->push_back(wayid);
+                    }
+
+                    input.read((char *)&b, sizeof(b));
+                }
+
+                input.read((char *)&a, sizeof(a));
+            }
+
+            input.read((char *)&region, sizeof(region));
+        }
+    } else
+        Error::warn("Expected 'L', got '0x%02x'", chr);
+
+    input.read((char *)&chr, sizeof(chr));
     if (chr != '_')
         Error::warn("Expected '_', got '0x%02x'", chr);
 }
@@ -387,6 +476,63 @@ std::ostream &Sweden::write(std::ostream &output) {
         output.write((char *) & ((*it).first), sizeof(int));
         output.write((char *) & ((*it).second), sizeof(uint64_t));
     }
+
+    chr = 'E';
+    output.write((char *)&chr, sizeof(chr));
+    for (uint8_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+        const size_t count = d->roads.european[d->EuropeanRoadNumbers[i]].size();
+        output.write((char *) &count, sizeof(count));
+        for (size_t r = 0; r < count; ++r) {
+            uint64_t wayid = d->roads.european[d->EuropeanRoadNumbers[i]][r];
+            output.write((char *) &wayid, sizeof(uint64_t));
+        }
+    }
+
+    const uint8_t terminator8bit = 0xff;
+
+    chr = 'R';
+    output.write((char *)&chr, sizeof(chr));
+    for (uint8_t i = 0; i < 100; ++i)
+        if (d->roads.national[i].empty()) continue;
+        else {
+            output.write((char *) &i, sizeof(i));
+            const size_t count = d->roads.national[i].size();
+            output.write((char *) &count, sizeof(count));
+            for (size_t r = 0; r < count; ++r) {
+                output.write((char *) &d->roads.national[i][r], sizeof(uint64_t));
+            }
+        }
+    output.write((char *) &terminator8bit, sizeof(terminator8bit));
+
+    chr = 'L';
+    output.write((char *)&chr, sizeof(chr));
+    for (uint8_t l = 2; l < UnknownRoadType; ++l)
+        if (d->roads.regional[l] == NULL) continue;
+        else
+        {
+            output.write((char *) &l, sizeof(l));
+            for (uint8_t a = 0; a < 100; ++a)
+                if (d->roads.regional[l][a] == NULL) continue;
+                else
+                {
+                    output.write((char *) &a, sizeof(a));
+                    for (uint8_t b = 0; b < 100; ++b)
+                        if (d->roads.regional[l][a][b] == NULL) continue;
+                        else
+                        {
+                            output.write((char *) &b, sizeof(b));
+                            const size_t count = d->roads.regional[l][a][b]->size();
+                            output.write((char *) &count, sizeof(count));
+                            for (size_t r = 0; r < count; ++r) {
+                                output.write((char *) &d->roads.regional[l][a][b]->at(r), sizeof(uint64_t));
+                            }
+                        }
+                    output.write((char *) &terminator8bit, sizeof(terminator8bit));
+                }
+            output.write((char *) &terminator8bit, sizeof(terminator8bit));
+        }
+    output.write((char *) &terminator8bit, sizeof(terminator8bit));
+
     chr = '_';
     output.write((char *)&chr, sizeof(chr));
 
@@ -407,4 +553,154 @@ void Sweden::insertNUTS3area(const int code, uint64_t relid) {
 
 int Sweden::insideNUTS3area(uint64_t nodeid) {
     return d->nodeIdToAreaCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygon);
+}
+
+void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
+    const char *cur = refValue;
+
+    while (*cur != '\0') {
+        RoadType roadType = National;
+        if (cur[0] == 'E' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = Europe;///< or LanE, needs more testing further down
+            cur += 2;
+        } else if (cur[0] == 'M' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanM;
+            cur += 2;
+        } else if (cur[0] == 'K' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanM;
+            cur += 2;
+        } else if (cur[0] == 'K' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanM;
+            cur += 2;
+        } else if (cur[0] == 'I' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanI;
+            cur += 2;
+        } else if (cur[0] == 'H' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanH;
+            cur += 2;
+        } else if (cur[0] == 'G' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanG;
+            cur += 2;
+        } else if (cur[0] == 'N' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanN;
+            cur += 2;
+        } else if (cur[0] == 'O' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanO;
+            cur += 2;
+        } else if (cur[0] == 'F' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanF;
+            cur += 2;
+        }
+        /// LanE must be checked based on road number,
+        /// as letter E is used for European roads as well
+        else if (cur[0] == 'D' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanD;
+            cur += 2;
+        } else if (cur[0] == 'A' && cur[1] == 'B' && cur[2] == ' ' && cur[3] >= '1' && cur[3] <= '9') {
+            roadType = LanAB;
+            cur += 3;
+        } else if (cur[0] == 'C' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanC;
+            cur += 2;
+        } else if (cur[0] == 'U' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanU;
+            cur += 2;
+        } else if (cur[0] == 'T' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanT;
+            cur += 2;
+        } else if (cur[0] == 'S' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanS;
+            cur += 2;
+        } else if (cur[0] == 'W' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanW;
+            cur += 2;
+        } else if (cur[0] == 'X' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanX;
+            cur += 2;
+        } else if (cur[0] == 'Z' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanZ;
+            cur += 2;
+        } else if (cur[0] == 'Y' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
+            roadType = LanY;
+            cur += 2;
+        } else if (cur[0] == 'A' && cur[1] == 'C' && cur[2] == ' ' && cur[3] >= '1' && cur[3] <= '9') {
+            roadType = LanAC;
+            cur += 3;
+        } else if (cur[0] == 'B' && cur[1] == 'D' && cur[2] == ' ' && cur[3] >= '1' && cur[3] <= '9') {
+            roadType = LanBD;
+            cur += 3;
+        } else if (cur[0] < '1' || cur[0] > '9')
+            return;
+
+        char *next;
+        int roadNumber = (int)strtol(cur, &next, 10);
+        if (roadNumber > 0 && next > cur) {
+            if (roadType == LanE || roadType == Europe) {
+                /// Handle the case that E may be used for European roads
+                /// or roads in East Gothland
+                roadType = LanE;
+                for (int i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i)
+                    if (d->EuropeanRoadNumbers[i] == roadNumber) {
+                        roadType = Europe;
+                        break;
+                    }
+            }
+            insertWayAsRoad(wayid, roadType, roadNumber);
+        }
+        cur = next;
+        if (*cur == ';')
+            ++cur;
+        else if (*cur == '.') {
+            /// Trunk road like E4.04, record as 'E4' only
+            while (*cur == '.' || *cur == ';' || (*cur >= '0' && *cur <= '9')) ++cur;
+        } else
+            break;
+    }
+}
+
+void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber) {
+    switch (roadType) {
+    case Europe:
+        if (roadNumber < 100)
+            d->roads.european[roadNumber].push_back(wayid);
+        break;
+    case National:
+        if (roadNumber < 1000)
+            d->roads.national[roadNumber].push_back(wayid);
+        break;
+    default:
+    {
+        const int idx = (int)roadType - 2;
+        if (idx < 22) {
+            if (d->roads.regional[idx] == NULL)
+                d->roads.regional[idx] = (std::vector<uint64_t> ** *)calloc(100, sizeof(std::vector<uint64_t> **));
+            const int firstIndex = roadNumber / 100, secondIndex = roadNumber % 100;
+            if (d->roads.regional[idx][firstIndex] == NULL)
+                d->roads.regional[idx][firstIndex] = (std::vector<uint64_t> **)calloc(100, sizeof(std::vector<uint64_t> *));
+            if (d->roads.regional[idx][firstIndex][secondIndex] == NULL)
+                d->roads.regional[idx][firstIndex][secondIndex] = new std::vector<uint64_t>();
+            d->roads.regional[idx][firstIndex][secondIndex]->push_back(wayid);
+        }
+    }
+    }
+}
+
+std::vector<uint64_t> Sweden::waysForRoad(RoadType roadType, uint16_t roadNumber) {
+    switch (roadType) {
+    case Europe:
+        if (roadNumber < 100)
+            return d->roads.european[roadNumber];
+    case National:
+        if (roadNumber < 1000)
+            return d->roads.national[roadNumber];
+    default:
+    {
+        const int idx = (int)roadType - 2;
+        const int firstIndex = roadNumber / 100, secondIndex = roadNumber % 100;
+        if (idx < 22 && d->roads.regional[idx] != NULL && firstIndex < 100 && d->roads.regional[idx][firstIndex] != NULL && d->roads.regional[idx][firstIndex][secondIndex] != NULL)
+            return *d->roads.regional[idx][firstIndex][secondIndex];
+    }
+    }
+
+    return std::vector<uint64_t>();
 }
