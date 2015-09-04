@@ -162,14 +162,19 @@ int main(int argc, char *argv[])
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
             Error::debug("Writing to '%s'", filenamebuffer);
             ofstream swedenfile(filenamebuffer);
-            sweden->write(swedenfile);
-            swedenfile.close();
+            boost::iostreams::filtering_ostream out;
+            out.push(boost::iostreams::gzip_compressor());
+            out.push(swedenfile);
+            sweden->write(out);
+
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
             ifstream swedenfile(filenamebuffer);
-            sweden = new Sweden(swedenfile, n2c, w2n, relmem);
-            swedenfile.close();
+            boost::iostreams::filtering_istream in;
+            in.push(boost::iostreams::gzip_decompressor());
+            in.push(swedenfile);
+            sweden = new Sweden(in, n2c, w2n, relmem);
         }
 
         int64_t elapsed = timer.elapsed();
