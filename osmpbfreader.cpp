@@ -326,6 +326,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         for (int k = 0; k < pg.ways(w).refs_size(); ++k) {
                             nodeId += pg.ways(w).refs(k);
                             wn.nodes[k] = nodeId;
+                            (*n2c)->increaseUseCounter(nodeId);
                         }
                         (*w2n)->insert(wayId, wn);
                     }
