@@ -318,6 +318,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                 const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), wayId << 2 | WAY_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
+                            } else if (strcmp("ref", ckey) == 0) {
+                                (*sweden)->insertWayAsRoad(wayId, primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
                             }
                         }
 
