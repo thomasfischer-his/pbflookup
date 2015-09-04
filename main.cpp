@@ -18,6 +18,9 @@
 #include <iostream>
 #include <fstream>
 
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+
 #include "swedishtexttree.h"
 #include "osmpbfreader.h"
 #include "tokenizer.h"
@@ -112,27 +115,35 @@ int main(int argc, char *argv[])
             snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
             Error::debug("Writing to '%s'", filenamebuffer);
             ofstream n2cfile(filenamebuffer);
-            n2c->write(n2cfile);
-            n2cfile.close();
+            boost::iostreams::filtering_ostream out;
+            out.push(boost::iostreams::gzip_compressor());
+            out.push(n2cfile);
+            n2c->write(out);
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
             ifstream n2cfile(filenamebuffer);
-            n2c = new IdTree<Coord>(n2cfile);
-            n2cfile.close();
+            boost::iostreams::filtering_istream in;
+            in.push(boost::iostreams::gzip_decompressor());
+            in.push(n2cfile);
+            n2c = new IdTree<Coord>(in);
         }
         if (w2n != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
             Error::debug("Writing to '%s'", filenamebuffer);
             ofstream w2nfile(filenamebuffer);
-            w2n->write(w2nfile);
-            w2nfile.close();
+            boost::iostreams::filtering_ostream out;
+            out.push(boost::iostreams::gzip_compressor());
+            out.push(w2nfile);
+            w2n->write(out);
         } else {
             snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
             ifstream w2nfile(filenamebuffer);
-            w2n = new IdTree<WayNodes>(w2nfile);
-            w2nfile.close();
+            boost::iostreams::filtering_istream in;
+            in.push(boost::iostreams::gzip_decompressor());
+            in.push(w2nfile);
+            w2n = new IdTree<WayNodes>(in);
         }
         if (relmem != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);

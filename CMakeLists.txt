@@ -15,20 +15,21 @@ find_package(ZLIB REQUIRED)
 
 find_package(Osmpbf REQUIRED)
 
-find_package(PkgConfig)
-pkg_check_modules(LIBLZMA REQUIRED liblzma>=5.0.8)
+find_package(Boost REQUIRED
+  COMPONENTS iostreams
+)
 
 include_directories(
   ${PROTOBUF_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIRS}
   ${OSMPBF_INCLUDE_DIRS}
-  ${LIBLZMA_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
   ${PROTOBUF_LITE_LIBRARIES}
   ${ZLIB_LIBRARIES}
   ${OSMPBF_LIBRARIES}
-  ${LIBLZMA_LIBRARIES}
+  ${Boost_LIBRARIES}
 )
 
