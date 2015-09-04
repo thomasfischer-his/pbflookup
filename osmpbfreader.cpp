@@ -334,7 +334,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     }
                 }
 
-                // tell about relations
                 if (pg.relations_size() > 0) {
                     found_items = true;
 
