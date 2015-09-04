@@ -29,6 +29,10 @@ public:
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
     std::vector<uint64_t> waysForRoad(RoadType roadType, uint16_t roadNumber);
+    /** Handle the case that E may be used for European roads
+    * or roads in East Gothland
+    */
+    static RoadType identifyEroad(uint16_t roadNumber);
 
 private:
     class Private;

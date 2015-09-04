@@ -638,12 +638,7 @@ void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
             if (roadType == LanE || roadType == Europe) {
                 /// Handle the case that E may be used for European roads
                 /// or roads in East Gothland
-                roadType = LanE;
-                for (int i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i)
-                    if (d->EuropeanRoadNumbers[i] == roadNumber) {
-                        roadType = Europe;
-                        break;
-                    }
+                roadType = identifyEroad(roadNumber);
             }
             insertWayAsRoad(wayid, roadType, roadNumber);
         }
@@ -703,4 +698,11 @@ std::vector<uint64_t> Sweden::waysForRoad(RoadType roadType, uint16_t roadNumber
     }
 
     return std::vector<uint64_t>();
+}
+
+Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
+    for (int i = 0; i < 20 && Private::EuropeanRoadNumbers[i] > 0; ++i)
+        if (Private::EuropeanRoadNumbers[i] == roadNumber)
+            return Europe;
+    return LanE;
 }
