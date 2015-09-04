@@ -226,6 +226,35 @@ int main(int argc, char *argv[])
                 WeightedNodeSet wns(n2c, w2n, relmem);
                 wns.setMinMaxLatLon(minlat, maxlat, minlon, maxlon);
 
+                for (size_t i = 0; i < words.size(); ++i) {
+                    int roadNumber = 0;
+                    Sweden::RoadType roadType = Sweden::National;
+                    if (i < words.size() - 1 && words[i][0] == 'e' && words[i][1] == '\0' && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+                        char *next;
+                        const char *cur = words[i + 1].c_str();
+                        roadNumber = (int)strtol(cur, &next, 10);
+                        if (roadNumber > 0 && next > cur) {
+                            roadType = Sweden::identifyEroad(roadNumber);
+                        } else {
+                            Error::debug("Not a road number:%s", cur);
+                            roadNumber = -1;
+                        }
+                    } else if (words[i][0] == 'e' && words[i][1] >= '1' && words[i][1] <= '9') {
+                        char *next;
+                        const char *cur = words[i].c_str() + 1;
+                        roadNumber = (int)strtol(cur, &next, 10);
+                        if (roadNumber > 0 && next > cur) {
+                            roadType = Sweden::identifyEroad(roadNumber);
+                        } else {
+                            Error::debug("Not a road number:%s", cur);
+                            roadNumber = -1;
+                        }
+                    }
+
+                    if (roadNumber > 0)
+                        Error::info("Found E-road %i (type %i)", roadNumber, roadType);
+                }
+
                 static const size_t combined_len = 8188;
                 char combined[combined_len + 4];
                 for (int s = 3; s >= 1; --s) {
