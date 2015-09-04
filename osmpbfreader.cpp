@@ -310,17 +310,17 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
                     const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
+                        const uint64_t wayId = pg.ways(w).id();
+
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                uint64_t id = pg.ways(w).id();
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), id << 2 | WAY_NIBBLE);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), wayId << 2 | WAY_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
                             }
                         }
 
-                        const uint64_t wayId = pg.ways(w).id();
                         WayNodes wn(pg.ways(w).refs_size());
                         uint64_t nodeId = 0;
                         for (int k = 0; k < pg.ways(w).refs_size(); ++k) {
