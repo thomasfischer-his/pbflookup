@@ -201,6 +201,7 @@ public:
                         }
 
                     if (successful_additions < expected_outer_members) {
+#ifdef DEBUG
                         Error::warn("The following ways could not be attached to polygon for relation %llu (%i<%i)", relid, successful_additions, expected_outer_members);
                         Error::warn("Polyon start: %.5f, %.5f", int_to_lat((*polygon.cbegin()).first), int_to_lon((*polygon.cbegin()).second));
                         Error::warn("Polyon end: %.5f, %.5f", int_to_lat((*(--polygon.cend())).first), int_to_lon((*(--polygon.cend())).second));
@@ -218,6 +219,9 @@ public:
                                     }
                                 }
                             }
+#else // DEBUG
+                        Error::warn("Only %i out of %i ways could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
+#endif // DEBUG
                     }
 
                     delete[] wayattached;
