@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
                 OsmPbfReader osmPbfReader;
                 osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
                 const int64_t elapsed = timer.elapsed();
-                Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
+                Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
                 minlat = osmPbfReader.min_lat();
                 maxlat = osmPbfReader.max_lat();
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
             OsmPbfReader osmPbfReader;
             osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
             const int64_t elapsed = timer.elapsed();
-            Error::info("Spent %li us (CPU) to parse .osm.pbf file", elapsed);
+            Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
             minlat = osmPbfReader.min_lat();
             maxlat = osmPbfReader.max_lat();
