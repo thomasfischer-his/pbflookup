@@ -131,6 +131,48 @@ public:
         if (root != NULL)
             delete root;
     }
+
+    IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = NULL) const {
+        if (root == NULL) {
+            Error::warn("Tree root is invalid, no id was ever added");
+            return NULL;
+        }
+
+        IdTreeNode<T> *cur = root;
+        uint64_t workingId = id;
+        for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
+            if (cur->children == NULL) {
+                return NULL;
+            }
+
+#ifdef REVERSE_ID_TREE
+            static const int shiftOffset = 64 - IdTreeNode<T>::bitsPerNode;
+            const unsigned int lowerBits = (workingId & (IdTree::Private::mask << shiftOffset)) >> shiftOffset;
+            workingId <<= IdTreeNode<T>::bitsPerNode;
+#else // REVERSE_ID_TREE
+            const unsigned int lowerBits = workingId & IdTree::Private::mask;
+            workingId >>= IdTreeNode<T>::bitsPerNode;
+#endif // REVERSE_ID_TREE
+
+            if (cur->children[lowerBits] == NULL) {
+                return NULL;
+            }
+
+            if (path != NULL) path->push_back(cur);
+            cur = cur->children[lowerBits];
+        }
+        if (path != NULL) path->push_back(cur);
+
+#ifdef DEBUG
+        if (cur->id != id) {
+            Error::warn("Ids do not match: %llu != %llu", cur->id, id);
+            return NULL;
+        }
+#endif // DEBUG
+
+        return cur;
+    }
+
 };
 
 template <typename T>
@@ -213,42 +255,9 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
 
 template <class T>
 bool IdTree<T>::retrieve(const uint64_t id, T &data) {
-    if (d->root == NULL) {
-        Error::warn("Tree root is invalid, no id was ever added");
+    IdTreeNode<T> *cur = d->findNodeForId(id);
+    if (cur == NULL)
         return false;
-    }
-
-    IdTreeNode<T> *cur = d->root;
-    uint64_t workingId = id;
-    for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
-        if (cur->children == NULL) {
-            //Error::warn("id=%llu   s=%d", id, s);
-            return false;
-        }
-
-#ifdef REVERSE_ID_TREE
-        static const int shiftOffset = 64 - IdTreeNode<T>::bitsPerNode;
-        const unsigned int lowerBits = (workingId & (IdTree::Private::mask << shiftOffset)) >> shiftOffset;
-        workingId <<= IdTreeNode<T>::bitsPerNode;
-#else // REVERSE_ID_TREE
-        const unsigned int lowerBits = workingId & IdTree::Private::mask;
-        workingId >>= IdTreeNode<T>::bitsPerNode;
-#endif // REVERSE_ID_TREE
-
-        if (cur->children[lowerBits] == NULL) {
-            //Error::warn("id=%llu   s=%d lowerBits=%d  workingId=%llu", id, s, lowerBits, workingId);
-            return false;
-        }
-
-        cur = cur->children[lowerBits];
-    }
-
-#ifdef DEBUG
-    if (cur->id != id) {
-        Error::warn("Ids do not match: %llu != %llu", cur->id, id);
-        return false;
-    }
-#endif // DEBUG
 
     data = cur->data;
 
