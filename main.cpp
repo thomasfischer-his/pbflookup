@@ -20,6 +20,7 @@
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
+#include <boost/thread.hpp>
 
 #include "swedishtexttree.h"
 #include "osmpbfreader.h"
@@ -35,6 +36,95 @@ inline bool ends_with(std::string const &value, std::string const &ending)
 {
     if (ending.size() > value.size()) return false;
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+}
+
+void loadOrSaveSwedishTextTree(SwedishText::Tree **swedishTextTree, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*swedishTextTree != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream swedishtexttreefile(filenamebuffer);
+        (*swedishTextTree)->write(swedishtexttreefile);
+        swedishtexttreefile.close();
+    } else {
+        snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
+        Error::debug("Reading from '%s'", filenamebuffer);
+        ifstream swedishtexttreefile(filenamebuffer);
+        *swedishTextTree = new SwedishText::Tree(swedishtexttreefile);
+        swedishtexttreefile.close();
+    }
+}
+
+void loadOrSaveN2c(IdTree<Coord> **n2c, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*n2c != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream n2cfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(n2cfile);
+        (*n2c)->write(out);
+    } else {
+        snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
+        Error::debug("Reading from '%s'", filenamebuffer);
+        ifstream n2cfile(filenamebuffer);
+        boost::iostreams::filtering_istream in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(n2cfile);
+        *n2c = new IdTree<Coord>(in);
+    }
+}
+
+void loadOrSaveW2n(IdTree<WayNodes> **w2n, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*w2n != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream w2nfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(w2nfile);
+        (*w2n)->write(out);
+    } else {
+        snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
+        Error::debug("Reading from '%s'", filenamebuffer);
+        ifstream w2nfile(filenamebuffer);
+        boost::iostreams::filtering_istream in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(w2nfile);
+        *w2n = new IdTree<WayNodes>(in);
+    }
+}
+
+void loadOrSaveRelMem(IdTree<RelationMem> **relmem, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*relmem != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream relmemfile(filenamebuffer);
+        (*relmem)->write(relmemfile);
+        relmemfile.close();
+    } else {
+        snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
+        Error::debug("Reading from '%s'", filenamebuffer);
+        ifstream relmemfile(filenamebuffer);
+        *relmem = new IdTree<RelationMem>(relmemfile);
+        relmemfile.close();
+    }
+}
+
+void saveSweden(Sweden **sweden, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*sweden != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream swedenfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(swedenfile);
+        (*sweden)->write(out);
+    }
 }
 
 int main(int argc, char *argv[])
@@ -99,76 +189,18 @@ int main(int argc, char *argv[])
         fp.close();
 
         Timer timer;
-        if (swedishTextTree != NULL) {
-            snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
-            Error::debug("Writing to '%s'", filenamebuffer);
-            ofstream swedishtexttreefile(filenamebuffer);
-            swedishTextTree->write(swedishtexttreefile);
-            swedishtexttreefile.close();
-        } else {
-            snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
-            Error::debug("Reading from '%s'", filenamebuffer);
-            ifstream swedishtexttreefile(filenamebuffer);
-            swedishTextTree = new SwedishText::Tree(swedishtexttreefile);
-            swedishtexttreefile.close();
-        }
-        if (n2c != NULL) {
-            snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
-            Error::debug("Writing to '%s'", filenamebuffer);
-            ofstream n2cfile(filenamebuffer);
-            boost::iostreams::filtering_ostream out;
-            out.push(boost::iostreams::gzip_compressor());
-            out.push(n2cfile);
-            n2c->write(out);
-        } else {
-            snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
-            Error::debug("Reading from '%s'", filenamebuffer);
-            ifstream n2cfile(filenamebuffer);
-            boost::iostreams::filtering_istream in;
-            in.push(boost::iostreams::gzip_decompressor());
-            in.push(n2cfile);
-            n2c = new IdTree<Coord>(in);
-        }
-        if (w2n != NULL) {
-            snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
-            Error::debug("Writing to '%s'", filenamebuffer);
-            ofstream w2nfile(filenamebuffer);
-            boost::iostreams::filtering_ostream out;
-            out.push(boost::iostreams::gzip_compressor());
-            out.push(w2nfile);
-            w2n->write(out);
-        } else {
-            snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
-            Error::debug("Reading from '%s'", filenamebuffer);
-            ifstream w2nfile(filenamebuffer);
-            boost::iostreams::filtering_istream in;
-            in.push(boost::iostreams::gzip_decompressor());
-            in.push(w2nfile);
-            w2n = new IdTree<WayNodes>(in);
-        }
-        if (relmem != NULL) {
-            snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
-            Error::debug("Writing to '%s'", filenamebuffer);
-            ofstream relmemfile(filenamebuffer);
-            relmem->write(relmemfile);
-            relmemfile.close();
-        } else {
-            snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
-            Error::debug("Reading from '%s'", filenamebuffer);
-            ifstream relmemfile(filenamebuffer);
-            relmem = new IdTree<RelationMem>(relmemfile);
-            relmemfile.close();
-        }
-        if (sweden != NULL) {
-            snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
-            Error::debug("Writing to '%s'", filenamebuffer);
-            ofstream swedenfile(filenamebuffer);
-            boost::iostreams::filtering_ostream out;
-            out.push(boost::iostreams::gzip_compressor());
-            out.push(swedenfile);
-            sweden->write(out);
+        boost::thread threadLoadOrSaveSwedishTextTree(loadOrSaveSwedishTextTree, &swedishTextTree, tempdir, mapname);
+        boost::thread threadLoadOrSaveN2c(loadOrSaveN2c, &n2c, tempdir, mapname);
+        boost::thread threadLoadOrSaveW2n(loadOrSaveW2n, &w2n, tempdir, mapname);
+        boost::thread threadLoadOrRelMem(loadOrSaveRelMem, &relmem, tempdir, mapname);
+        boost::thread threadSaveSweden(saveSweden, &sweden, tempdir, mapname);
+        threadLoadOrSaveSwedishTextTree.join();
+        threadLoadOrSaveN2c.join();
+        threadLoadOrSaveW2n.join();
+        threadLoadOrRelMem.join();
+        threadSaveSweden.join();
 
-        } else {
+        if (sweden == NULL && n2c != NULL && w2n != NULL && relmem != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
             ifstream swedenfile(filenamebuffer);

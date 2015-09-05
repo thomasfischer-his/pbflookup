@@ -16,7 +16,7 @@ find_package(ZLIB REQUIRED)
 find_package(Osmpbf REQUIRED)
 
 find_package(Boost REQUIRED
-  COMPONENTS iostreams
+  COMPONENTS iostreams system thread
 )
 
 include_directories(
