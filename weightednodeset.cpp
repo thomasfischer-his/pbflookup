@@ -16,7 +16,7 @@
 
 #include "weightednodeset.h"
 
-#include "cmath"
+#include <cmath>
 
 #include <algorithm>
 
