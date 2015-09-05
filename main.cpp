@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
         else
             Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
 
-        if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL) {
+        if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL && sweden != NULL) {
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
             if (textfile.is_open()) {
@@ -256,7 +256,7 @@ int main(int argc, char *argv[])
                 tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 
-                WeightedNodeSet wns(n2c, w2n, relmem);
+                WeightedNodeSet wns(n2c, w2n, relmem, sweden);
                 wns.setMinMaxLatLon(minlat, maxlat, minlon, maxlon);
 
                 TokenProcessor tokenProcessor(swedishTextTree, n2c, w2n, relmem, sweden);
@@ -271,12 +271,10 @@ int main(int argc, char *argv[])
             elapsed = timer.elapsed();
             Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
-            if (sweden != NULL) {
-                timer.start();
-                sweden->test();
-                elapsed = timer.elapsed();
-                Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
-            }
+            timer.start();
+            sweden->test();
+            elapsed = timer.elapsed();
+            Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
         }
 
         timer.start();
