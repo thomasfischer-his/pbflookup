@@ -14,6 +14,8 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>.  *
  ***************************************************************************/
 
+#include <vector>
+
 template <typename T>
 struct IdTreeNode {
     static const int bitsPerNode;
@@ -266,6 +268,38 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) const {
         return false;
 
     data = cur->data;
+
+    return true;
+}
+
+template <class T>
+bool IdTree<T>::remove(uint64_t id) {
+    std::vector<IdTreeNode<T> *> path;
+    IdTreeNode<T> *cur = d->findNodeForId(id, &path);
+    if (cur == NULL)
+        return false;
+
+    int num_children = 0;
+    while (num_children == 0 && path.size() > 1) {
+        path.pop_back();
+        IdTreeNode<T> *parent = path.back();
+        num_children = 0;
+        if (parent->children != NULL)
+            for (int i = (1 << IdTreeNode<T>::bitsPerNode) - 1; i >= 0; --i) {
+                if (cur != NULL && parent->children[i] == cur) {
+                    delete cur;
+                    cur = NULL;
+                    parent->children[i] = NULL;
+                }
+                if (parent->children[i] != NULL)
+                    ++num_children;
+            }
+        cur = parent;
+    }
+    if (num_children == 0 && cur == d->root) {
+        delete d->root;
+        d->root = NULL;
+    }
 
     return true;
 }
