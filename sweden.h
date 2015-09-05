@@ -33,7 +33,7 @@ public:
 
     void setMinMaxLatLon(double min_lat, double min_lon, double max_lat, double max_lon);
 
-    void dump();
+    void dump() const;
     void test();
 
     std::ostream &write(std::ostream &output);

@@ -470,7 +470,7 @@ void Sweden::setMinMaxLatLon(double min_lat, double min_lon, double max_lat, dou
     d->delta_lon = d->max_lon - d->min_lon;
 }
 
-void Sweden::dump() {
+void Sweden::dump() const {
     d->dumpSCBcodeNames();
 }
 
