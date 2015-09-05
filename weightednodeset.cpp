@@ -117,8 +117,10 @@ void WeightedNodeSet::setMinMaxLatLon(double minlat, double maxlat, double minlo
 }
 
 void WeightedNodeSet::powerCluster(double alpha, double p) {
+    if (empty()) return;
+
     double change[size()];
-    for (int i = size(); i >= 0; --i)
+    for (int i = size() - 1; i >= 0; --i)
         change[i] = 0;
 
     static const double relationlatlonlen = 0.5;
@@ -148,9 +150,11 @@ void WeightedNodeSet::powerCluster(double alpha, double p) {
 }
 
 void WeightedNodeSet::powerMunicipalityCluster(double p) {
+    if (empty()) return;
+
     double change[size()];
     int scbcode[size()];
-    for (int i = size(); i >= 0; --i) {
+    for (int i = size() - 1; i >= 0; --i) {
         change[i] = 0;
         scbcode[i] = sweden->insideSCBarea(at(i).id);
     }
