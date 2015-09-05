@@ -27,6 +27,7 @@
 #include "timer.h"
 #include "weightednodeset.h"
 #include "sweden.h"
+#include "tokenprocessor.h"
 
 using namespace std;
 
@@ -226,78 +227,9 @@ int main(int argc, char *argv[])
                 WeightedNodeSet wns(n2c, w2n, relmem);
                 wns.setMinMaxLatLon(minlat, maxlat, minlon, maxlon);
 
-                for (size_t i = 0; i < words.size(); ++i) {
-                    int roadNumber = 0;
-                    Sweden::RoadType roadType = Sweden::National;
-                    if (i < words.size() - 1 && words[i][0] == 'e' && words[i][1] == '\0' && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
-                        char *next;
-                        const char *cur = words[i + 1].c_str();
-                        roadNumber = (int)strtol(cur, &next, 10);
-                        if (roadNumber > 0 && next > cur) {
-                            roadType = Sweden::identifyEroad(roadNumber);
-                        } else {
-                            Error::debug("Not a road number:%s", cur);
-                            roadNumber = -1;
-                        }
-                    } else if (words[i][0] == 'e' && words[i][1] >= '1' && words[i][1] <= '9') {
-                        char *next;
-                        const char *cur = words[i].c_str() + 1;
-                        roadNumber = (int)strtol(cur, &next, 10);
-                        if (roadNumber > 0 && next > cur) {
-                            roadType = Sweden::identifyEroad(roadNumber);
-                        } else {
-                            Error::debug("Not a road number:%s", cur);
-                            roadNumber = -1;
-                        }
-                    }
-
-                    if (roadNumber > 0)
-                        Error::info("Found E-road %i (type %i)", roadNumber, roadType);
-                }
-
-                static const size_t combined_len = 8188;
-                char combined[combined_len + 4];
-                for (int s = 3; s >= 1; --s) {
-                    for (size_t i = 0; i <= words.size() - s; ++i) {
-                        char *p = combined;
-                        for (int k = 0; k < s; ++k) {
-                            if (k > 0)
-                                p += snprintf(p, combined_len - (p - combined), " ");
-                            p += snprintf(p, combined_len - (p - combined), "%s", words[i + k].c_str());
-                        }
-
-                        const size_t wordlen = strlen(combined);
-                        std::vector<uint64_t> id_list = swedishTextTree->retrieve_ids(combined);
-                        if (!id_list.empty()) {
-                            if (id_list.size() > 1000)
-                                Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
-                            else {
-                                Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                                for (unsigned int l = 0; l < id_list.size(); ++l) {
-                                    const uint64_t id = id_list[l] >> 2;
-                                    const int lowerBits = id_list[l] & 3;
-                                    if (lowerBits == NODE_NIBBLE) {
-#ifdef DEBUG
-                                        Error::debug("   https://www.openstreetmap.org/node/%llu", id);
-#endif // DEBUG
-                                        wns.appendNode(id, s, wordlen);
-                                    } else if (lowerBits == WAY_NIBBLE) {
-#ifdef DEBUG
-                                        Error::debug("   https://www.openstreetmap.org/way/%llu", id);
-#endif // DEBUG
-                                        wns.appendWay(id, s, wordlen);
-                                    } else if (lowerBits == RELATION_NIBBLE) {
-#ifdef DEBUG
-                                        Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
-#endif // DEBUG
-                                        wns.appendRelation(id, s, wordlen);
-                                    } else
-                                        Error::warn("  Neither node, way, nor relation: %llu", id);
-                                }
-                            }
-                        }
-                    }
-                }
+                TokenProcessor tokenProcessor(swedishTextTree, n2c, w2n, relmem, sweden);
+                tokenProcessor.evaluteWordCombinations(words, wns);
+                tokenProcessor.evaluteRoads(words, wns);
 
                 //wns.powerCluster(2.0, 2.0 / wns.size());
                 wns.normalize();
