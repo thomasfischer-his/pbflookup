@@ -260,7 +260,7 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
 }
 
 template <class T>
-bool IdTree<T>::retrieve(const uint64_t id, T &data) {
+bool IdTree<T>::retrieve(const uint64_t id, T &data) const {
     IdTreeNode<T> *cur = d->findNodeForId(id);
     if (cur == NULL)
         return false;
