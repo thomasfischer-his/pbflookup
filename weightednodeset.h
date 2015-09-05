@@ -19,6 +19,8 @@
 
 #include "idtree.h"
 
+class Sweden;
+
 struct WeightedNode {
     explicit WeightedNode() {
         id = 0;
@@ -48,7 +50,7 @@ struct WeightedNode {
 
 class WeightedNodeSet : public std::vector<WeightedNode> {
 public:
-    WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem);
+    WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem, Sweden *sweden);
     bool appendNode(uint64_t id, int s, size_t wordlen);
     bool appendNode(uint64_t id, double weight = 1.0);
     bool appendWay(uint64_t id, int s, size_t wordlen);
@@ -62,11 +64,13 @@ public:
     void setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon);
 
     void powerCluster(double alpha, double p);
+    void powerMunicipalityCluster(double p);
 
 private:
-    IdTree<Coord> *m_n2c;
-    IdTree<WayNodes> *m_w2n;
-    IdTree<RelationMem> *m_relmem;
+    IdTree<Coord> *n2c;
+    IdTree<WayNodes> *w2n;
+    IdTree<RelationMem> *relmem;
+    Sweden *sweden;
 
     double m_minlat;
     double m_maxlat;

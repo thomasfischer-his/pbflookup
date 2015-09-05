@@ -21,9 +21,10 @@
 #include <algorithm>
 
 #include "error.h"
+#include "sweden.h"
 
-WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem)
-    : m_n2c(n2c), m_w2n(w2n), m_relmem(relmem), m_minlat(1000.0), m_maxlat(-1000.0), m_minlon(1000.0), m_maxlon(1000)
+WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *_n2c, IdTree<WayNodes> *_w2n, IdTree<RelationMem> *_relmem, Sweden *_sweden)
+    : n2c(_n2c), w2n(_w2n), relmem(_relmem), sweden(_sweden), m_minlat(1000.0), m_maxlat(-1000.0), m_minlon(1000.0), m_maxlon(1000)
 {
     /// nothing
 }
@@ -35,7 +36,7 @@ bool WeightedNodeSet::appendNode(uint64_t id, int s, size_t wordlen) {
 
 bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
     Coord c;
-    const bool found = m_n2c->retrieve(id, c);
+    const bool found = n2c->retrieve(id, c);
     if (found) {
         bool alreadyKnown = false;
         for (int i = size() - 1; !alreadyKnown && i >= 0; --i)
@@ -57,7 +58,7 @@ bool WeightedNodeSet::appendWay(uint64_t id, int s, size_t wordlen) {
 
 bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
     WayNodes wn;
-    const bool found = m_w2n->retrieve(id, wn);
+    const bool found = w2n->retrieve(id, wn);
     if (found) {
         const double weightPerNode = weight / wn.num_nodes;
         for (uint32_t i = 0; i < wn.num_nodes; ++i)
@@ -74,7 +75,7 @@ bool WeightedNodeSet::appendRelation(uint64_t id, int s, size_t wordlen) {
 
 bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
     RelationMem rm;
-    const bool found = m_relmem->retrieve(id, rm);
+    const bool found = relmem->retrieve(id, rm);
     if (found) {
         const double weightPerMember = weight / rm.num_members;
         for (uint32_t i = 0; i < rm.num_members; ++i) {
@@ -139,6 +140,28 @@ void WeightedNodeSet::powerCluster(double alpha, double p) {
             change[j] += poweredreldist;
         }
     }
+
+    for (int i = size() - 1; i >= 0; --i) {
+        WeightedNode &wn = at(i);
+        wn.weight += change[i];
+    }
+}
+
+void WeightedNodeSet::powerMunicipalityCluster(double p) {
+    double change[size()];
+    int scbcode[size()];
+    for (int i = size(); i >= 0; --i) {
+        change[i] = 0;
+        scbcode[i] = sweden->insideSCBarea(at(i).id);
+    }
+
+    for (int i = size() - 2; i >= 0; --i)
+        for (unsigned int j = i + 1; j < size(); ++j)
+            if (scbcode[i] == scbcode[j]) {
+                change[i] += at(i).weight * p;
+                change[j] += at(j).weight * p;
+            }
+
 
     for (int i = size() - 1; i >= 0; --i) {
         WeightedNode &wn = at(i);
