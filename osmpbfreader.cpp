@@ -26,6 +26,8 @@
 #include <netinet/in.h>
 #endif
 
+#include <stack>
+
 #include "swedishtexttree.h"
 #include "error.h"
 
@@ -77,6 +79,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     *sweden = new Sweden(*n2c, *w2n, *relmem);
     if (sweden == NULL)
         Error::err("Could not allocate memory for Sweden");
+
+    int simplifiedWayAllocationSize = 1024;
+    uint64_t *simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -323,13 +328,18 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             }
                         }
 
-                        WayNodes wn(pg.ways(w).refs_size());
-                        uint64_t nodeId = 0;
-                        for (int k = 0; k < pg.ways(w).refs_size(); ++k) {
-                            nodeId += pg.ways(w).refs(k);
-                            wn.nodes[k] = nodeId;
-                            (*n2c)->increaseUseCounter(nodeId);
+                        if (pg.ways(w).refs_size() + 2 > simplifiedWayAllocationSize) {
+                            simplifiedWayAllocationSize = ((pg.ways(w).refs_size() >> 8) + 1) << 8;
+                            free(simplifiedWay);
+                            simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
                         }
+                        uint64_t *simplifiedWay = (uint64_t *)calloc(pg.ways(w).refs_size() + 2, sizeof(uint64_t));
+                        const int simplifiedWaySize = applyRamerDouglasPeucker(pg.ways(w), *n2c, simplifiedWay);
+
+                        WayNodes wn(simplifiedWaySize);
+                        memcpy(wn.nodes, simplifiedWay, sizeof(uint64_t)*simplifiedWaySize);
+                        for (int k = 0; k < simplifiedWaySize; ++k)
+                            (*n2c)->increaseUseCounter(simplifiedWay[k]);
                         (*w2n)->insert(wayId, wn);
                     }
                 }
@@ -383,6 +393,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
         }
     }
 
+    free(simplifiedWay);
+
     /// Line break after series of dots
     std::cout << std::endl;
 
@@ -400,4 +412,59 @@ double OsmPbfReader::min_lon() const {
 }
 double OsmPbfReader::max_lon() const {
     return maxlon;
+}
+
+int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result) {
+    uint64_t nodeId = 0;
+    for (int i = 0; i < ways.refs_size(); ++i) {
+        nodeId += ways.refs(i);
+        result[i] = nodeId;
+    }
+
+    std::stack<std::pair<int, int> > recursion;
+    recursion.push(std::pair<int, int>(0, ways.refs_size() - 1));
+
+    while (!recursion.empty()) {
+        const std::pair<int, int> nextPair = recursion.top();
+        recursion.pop();
+        const int a = nextPair.first, b = nextPair.second;
+
+        double dmax = -1.0;
+        int dnode = -1;
+        for (int i = a + 1; i < b; ++i) {
+            if (result[i] == 0) continue;
+            const double d = shortestDistanceToSegment(result[a], result[i], result[b], n2c);
+            if (d > dmax) {
+                dmax = d;
+                dnode = i;
+            }
+        }
+
+        static const double epsilon = 5.0;
+        if (dmax > epsilon) {
+            recursion.push(std::pair<int, int>(a, dnode));
+            recursion.push(std::pair<int, int>(dnode, b));
+        }
+        else
+            for (int i = a + 1; i < b; ++i)
+                result[i] = 0;
+    }
+
+    int p = 0;
+    for (int i = 0; i < ways.refs_size(); ++i)
+        if (result[i] > 0) {
+            if (i > p) result[p] = result[i];
+            ++p;
+        }
+    return p;
+}
+
+double OsmPbfReader::shortestDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const {
+    Coord coordA, coordInBetween, coordB;
+
+    if (n2c->retrieve(nodeA, coordA) && n2c->retrieve(nodeInBetween, coordInBetween) && n2c->retrieve(nodeB, coordB)) {
+        // TODO
+        return 10000.0;
+    } else
+        return 0.0;
 }

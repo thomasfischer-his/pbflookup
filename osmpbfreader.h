@@ -85,6 +85,9 @@ private:
     OSMPBF::PrimitiveBlock primblock;
 
     double minlat, minlon, maxlat, maxlon;
+
+    int applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result);
+    double shortestDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const;
 };
 
 #endif // OSMPBFREADER_H
