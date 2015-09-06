@@ -31,6 +31,27 @@
 #include "swedishtexttree.h"
 #include "error.h"
 
+const uint64_t OsmPbfReader::exclaveInclaveWays[] = {
+    320878424,///< Mullsjo/Falkoping
+    132851007,///< Kristianstad/Tomelilla
+    132851008,///< Kristianstad/Tomelilla
+    132865858,///< Simrishamn/Tomelilla
+    185009590,///< Simrishamn/Kristianstad
+    321283489,///<  Lilla Edet/Ale
+    321283490,///<  Lilla Edet/Ale
+    317893976,///<  Lilla Edet/Ale
+    321283488,///<  Lilla Edet/Ale
+    317893975,///<  Lilla Edet/Ale
+    317893972,///<  Lilla Edet/Ale
+    321283487,///<  Lilla Edet/Ale
+    293357457,///<  Skovde/Skara
+    293357462,///<  Skovde/Skara
+    293357458,///<  Skovde/Skara/Falkoping
+    322957346,///<  Skovde/Skara/Falkoping
+    293357456,///<  Skovde/Skara/Falkoping
+    0
+};
+
 OsmPbfReader::OsmPbfReader()
 {
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
@@ -316,6 +337,10 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
                         const uint64_t wayId = pg.ways(w).id();
+                        bool isBlacklisted = false;
+                        for (int ei = 0; !isBlacklisted && exclaveInclaveWays[ei] > 0; ++ei)
+                            isBlacklisted = exclaveInclaveWays[ei] == wayId;
+                        if (isBlacklisted) continue; ///< skip black-listed ways
 
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
