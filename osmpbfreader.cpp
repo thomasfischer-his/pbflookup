@@ -464,7 +464,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             free(simplifiedWay);
                             simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
                         }
-                        uint64_t *simplifiedWay = (uint64_t *)calloc(pg.ways(w).refs_size() + 2, sizeof(uint64_t));
+
                         const int simplifiedWaySize = applyRamerDouglasPeucker(pg.ways(w), *n2c, simplifiedWay);
 
                         WayNodes wn(simplifiedWaySize);
@@ -477,37 +477,54 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
                 if (pg.relations_size() > 0) {
                     found_items = true;
+                    static const int blacklistVectorSize = 8192;
+                    static bool blacklistVector[blacklistVectorSize];
 
                     const int maxrelations = pg.relations_size();
                     for (int i = 0; i < maxrelations; ++i) {
+                        const uint64_t relId = pg.relations(i).id();
                         const int maxkv = pg.relations(i).keys_size();
                         for (int k = 0; k < maxkv; ++k) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
-                            const uint64_t id = pg.relations(i).id();
                             if (strcmp("name", ckey) == 0) {
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), id << 2 | RELATION_NIBBLE);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), relId << 2 | RELATION_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             } else if (strcmp("ref:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
-                                (*sweden)->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), id);
+                                (*sweden)->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), relId);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
-                                (*sweden)->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), id);
+                                (*sweden)->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), relId);
                             }
                         }
 
-                        const uint64_t relId = pg.relations(i).id();
-                        RelationMem rm(pg.relations(i).memids_size());
+                        int countBlacklisted = 0;
                         uint64_t memId = 0;
-                        for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
-                            uint16_t flags = 0;
+                        for (int k = 0; k < pg.relations(i).memids_size() && k < blacklistVectorSize; ++k) {
                             memId += pg.relations(i).memids(k);
+                            bool isBlacklisted = false;
+                            for (int ei = 0; !isBlacklisted && exclaveInclaveWays[ei] > 0; ++ei)
+                                isBlacklisted = exclaveInclaveWays[ei] == memId;
+                            if (isBlacklisted) ++countBlacklisted;
+                            blacklistVector[k] = isBlacklisted;
+                        }
+
+                        RelationMem rm(pg.relations(i).memids_size() - countBlacklisted);
+                        memId = 0;
+                        int p = 0;
+                        for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
+                            memId += pg.relations(i).memids(k);
+                            if (k < blacklistVectorSize && blacklistVector[k]) continue; ///< skip black-listed ways
+                            uint16_t flags = 0;
                             if (strcmp("outer", primblock.stringtable().s(pg.relations(i).roles_sid(k)).c_str()) == 0)
                                 flags |= RelationFlags::RoleOuter;
-                            rm.member_ids[k] = memId;
-                            rm.member_flags[k] = flags;
+                            rm.member_ids[p] = memId;
+                            rm.member_flags[p] = flags;
+                            ++p;
                         }
+                        if (p + countBlacklisted != pg.relations(i).memids_size())
+                            Error::err("Relation with black-listed ways has wrong size: p=%d  countBlacklisted=%d  num-members=%d", p, countBlacklisted, pg.relations(i).memids_size());
                         (*relmem)->insert(relId, rm);
                     }
                 }
