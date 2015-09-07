@@ -24,11 +24,12 @@ class Sweden;
 struct WeightedNode {
     explicit WeightedNode() {
         id = 0;
-        weight = lat = lon = 0.0;
+        weight = 0.0;
+        x = y = 0;
     }
 
-    explicit WeightedNode(uint64_t _id, double _weight, double _lat, double _lon)
-        : id(_id), weight(_weight), lat(_lat), lon(_lon)
+    explicit WeightedNode(uint64_t _id, double _weight, int _y, int _x)
+        : id(_id), weight(_weight), x(_x), y(_y)
     {
         /// nothing
     }
@@ -45,7 +46,7 @@ struct WeightedNode {
 
     uint64_t id;
     double weight;
-    double lat, lon;
+    int x, y;
 };
 
 class WeightedNodeSet : public std::vector<WeightedNode> {

@@ -45,7 +45,7 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
                 alreadyKnown = true;
             }
         if (!alreadyKnown)
-            push_back(WeightedNode(id, weight, c.lat, c.lon));
+            push_back(WeightedNode(id, weight, c.y, c.x));
         return true;
     } else
         return false;
@@ -93,7 +93,7 @@ void WeightedNodeSet::dump() {
     for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 10; ++it, ++i) {
         const WeightedNode &wn = *it;
         if (wn.weight > 0.01) {
-            Error::info("Node %5i, id=%8llu, weight=%5.3f, lat=%8.4f, lon=%8.4f", i, wn.id, wn.weight, wn.lat, wn.lon);
+            Error::info("Node %5i, id=%8llu, weight=%5.3f, x=%i, y=%i", i, wn.id, wn.weight, wn.x, wn.y);
             Error::debug("  http://www.openstreetmap.org/node/%llu", wn.id);
         }
     }
@@ -125,16 +125,15 @@ void WeightedNodeSet::powerCluster(double alpha, double p) {
     for (int i = size() - 1; i >= 0; --i)
         change[i] = 0;
 
-    static const double relationlatlonlen = 0.5;
     Error::info("alpha=%.7f  p=%.7f", alpha, p);
-    const double delta_latbound = (m_maxlat - m_minlat) * relationlatlonlen;
-    const double delta_lonbound = (m_maxlon - m_minlon);
-    const double max_dist = sqrt(delta_latbound * delta_latbound + delta_lonbound * delta_lonbound);
+    const double delta_ybound = (71.2 - 53.8) * 111412.24; ///< latitude
+    const double delta_xbound = (31.2 - 4.4) * 55799.98; ///< longitude
+    const double max_dist = sqrt(delta_ybound * delta_ybound + delta_xbound * delta_xbound);
     for (int i = size() - 2; i >= 0; --i) {
         for (unsigned int j = i + 1; j < size(); ++j) {
-            const double delta_lat = (at(i).lat - at(j).lat) * relationlatlonlen;
-            const double delta_lon = at(i).lon - at(j).lon;
-            const double dist = sqrt(delta_lat * delta_lat + delta_lon * delta_lon);
+            const int delta_y = at(i).y - at(j).y;
+            const int delta_x = at(i).x - at(j).x;
+            const double dist = sqrt(delta_x * delta_x + delta_y * delta_y);
             if (dist >= max_dist) {
                 Error::warn("Distance is larger than max_dist");
             }

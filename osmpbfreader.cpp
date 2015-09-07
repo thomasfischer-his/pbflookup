@@ -375,7 +375,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     for (int j = 0; j < maxnodes; ++j) {
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        (*n2c)->insert(pg.nodes(j).id(), Coord(lon, lat));
+                        (*n2c)->insert(pg.nodes(j).id(), Coord::fromLatLon(lon, lat));
                         if (lat > maxlat) maxlat = lat;
                         if (lat < minlat) minlat = lat;
                         if (lon > maxlon) maxlon = lon;
@@ -404,7 +404,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        (*n2c)->insert(last_id, Coord(last_lon, last_lat));
+                        (*n2c)->insert(last_id, Coord::fromLatLon(last_lon, last_lat));
                         if (last_lat > maxlat) maxlat = last_lat;
                         if (last_lat < minlat) minlat = last_lat;
                         if (last_lon > maxlon) maxlon = last_lon;
@@ -558,18 +558,18 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coo
         recursion.pop();
         const int a = nextPair.first, b = nextPair.second;
 
-        double dmax = -1.0;
+        int dmax = -1;
         int dnode = -1;
         for (int i = a + 1; i < b; ++i) {
             if (result[i] == 0) continue;
-            const double d = shortestDistanceToSegment(result[a], result[i], result[b], n2c);
-            if (d > dmax) {
-                dmax = d;
+            const int dsquare = shortestSquareDistanceToSegment(result[a], result[i], result[b], n2c);
+            if (dsquare > dmax) {
+                dmax = dsquare;
                 dnode = i;
             }
         }
 
-        static const double epsilon = 5.0;
+        static const int epsilon = 400;///< 2m corridor (20dm * 20dm)
         if (dmax > epsilon) {
             recursion.push(std::pair<int, int>(a, dnode));
             recursion.push(std::pair<int, int>(dnode, b));
@@ -588,12 +588,38 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coo
     return p;
 }
 
-double OsmPbfReader::shortestDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const {
+int OsmPbfReader::shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const {
     Coord coordA, coordInBetween, coordB;
 
     if (n2c->retrieve(nodeA, coordA) && n2c->retrieve(nodeInBetween, coordInBetween) && n2c->retrieve(nodeB, coordB)) {
-        // TODO
-        return 10000.0;
+        /// http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+        const int d1 = coordB.x - coordA.x;
+        const int d2 = coordB.y - coordA.y;
+        if (d1 == 0 && d2 == 0) { ///< nodes A and B are equal
+            const int d1 = coordA.x - coordInBetween.x;
+            const int d2 = coordA.y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        }
+        /// Find a projection of nodeInBetween onto the line
+        /// between nodeA and nodeB
+        const int l2 = (d1 * d1 + d2 * d2);
+        const double t = ((coordInBetween.x - coordA.x) * d1 + (coordInBetween.y - coordA.y) * d2) / (double)l2;
+        if (t < 0.0) { ///< beyond node A's end of the segment
+            const int d1 = coordA.x - coordInBetween.x;
+            const int d2 = coordA.y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        } else if (t > 1.0) { ///< beyond node B's end of the segment
+            const int d1 = coordB.x - coordInBetween.x;
+            const int d2 = coordB.y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        } else {
+            const int x = coordA.x + t * (coordB.x - coordA.x) + 0.5;
+            const int d = coordB.y - coordA.y;
+            const int y = coordA.y + (int)(t * d + 0.5);
+            const int d1 = x - coordInBetween.x;
+            const int d2 = y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        }
     } else
-        return 0.0;
+        return 0;
 }

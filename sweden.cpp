@@ -73,7 +73,7 @@ public:
     IdTree<RelationMem> *relmem;
 
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
-    std::map<int, std::deque<std::pair<int, int> > > scbcode_to_polygon, nuts3code_to_polygon;
+    std::map<int, std::deque<Coord> > scbcode_to_polygon, nuts3code_to_polygon;
 
     struct {
         std::vector<uint64_t> european[100];
@@ -113,17 +113,15 @@ public:
      * If the polygon is empty, the WayNodes object will be inserted
      * completely into the polygon.
      */
-    bool addWayToPolygon(const WayNodes &wn, std::deque<std::pair<int, int> > &polygon) {
+    bool addWayToPolygon(const WayNodes &wn, std::deque<Coord> &polygon) {
         if (polygon.empty()) {
             /// Always add first way completely
             for (uint32_t j = 0; j < wn.num_nodes; ++j) {
                 const uint64_t nodeid = wn.nodes[j];
                 Coord coord;
-                if (coords->retrieve(nodeid, coord)) {
-                    const int lat = lat_to_int(coord.lat);
-                    const int lon = lon_to_int(coord.lon);
-                    polygon.push_back(std::pair<int, int>(lat, lon));
-                } else
+                if (coords->retrieve(nodeid, coord))
+                    polygon.push_back(coord);
+                else
                     Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
             }
             return true;
@@ -136,29 +134,23 @@ public:
             Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[0]);
             return false;
         }
-        const int firstlat = lat_to_int(coord.lat);
-        const int firstlon = lon_to_int(coord.lon);
 
         /// Test if the way can be attached to one side of the (growing) polygon
-        if (polygon[0].first == firstlat && polygon[0].second == firstlon) {
+        if (polygon[0].x == coord.x && polygon[0].y == coord.y) {
             for (uint32_t j = 1; j < wn.num_nodes; ++j) {
-                if (coords->retrieve(wn.nodes[j], coord)) {
-                    const int lat = lat_to_int(coord.lat);
-                    const int lon = lon_to_int(coord.lon);
-                    polygon.push_front(std::pair<int, int>(lat, lon));
-                } else
+                if (coords->retrieve(wn.nodes[j], coord))
+                    polygon.push_front(coord);
+                else
                     Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
             }
             return true;
         } else
             /// Test if the way can be attached to other side of the (growing) polygon
-            if (polygon[polygon.size() - 1].first == firstlat && polygon[polygon.size() - 1].second == firstlon) {
+            if (polygon[polygon.size() - 1].x == coord.x && polygon[polygon.size() - 1].y == coord.y) {
                 for (uint32_t j = 1; j < wn.num_nodes; ++j) {
-                    if (coords->retrieve(wn.nodes[j], coord)) {
-                        const int lat = lat_to_int(coord.lat);
-                        const int lon = lon_to_int(coord.lon);
-                        polygon.push_back(std::pair<int, int>(lat, lon));
-                    } else
+                    if (coords->retrieve(wn.nodes[j], coord))
+                        polygon.push_back(coord);
+                    else
                         Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
                 }
                 return true;
@@ -170,29 +162,23 @@ public:
             Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[wn.num_nodes - 1]);
             return false;
         }
-        const int lastlat = lat_to_int(coord.lat);
-        const int lastlon = lon_to_int(coord.lon);
 
         /// Test if the way can be attached to one side of the (growing) polygon
-        if (polygon[0].first == lastlat && polygon[0].second == lastlon) {
+        if (polygon[0].x == coord.x && polygon[0].y == coord.y) {
             for (int j = wn.num_nodes - 2; j >= 0; --j) {
-                if (coords->retrieve(wn.nodes[j], coord)) {
-                    const int lat = lat_to_int(coord.lat);
-                    const int lon = lon_to_int(coord.lon);
-                    polygon.push_front(std::pair<int, int>(lat, lon));
-                } else
+                if (coords->retrieve(wn.nodes[j], coord))
+                    polygon.push_front(coord);
+                else
                     Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
             }
             return true;
         } else
             /// Test if the way can be attached to other side of the (growing) polygon
-            if (polygon[polygon.size() - 1].first == lastlat && polygon[polygon.size() - 1].second == lastlon) {
+            if (polygon[polygon.size() - 1].x == coord.x && polygon[polygon.size() - 1].y == coord.y) {
                 for (int j = wn.num_nodes - 2; j >= 0; --j) {
-                    if (coords->retrieve(wn.nodes[j], coord)) {
-                        const int lat = lat_to_int(coord.lat);
-                        const int lon = lon_to_int(coord.lon);
-                        polygon.push_back(std::pair<int, int>(lat, lon));
-                    } else
+                    if (coords->retrieve(wn.nodes[j], coord))
+                        polygon.push_back(coord);
+                    else
                         Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
                 }
                 return true;
@@ -202,13 +188,14 @@ public:
         return false;
     }
 
-    int nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::deque<std::pair<int, int> > > &code_to_polygon) {
+    int nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::deque<Coord> > &code_to_polygon) {
         if (code_to_polygon.empty()) {
             for (std::map<int, uint64_t>::const_iterator it = code_to_relationid.cbegin(); it != code_to_relationid.cend(); ++it) {
+                const int code = (*it).first;
                 const uint64_t relid = (*it).second;
                 RelationMem rel;
                 if (relmem->retrieve(relid, rel) && rel.num_members > 0) {
-                    std::deque<std::pair<int, int> > polygon;
+                    std::deque<Coord> polygon;
 
                     bool *wayattached = new bool[rel.num_members];
                     uint32_t expected_outer_members = 0;
@@ -249,8 +236,8 @@ public:
                     if (successful_additions < expected_outer_members) {
 #ifdef DEBUG
                         Error::warn("The following ways could not be attached to polygon for relation %llu (%i<%i)", relid, successful_additions, expected_outer_members);
-                        Error::warn("Polyon start: %.5f, %.5f", int_to_lat((*polygon.cbegin()).first), int_to_lon((*polygon.cbegin()).second));
-                        Error::warn("Polyon end: %.5f, %.5f", int_to_lat((*(--polygon.cend())).first), int_to_lon((*(--polygon.cend())).second));
+                        Error::warn("Polyon start: lat=%.5f, lon=%.5f", (*polygon.cbegin()).latitude(), (*polygon.cbegin()).longitude());
+                        Error::warn("Polyon end: lat=%.5f, lon=%.5f", (*polygon.cend()).latitude(), (*polygon.cend()).longitude());
                         for (int i = rel.num_members - 1; i >= 0; --i)
                             if (!wayattached[i]) {
                                 Error::warn("  Way %llu", rel.member_ids[i]);
@@ -258,10 +245,10 @@ public:
                                 if (waynodes->retrieve(rel.member_ids[i], wn)) {
                                     Coord coord;
                                     if (coords->retrieve(wn.nodes[0], coord)) {
-                                        Error::warn("    Start %.5f, %.5f", coord.lat, coord.lon);
+                                        Error::warn("    Start  lat=%.5f, lon=%.5f", coord.latitude(), coord.longitude());
                                     }
                                     if (coords->retrieve(wn.nodes[wn.num_nodes - 1], coord)) {
-                                        Error::warn("    End %.5f, %.5f", coord.lat, coord.lon);
+                                        Error::warn("    End  lat=%.5f, lon=%.5f", coord.latitude(), coord.longitude());
                                     }
                                 }
                             }
@@ -278,7 +265,7 @@ public:
                         /// in the geographic database and as such may be considered
                         /// in the following analysis
                         polygon.pop_back();
-                        code_to_polygon.insert(std::pair<int, std::deque<std::pair<int, int> > >((*it).first, polygon));
+                        code_to_polygon.insert(std::pair<int, std::deque<Coord> >(code, polygon));
                     } else
                         Error::info("Could not insert relation %llu, not all ways found/known?", relid);
                 }
@@ -287,26 +274,30 @@ public:
 
         Coord coord;
         if (coords->retrieve(nodeid, coord)) {
-            const int x = lon_to_int(coord.lon);
-            const int y = lat_to_int(coord.lat);
-
-            for (std::map<int, std::deque<std::pair<int, int> > >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
+            int resultCode = -1;
+            for (std::map<int, std::deque<Coord> >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
+                const int code = (*it).first;
                 /// For a good explanation, see here: http://alienryderflex.com/polygon/
-                const std::deque<std::pair<int, int> > &polygon = (*it).second;
+                const std::deque<Coord> &polygon = (*it).second;
                 const int polyCorners = polygon.size();
                 int j = polyCorners - 1;
                 bool oddNodes = false;
 
                 for (int i = 0; i < polyCorners; i++) {
-                    if (((polygon[i].first < y && polygon[j].first >= y) || (polygon[j].first < y && polygon[i].first >= y)) && (polygon[i].second <= x || polygon[j].second <= x)) {
-                        oddNodes ^= polygon[i].second + (y - polygon[i].first) * (polygon[j].second - polygon[i].second) / (double)(polygon[j].first - polygon[i].first) < x;
+                    if (((polygon[i].y < coord.y && polygon[j].y >= coord.y) || (polygon[j].y < coord.y && polygon[i].y >= coord.y)) && (polygon[i].x <= coord.x || polygon[j].x <= coord.x)) {
+                        const int intermediate = polygon[i].x + (coord.y - polygon[i].y) * (polygon[j].x - polygon[i].x) / (polygon[j].y - polygon[i].y);
+                        oddNodes ^= intermediate < coord.x;
                     }
                     j = i;
                 }
 
-                if (oddNodes)
-                    return (*it).first;
+                if (oddNodes) {
+                    if (resultCode >= 0)
+                        Error::warn("There is another code already matching for this area: %d != %d", resultCode, code);
+                    resultCode = code;
+                }
             }
+            return resultCode;
         }
 
         return -1;
@@ -487,7 +478,7 @@ void Sweden::test() {
     uint64_t id = 322746501;
     Coord coord;
     if (d->coords->retrieve(id, coord)) {
-        Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     int scbcode = insideSCBarea(id);
     if (scbcode <= 0)
@@ -508,7 +499,7 @@ void Sweden::test() {
 
     id = 541187594;
     if (d->coords->retrieve(id, coord)) {
-        Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcode = insideSCBarea(id);
     if (scbcode <= 0)
@@ -530,7 +521,7 @@ void Sweden::test() {
 
     id = 3170517078;
     if (d->coords->retrieve(id, coord)) {
-        Error::info("node %llu is located at lat=%.5f, lon=%.5f", id, coord.lat, coord.lon);
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcode = insideSCBarea(id);
     if (scbcode <= 0)
