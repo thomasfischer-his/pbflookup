@@ -47,23 +47,6 @@ private:
     };
     std::map<int, Land> lands;
 
-    inline int lat_to_int(const double &lat) {
-        return (lat - min_lat) * INT_RANGE / delta_lat + 0.5;
-    }
-
-    inline double int_to_lat(const int &lat) {
-        return ((lat - 0.5) * delta_lat / INT_RANGE) + min_lat;
-    }
-
-    inline int lon_to_int(const double &lon) {
-        return (lon - min_lon) * INT_RANGE / delta_lon + 0.5;
-    }
-
-    inline double int_to_lon(const int &lon) {
-        return ((lon - 0.5) * delta_lon / INT_RANGE) + min_lon;
-    }
-
-
 public:
     double min_lat = 1000.0, min_lon = 1000.0, max_lat = -1000.0, max_lon = -1000.0;
     double delta_lat = 0.0, delta_lon = 0.0;
