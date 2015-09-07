@@ -385,6 +385,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const uint64_t id = pg.nodes(j).id();
+                                (*n2c)->increaseUseCounter(id);
                                 const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), id << 2 | NODE_NIBBLE);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
@@ -425,6 +426,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
+                                    (*n2c)->increaseUseCounter(last_id);
                                     const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(value), last_id << 2 | NODE_NIBBLE);
                                     if (!result)
                                         Error::warn("Cannot insert %s", primblock.stringtable().s(value).c_str());
@@ -545,13 +547,14 @@ double OsmPbfReader::max_lon() const {
 
 int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result) {
     uint64_t nodeId = 0;
-    for (int i = 0; i < ways.refs_size(); ++i) {
+    const int numberOfNodes = ways.refs_size();
+    for (int i = 0; i < numberOfNodes; ++i) {
         nodeId += ways.refs(i);
         result[i] = nodeId;
     }
 
     std::stack<std::pair<int, int> > recursion;
-    recursion.push(std::pair<int, int>(0, ways.refs_size() - 1));
+    recursion.push(std::pair<int, int>(0, numberOfNodes - 1));
 
     while (!recursion.empty()) {
         const std::pair<int, int> nextPair = recursion.top();
@@ -576,11 +579,13 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coo
         }
         else
             for (int i = a + 1; i < b; ++i)
-                result[i] = 0;
+                if (n2c->useCounter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
+                    result[i] = 0;
+                }
     }
 
     int p = 0;
-    for (int i = 0; i < ways.refs_size(); ++i)
+    for (int i = 0; i < numberOfNodes; ++i)
         if (result[i] > 0) {
             if (i > p) result[p] = result[i];
             ++p;
