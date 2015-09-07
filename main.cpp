@@ -21,6 +21,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "swedishtexttree.h"
 #include "osmpbfreader.h"
@@ -194,11 +195,14 @@ int main(int argc, char *argv[])
         boost::thread threadLoadOrSaveW2n(loadOrSaveW2n, &w2n, tempdir, mapname);
         boost::thread threadLoadOrRelMem(loadOrSaveRelMem, &relmem, tempdir, mapname);
         boost::thread threadSaveSweden(saveSweden, &sweden, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        Error::debug("Waiting for threads to join");
         threadLoadOrSaveSwedishTextTree.join();
         threadLoadOrSaveN2c.join();
         threadLoadOrSaveW2n.join();
         threadLoadOrRelMem.join();
         threadSaveSweden.join();
+        Error::debug("All threads joined");
 
         if (sweden == NULL && n2c != NULL && w2n != NULL && relmem != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
