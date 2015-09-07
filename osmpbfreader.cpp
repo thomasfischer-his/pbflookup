@@ -61,6 +61,10 @@ const uint64_t OsmPbfReader::exclaveInclaveWays[] = {
     248228629,///< Rattviks/Mora
     248228630,///< Rattviks/Leksand
     248228631,///< Rattviks/Mora
+    265522459,///< Sater/Borlange
+    265522461,///< Sater/Borlange
+    265522463,///< Sater/Borlange
+    265522465,///< Sater/Borlange
     265714858,///< Ludvika/Gagnef
     265714859,///< Ludvika/Gagnef
     293357456,///< Skovde/Skara/Falkoping
