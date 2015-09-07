@@ -22,6 +22,15 @@
 
 #include "error.h"
 
+
+const double minlon = 4.4;
+const double minlat = 53.8;
+
+/// Values come from  http://www.csgnetwork.com/degreelenllavcalc.html
+const double decimeterDegreeLongitude = 557999.790;
+const double decimeterDegreeLatitude = 1114122.402;
+
+
 class Sweden::Private {
 private:
     static const int INT_RANGE;

@@ -24,6 +24,13 @@
 
 #include "error.h"
 
+
+/// Minimum latitude and longitude for Sweden
+extern const double minlon, minlat;
+/// Decimeter per degree longitude and latitude at N 60 (north of Uppsala)
+extern const double decimeterDegreeLongitude, decimeterDegreeLatitude;
+
+
 struct WayNodes {
     WayNodes() {
         num_nodes = 0;
@@ -177,40 +184,68 @@ struct RelationMem {
 
 struct Coord {
     Coord() {
-        lon = lat = 0.0;
+        x = y = 0;
     }
 
-    Coord(double longitude, double latitude) {
-        lon = longitude;
-        lat = latitude;
+    Coord(int _x, int _y) {
+        x = _x;
+        y = _y;
     }
 
     Coord &operator=(const Coord &other) {
-        lon = other.lon;
-        lat = other.lat;
+        x = other.x;
+        y = other.y;
         return *this;
     }
 
     Coord(std::istream &input) {
-        input.read((char *)&lon, sizeof(lon));
+        input.read((char *)&x, sizeof(x));
         if (!input)
             Error::err("Could not read coordinates from input stream");
-        input.read((char *)&lat, sizeof(lat));
+        input.read((char *)&y, sizeof(y));
         if (!input)
             Error::err("Could not read coordinates from input stream");
     }
 
     std::ostream &write(std::ostream &output) {
-        output.write((char *)&lon, sizeof(lon));
+        output.write((char *)&x, sizeof(x));
         if (!output)
             Error::err("Could not write coordinates to output stream");
-        output.write((char *)&lat, sizeof(lat));
+        output.write((char *)&y, sizeof(y));
         if (!output)
             Error::err("Could not write coordinates to output stream");
         return output;
     }
 
-    double lon, lat;
+    static Coord fromLatLon(double longitude, double latitude) {
+        return Coord(fromLongitude(longitude), fromLatitude(latitude));
+    }
+
+    inline double longitude() const {
+        return toLongitude(x);
+    }
+
+    static inline int fromLongitude(const double l) {
+        return (int)((l - minlon) * decimeterDegreeLongitude + 0.5);
+    }
+
+    static inline double toLongitude(const int x) {
+        return ((double)x - 0.5) / decimeterDegreeLongitude + minlon;
+    }
+
+    inline double latitude() const {
+        return toLatitude(y);
+    }
+
+    static inline int fromLatitude(const double l) {
+        return (int)((l - minlat) * decimeterDegreeLatitude + 0.5);
+    }
+
+    static inline double toLatitude(const int y) {
+        return ((double)y - 0.5) / decimeterDegreeLatitude + minlat;
+    }
+
+    int x, y;
 };
 
 template <typename T>
