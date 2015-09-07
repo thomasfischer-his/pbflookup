@@ -42,7 +42,9 @@ const uint64_t OsmPbfReader::exclaveInclaveWays[] = {
     220234514,///< Rattviks/Leksand
     220234515,///< Rattviks/Leksand
     220234516,///< Rattviks/Leksand
+    220234517,///< Mora/Leksand
     220234518,///< Rattviks/Leksand
+    220234519,///< Mora/Leksand
     220234520,///< Rattviks/Leksand
     220234521,///< Rattviks/Leksand
     220234522,///< Rattviks/Mora
@@ -53,10 +55,16 @@ const uint64_t OsmPbfReader::exclaveInclaveWays[] = {
     220234527,///< Rattviks/Leksand
     220234529,///< Rattviks/Leksand
     220234531,///< Rattviks/Leksand
+    220234534,///< Mora/Leksand
     220234536,///< Rattviks/Leksand
     220234538,///< Rattviks/Leksand
+    220234541,///< Mora/Leksand
     248228620,///< Rattviks/Leksand
+    248228621,///< Mora/Leksand
+    248228622,///< Mora/Leksand
+    248228624,///< Mora/Leksand
     248228625,///< Rattviks/Leksand
+    248228626,///< Mora/Leksand
     248228627,///< Rattviks/Leksand
     248228629,///< Rattviks/Mora
     248228630,///< Rattviks/Leksand
@@ -72,7 +80,7 @@ const uint64_t OsmPbfReader::exclaveInclaveWays[] = {
     293357458,///< Skovde/Skara/Falkoping
     293357462,///< Skovde/Skara
     316109917,///< Rattviks/Leksand
-    317893972,///< Lilla Edet/Ale
+    317893972,///< Alingsas/Lilla Edet
     317893975,///< Lilla Edet/Ale
     317893976,///< Lilla Edet/Ale
     320653723,///< Overtornea/Pajala
