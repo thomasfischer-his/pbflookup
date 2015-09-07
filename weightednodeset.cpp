@@ -100,6 +100,8 @@ void WeightedNodeSet::dump() {
 }
 
 void WeightedNodeSet::normalize() {
+    if (begin() == end()) return; ///< empty vector
+
     /// Sort by weight, heaviest first
     std::sort(begin(), end(), std::greater<WeightedNode>());
 
