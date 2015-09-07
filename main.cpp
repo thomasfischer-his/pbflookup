@@ -191,9 +191,13 @@ int main(int argc, char *argv[])
 
         Timer timer;
         boost::thread threadLoadOrSaveSwedishTextTree(loadOrSaveSwedishTextTree, &swedishTextTree, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveN2c(loadOrSaveN2c, &n2c, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveW2n(loadOrSaveW2n, &w2n, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrRelMem(loadOrSaveRelMem, &relmem, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadSaveSweden(saveSweden, &sweden, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         Error::debug("Waiting for threads to join");
