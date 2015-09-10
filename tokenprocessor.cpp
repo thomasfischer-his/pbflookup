@@ -19,6 +19,8 @@
 #include "sweden.h"
 #include "swedishtexttree.h"
 
+#define min(a,b) ((b)>(a)?(a):(b))
+
 class TokenProcessor::Private
 {
 public:
@@ -100,7 +102,7 @@ TokenProcessor::~TokenProcessor() {
 void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const {
     static const size_t combined_len = 8188;
     char combined[combined_len + 4];
-    for (int s = 3; s >= 1; --s) {
+    for (int s = min(3, words.size()); s >= 1; --s) {
         for (size_t i = 0; i <= words.size() - s; ++i) {
             char *p = combined;
             for (int k = 0; k < s; ++k) {
