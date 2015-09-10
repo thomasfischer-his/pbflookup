@@ -62,8 +62,6 @@ public:
     void dump();
     void normalize();
 
-    void setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon);
-
     void powerCluster(double alpha, double p);
     void powerMunicipalityCluster(double p);
 
@@ -72,11 +70,6 @@ private:
     IdTree<WayNodes> *w2n;
     IdTree<RelationMem> *relmem;
     Sweden *sweden;
-
-    double m_minlat;
-    double m_maxlat;
-    double m_minlon;
-    double m_maxlon;
 };
 
 #endif // WEIGHTED_NODE_SET_H

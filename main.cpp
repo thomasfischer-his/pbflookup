@@ -146,10 +146,6 @@ int main(int argc, char *argv[])
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
         Sweden *sweden = NULL;
-        double minlat = 1000.0;
-        double maxlat = -1000.0;
-        double minlon = 1000.0;
-        double maxlon = -1000.0;
 
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
         ifstream fileteststream(filenamebuffer);
@@ -164,12 +160,6 @@ int main(int argc, char *argv[])
                 osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
                 const int64_t elapsed = timer.elapsed();
                 Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs", elapsed, elapsed / 1000000.0);
-
-                minlat = osmPbfReader.min_lat();
-                maxlat = osmPbfReader.max_lat();
-                minlon = osmPbfReader.min_lon();
-                maxlon = osmPbfReader.max_lon();
-                Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
             }
         } else {
             Timer timer;
@@ -177,12 +167,6 @@ int main(int argc, char *argv[])
             osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
             const int64_t elapsed = timer.elapsed();
             Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs", elapsed, elapsed / 1000000.0);
-
-            minlat = osmPbfReader.min_lat();
-            maxlat = osmPbfReader.max_lat();
-            minlon = osmPbfReader.min_lon();
-            maxlon = osmPbfReader.max_lon();
-            Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
         }
         fileteststream.close();
         /// Clean up the protobuf lib
@@ -221,38 +205,6 @@ int main(int argc, char *argv[])
         int64_t elapsed = timer.elapsed();
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs", elapsed, elapsed / 1000000.0);
 
-        if (strcmp(mapname, "isle-of-man") == 0) {
-            /// Isle of man
-            minlat = 54.0;
-            minlon = -5.0;
-            maxlat = 54.5;
-            maxlon = -4.0;
-        } else if (strcmp(mapname, "sweden") == 0) {
-            /// Sweden
-            minlat = 53.8;
-            minlon = 4.4;
-            maxlat = 71.2;
-            maxlon = 31.2;
-        } else if (strcmp(mapname, "westsweden") == 0) {
-            /// West Sweden
-            minlat = 56.3;
-            minlon = 10.4;
-            maxlat = 59.9;
-            maxlon = 16.3;
-        } else if (strcmp(mapname, "goteborg") == 0) {
-            /// Gothenburg
-            minlat = 56.9;
-            minlon = 11.4;
-            maxlat = 59.4;
-            maxlon = 14.5;
-        }
-        sweden->setMinMaxLatLon(minlat, minlon, maxlat, maxlon);
-
-        if (minlat < -500 || minlat > 500)
-            Error::warn("Unknown min/max for latitudes and longitudes");
-        else
-            Error::info("maxlat=%.7f  minlat=%.7f  maxlon=%.7f  minlon=%.7f", maxlat, minlat, maxlon, minlon);
-
         if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL && sweden != NULL) {
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
@@ -265,7 +217,6 @@ int main(int argc, char *argv[])
                 textfile.close();
 
                 WeightedNodeSet wns(n2c, w2n, relmem, sweden);
-                wns.setMinMaxLatLon(minlat, maxlat, minlon, maxlon);
 
                 TokenProcessor tokenProcessor(swedishTextTree, n2c, w2n, relmem, sweden);
                 tokenProcessor.evaluteWordCombinations(words, wns);

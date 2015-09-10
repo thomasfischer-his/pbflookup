@@ -61,11 +61,6 @@ public:
     SwedishText::Tree *parse(std::istream &input);
     bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **, IdTree<WayNodes> **, IdTree<RelationMem> **, Sweden **sweden);
 
-    double min_lat() const;
-    double max_lat() const;
-    double min_lon() const;
-    double max_lon() const;
-
 private:
     /// Buffer for reading a compressed blob from file
     char *buffer;
@@ -83,8 +78,6 @@ private:
 
     // pbf struct of an OSM PrimitiveBlock
     OSMPBF::PrimitiveBlock primblock;
-
-    double minlat, minlon, maxlat, maxlon;
 
     int applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result);
     int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const;

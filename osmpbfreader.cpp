@@ -164,11 +164,6 @@ OsmPbfReader::OsmPbfReader()
     unpack_buffer = new char[OSMPBF::max_uncompressed_blob_size];
     if (unpack_buffer == NULL)
         Error::err("Could not allocate memory for OsmPbfReader::unpack_buffer");
-
-    minlat = 1000.0;
-    minlon = 1000.0;
-    maxlat = -1000.0;
-    maxlon = -1000.0;
 }
 
 OsmPbfReader::~OsmPbfReader()
@@ -183,10 +178,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     *w2n = NULL;
     *relmem = NULL;
     *sweden = NULL;
-    minlat = 1000.0;
-    minlon = 1000.0;
-    maxlat = -1000.0;
-    maxlon = -1000.0;
 
     if (!input || !input.good())
         return false;
@@ -376,10 +367,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
                         (*n2c)->insert(pg.nodes(j).id(), Coord::fromLatLon(lon, lat));
-                        if (lat > maxlat) maxlat = lat;
-                        if (lat < minlat) minlat = lat;
-                        if (lon > maxlon) maxlon = lon;
-                        if (lon < minlon) minlon = lon;
 
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
@@ -406,10 +393,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
                         (*n2c)->insert(last_id, Coord::fromLatLon(last_lon, last_lat));
-                        if (last_lat > maxlat) maxlat = last_lat;
-                        if (last_lat < minlat) minlat = last_lat;
-                        if (last_lon > maxlon) maxlon = last_lon;
-                        if (last_lon < minlon) minlon = last_lon;
 
                         bool isKey = true;
                         int key = 0, value = 0;
@@ -547,19 +530,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     std::cout << std::endl;
 
     return true;
-}
-
-double OsmPbfReader::min_lat() const {
-    return minlat;
-}
-double OsmPbfReader::max_lat() const {
-    return maxlat;
-}
-double OsmPbfReader::min_lon() const {
-    return minlon;
-}
-double OsmPbfReader::max_lon() const {
-    return maxlon;
 }
 
 int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result) {

@@ -31,8 +31,6 @@ public:
     explicit Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem);
     ~Sweden();
 
-    void setMinMaxLatLon(double min_lat, double min_lon, double max_lat, double max_lon);
-
     void dump() const;
     void test();
 

@@ -24,7 +24,7 @@
 #include "sweden.h"
 
 WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *_n2c, IdTree<WayNodes> *_w2n, IdTree<RelationMem> *_relmem, Sweden *_sweden)
-    : n2c(_n2c), w2n(_w2n), relmem(_relmem), sweden(_sweden), m_minlat(1000.0), m_maxlat(-1000.0), m_minlon(1000.0), m_maxlon(1000)
+    : n2c(_n2c), w2n(_w2n), relmem(_relmem), sweden(_sweden)
 {
     /// nothing
 }
@@ -109,13 +109,6 @@ void WeightedNodeSet::normalize() {
     for (iterator it = begin(); it != end(); ++it) {
         (*it).weight /= max_weight;
     }
-}
-
-void WeightedNodeSet::setMinMaxLatLon(double minlat, double maxlat, double minlon, double maxlon) {
-    m_minlat = minlat;
-    m_maxlat = maxlat;
-    m_minlon = minlon;
-    m_maxlon = maxlon;
 }
 
 void WeightedNodeSet::powerCluster(double alpha, double p) {
