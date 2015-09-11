@@ -112,26 +112,26 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
             }
 
             const size_t wordlen = strlen(combined);
-            std::vector<uint64_t> id_list = d->swedishTextTree->retrieve_ids(combined);
+            std::vector<OSMElement> id_list = d->swedishTextTree->retrieve(combined);
             if (!id_list.empty()) {
                 if (id_list.size() > 1000)
                     Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
                 else {
                     Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                    for (unsigned int l = 0; l < id_list.size(); ++l) {
-                        const uint64_t id = id_list[l] >> 2;
-                        const int lowerBits = id_list[l] & 3;
-                        if (lowerBits == NODE_NIBBLE) {
+                    for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
+                        const uint64_t id = (*it).id;
+                        const OSMElement::ElementType type = (*it).type;
+                        if (type == OSMElement::Node) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/node/%llu", id);
 #endif // DEBUG
                             wns.appendNode(id, s, wordlen);
-                        } else if (lowerBits == WAY_NIBBLE) {
+                        } else if (type == OSMElement::Way) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/way/%llu", id);
 #endif // DEBUG
                             wns.appendWay(id, s, wordlen);
-                        } else if (lowerBits == RELATION_NIBBLE) {
+                        } else if (type == OSMElement::Relation) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
 #endif // DEBUG

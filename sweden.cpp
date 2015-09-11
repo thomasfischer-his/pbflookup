@@ -181,7 +181,7 @@ public:
                     uint32_t expected_outer_members = 0;
                     for (int i = rel.num_members - 1; i >= 0; --i) {
                         wayattached[i] = false;
-                        if ((rel.member_flags[i] & RelationFlags::RoleOuter) > 0) ++expected_outer_members;
+                        if (rel.members[i].type == OSMElement::Way && (rel.member_flags[i] & RelationFlags::RoleOuter) > 0) ++expected_outer_members;
                     }
 
                     uint32_t successful_additions = 0;
@@ -190,13 +190,14 @@ public:
                     for (uint32_t wrap_around = 0; successful_additions < expected_outer_members && wrap_around < rel.num_members + 5; ++wrap_around)
                         for (uint32_t i = 0; i < rel.num_members && successful_additions < expected_outer_members; ++i) {
                             if (wayattached[i]) continue;
+                            if (rel.members[i].type != OSMElement::Way) continue; ///< consider only ways as relation members
                             if ((rel.member_flags[i] & RelationFlags::RoleOuter) == 0) continue; ///< consider only members of role 'outer'
 
                             WayNodes wn;
 #ifdef DEBUG
                             Coord coord;
 #endif // DEBUG
-                            const uint64_t memid = rel.member_ids[i];
+                            const uint64_t memid = rel.members[i].id;
                             if (waynodes->retrieve(memid, wn)) {
                                 if (addWayToPolygon(wn, polygon)) {
                                     ++successful_additions;
@@ -204,11 +205,11 @@ public:
                                 }
                             }
 #ifdef DEBUG
-                            else if (coords->retrieve(rel.member_ids[i], coord)) {
+                            else if (coords->retrieve(memid, coord)) {
                                 /// ignoring node ids
                             } else {
                                 /// Warn about member ids that are not ways (and not nodes)
-                                Error::warn("Id %llu is member of relation %llu, but no way with this id is not known", rel.member_ids[i], relid);
+                                Error::warn("Id %llu is member of relation %llu, but no way with this id is not known", memid, relid);
                             }
 #endif // DEBUG
                         }
@@ -220,9 +221,9 @@ public:
                         Error::warn("Polyon end: lat=%.5f, lon=%.5f", (*polygon.cend()).latitude(), (*polygon.cend()).longitude());
                         for (int i = rel.num_members - 1; i >= 0; --i)
                             if (!wayattached[i]) {
-                                Error::warn("  Way %llu", rel.member_ids[i]);
+                                Error::warn("  Relation member %llu of type %d", rel.members[i].id, rel.members[i].type);
                                 WayNodes wn;
-                                if (waynodes->retrieve(rel.member_ids[i], wn)) {
+                                if (rel.members[i].type == OSMElement::Way && waynodes->retrieve(rel.members[i].id, wn)) {
                                     Coord coord;
                                     if (coords->retrieve(wn.nodes[0], coord)) {
                                         Error::warn("    Start  lat=%.5f, lon=%.5f", coord.latitude(), coord.longitude());
@@ -233,7 +234,7 @@ public:
                                 }
                             }
 #else // DEBUG
-                        Error::warn("Only %i out of %i ways could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
+                        Error::warn("Only %i out of %i elements could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
 #endif // DEBUG
                     }
 

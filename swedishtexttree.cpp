@@ -27,7 +27,8 @@ const int Tree::code_unknown = Tree::num_codes - 1;
 
 Node::Node() {
     children = NULL;
-    ids = NULL;
+    elements_size = 0;
+    elements = NULL;
 }
 
 Node::Node(std::istream &input) {
@@ -55,13 +56,13 @@ Node::Node(std::istream &input) {
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'n') {
-        ids = NULL;
+        elements_size = 0;
+        elements = NULL;
     } else if (chr == 'i') {
-        uint64_t firstId;
-        input.read((char *)&firstId, sizeof(firstId));
-        ids = (uint64_t *)malloc(firstId * sizeof(uint64_t));
-        ids[0] = firstId;
-        input.read((char *)(ids + 1), (firstId - 1)*sizeof(uint64_t));
+        input.read((char *)&elements_size, sizeof(elements_size));
+        const size_t bytes = elements_size * sizeof(OSMElement);
+        elements = (OSMElement *)malloc(bytes);
+        input.read((char *)elements, bytes);
     } else
         Error::warn("Expected 'n' or 'i', got '0x%02x'", chr);
 }
@@ -72,7 +73,7 @@ Node::~Node() {
             if (children[i] != NULL) delete children[i];
         free(children);
     }
-    if (ids != NULL) free(ids);
+    if (elements != NULL) free(elements);
 }
 
 std::ostream &Node::write(std::ostream &output) {
@@ -95,13 +96,14 @@ std::ostream &Node::write(std::ostream &output) {
         }
     }
 
-    if (ids == NULL) {
+    if (elements == NULL) {
         chr = 'n';
         output.write((char *)&chr, sizeof(chr));
     } else {
         chr = 'i';
         output.write((char *)&chr, sizeof(chr));
-        output.write((char *)ids, ids[0] * sizeof(uint64_t));
+        output.write((char *)&elements_size, sizeof(elements_size));
+        output.write((char *)elements, elements_size * sizeof(OSMElement));
     }
 
     return output;
@@ -126,7 +128,7 @@ std::ostream &Tree::write(std::ostream &output) {
     return root->write(output);
 }
 
-bool Tree::insert(const std::string &input, uint64_t id) {
+bool Tree::insert(const std::string &input, const OSMElement &element) {
     bool result = true;
     std::vector<std::string> words;
     const int num_components = separate_words(input, words);
@@ -146,7 +148,7 @@ bool Tree::insert(const std::string &input, uint64_t id) {
                         ++cur;
                     }
                 }
-                result &= internal_insert(buffer, id);
+                result &= internal_insert(buffer, element);
             }
         }
 
@@ -155,7 +157,7 @@ bool Tree::insert(const std::string &input, uint64_t id) {
         return false;
 }
 
-bool Tree::internal_insert(const char *word, uint64_t id) {
+bool Tree::internal_insert(const char *word, const OSMElement &element) {
     ++_size;
     std::vector<unsigned int> code = code_word(word);
     if (code.empty())
@@ -184,36 +186,36 @@ bool Tree::internal_insert(const char *word, uint64_t id) {
         cur = next;
     }
 
-    if (cur->ids == NULL) {
-        cur->ids = (uint64_t *)calloc(default_num_indices, sizeof(uint64_t));
-        if (cur->ids == NULL) {
-            Error::err("Could not allocate memory for cur->ids");
+    if (cur->elements == NULL) {
+        cur->elements = (OSMElement *)calloc(default_num_indices, sizeof(OSMElement));
+        if (cur->elements == NULL) {
+            Error::err("Could not allocate memory for cur->elements");
             return false;
         }
-        cur->ids[0] = default_num_indices;
+        cur->elements_size = default_num_indices;
     }
     unsigned int idx = 1;
-    while (idx < cur->ids[0] && cur->ids[idx] != 0) ++idx;
-    if (idx >= cur->ids[0]) {
-        const uint64_t new_size = cur->ids[0] + default_num_indices;
-        uint64_t *new_array = (uint64_t *)calloc(new_size, sizeof(uint64_t));
+    while (idx < cur->elements_size && cur->elements[idx].id != 0) ++idx;
+    if (idx >= cur->elements_size) {
+        const size_t new_size = cur->elements_size + default_num_indices;
+        OSMElement *new_array = (OSMElement *)calloc(new_size, sizeof(OSMElement));
         if (new_array == NULL) {
             Error::err("Could not allocate memory for new_array");
             return false;
         }
-        new_array[0] = new_size;
-        memcpy(new_array + 1, cur->ids + 1, (cur->ids[0] - 1)*sizeof(uint64_t));
-        free(cur->ids);
-        cur->ids = new_array;
+        memcpy(new_array, cur->elements, (cur->elements_size)*sizeof(OSMElement));
+        free(cur->elements);
+        cur->elements = new_array;
+        cur->elements_size = new_size;
     }
-    cur->ids[idx] = id;
+    cur->elements[idx] = element;
 
     return true;
 }
 
-std::vector<uint64_t> Tree::retrieve_ids(const char *word) {
+std::vector<OSMElement> Tree::retrieve(const char *word) {
     std::vector<unsigned int> code = code_word(word);
-    std::vector<uint64_t> result;
+    std::vector<OSMElement> result;
 
     Node *cur = root;
     unsigned int pos = 0;
@@ -232,8 +234,8 @@ std::vector<uint64_t> Tree::retrieve_ids(const char *word) {
     if (cur->ids == NULL)
         return result;
 
-    for (unsigned int idx = 1; idx < cur->ids[0] && cur->ids[idx] != 0; ++idx) {
-        result.push_back(cur->ids[idx]);
+    for (unsigned int idx = 1; idx < cur->elements_size && cur->elements[idx].id != 0; ++idx) {
+        result.push_back(cur->elements[idx]);
     }
 
     return result;

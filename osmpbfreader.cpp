@@ -373,7 +373,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             if (strcmp("name", ckey) == 0) {
                                 const uint64_t id = pg.nodes(j).id();
                                 (*n2c)->increaseUseCounter(id);
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), id << 2 | NODE_NIBBLE);
+                                const OSMElement element(id, OSMElement::Node);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
                             }
@@ -410,7 +411,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
                                     (*n2c)->increaseUseCounter(last_id);
-                                    const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(value), last_id << 2 | NODE_NIBBLE);
+                                    const OSMElement element(last_id, OSMElement::Node);
+                                    const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(value), element);
                                     if (!result)
                                         Error::warn("Cannot insert %s", primblock.stringtable().s(value).c_str());
                                 }
@@ -434,7 +436,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), wayId << 2 | WAY_NIBBLE);
+                                const OSMElement element(wayId, OSMElement::Way);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
                             } else if (strcmp("ref", ckey) == 0) {
@@ -470,7 +473,8 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         for (int k = 0; k < maxkv; ++k) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), relId << 2 | RELATION_NIBBLE);
+                                const OSMElement element(relId, OSMElement::Relation);
+                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             } else if (strcmp("ref:scb", ckey) == 0) {
@@ -502,7 +506,16 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             uint16_t flags = 0;
                             if (strcmp("outer", primblock.stringtable().s(pg.relations(i).roles_sid(k)).c_str()) == 0)
                                 flags |= RelationFlags::RoleOuter;
-                            rm.member_ids[p] = memId;
+                            OSMElement::ElementType type = OSMElement::Unknown;
+                            if (pg.relations(i).types(k) == 0)
+                                type = OSMElement::Node;
+                            else if (pg.relations(i).types(k) == 1)
+                                type = OSMElement::Way;
+                            else if (pg.relations(i).types(k) == 2)
+                                type = OSMElement::Relation;
+                            else
+                                Error::warn("Unknown relation type for member %llu in relation %llu : type=%d", memId, relId, pg.relations(i).types(k));
+                            rm.members[p] = OSMElement(memId, type);
                             rm.member_flags[p] = flags;
                             ++p;
                         }

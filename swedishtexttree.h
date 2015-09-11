@@ -17,14 +17,12 @@
 #ifndef SWEDISHTEXTTREE_H
 #define SWEDISHTEXTTREE_H
 
-#define NODE_NIBBLE 1
-#define WAY_NIBBLE 2
-#define RELATION_NIBBLE 3
-
 #include <iostream>
 #include <vector>
 
 #include <google/protobuf/stubs/common.h>
+
+#include "types.h"
 
 namespace SwedishText {
 
@@ -36,8 +34,8 @@ public:
     explicit Tree(std::istream &input);
     ~Tree();
 
-    bool insert(const std::string &input, uint64_t id);
-    std::vector<uint64_t> retrieve_ids(const char *word);
+    bool insert(const std::string &input, const OSMElement &element);
+    std::vector<OSMElement> retrieve(const char *word);
 
     size_t size() const;
 
@@ -53,7 +51,7 @@ private:
     Node *root;
     size_t _size;
 
-    bool internal_insert(const char *word, uint64_t id);
+    bool internal_insert(const char *word, const OSMElement &element);
 
     int separate_words(const std::string &input, std::vector<std::string> &words) const;
     unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c) const;
@@ -69,7 +67,8 @@ struct Node {
     std::ostream &write(std::ostream &output);
 
     Node **children;
-    uint64_t *ids;
+    size_t elements_size;
+    OSMElement *elements;
 };
 
 } // namespace SwedishText

@@ -23,6 +23,7 @@
 #include <osmpbf/osmpbf.h>
 
 #include "error.h"
+#include "types.h"
 
 
 /// Minimum latitude and longitude for Sweden
@@ -94,33 +95,33 @@ enum RelationFlags {RoleOuter = 1};
 struct RelationMem {
     RelationMem() {
         num_members = 0;
-        member_ids = NULL;
+        members = NULL;
         member_flags = NULL;
     }
 
     RelationMem(int num) {
         num_members = num;
-        member_ids = (uint64_t *)calloc(num, sizeof(uint64_t));
-        if (member_ids == NULL)
-            Error::err("Could not allocate memory for RelationMem::member_ids");
+        members = (OSMElement *)calloc(num, sizeof(OSMElement));
+        if (members == NULL)
+            Error::err("Could not allocate memory for RelationMem::members");
         member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
         if (member_flags == NULL)
             Error::err("Could not allocate memory for RelationMem::member_flags");
     }
 
     RelationMem &operator=(const RelationMem &other) {
-        if (member_ids != NULL)
-            free(member_ids);
+        if (members != NULL)
+            free(members);
         if (member_flags != NULL)
             free(member_flags);
 
         num_members = other.num_members;
 
-        const size_t bytesIds = num_members * sizeof(uint64_t);
-        member_ids = (uint64_t *)malloc(bytesIds);
-        if (member_ids == NULL)
-            Error::err("Could not allocate memory for RelationMem::member_ids");
-        memcpy(member_ids, other.member_ids, bytesIds);
+        const size_t bytesElements = num_members * sizeof(OSMElement);
+        members = (OSMElement *)malloc(bytesElements);
+        if (members == NULL)
+            Error::err("Could not allocate memory for RelationMem::members");
+        memcpy(members, other.members, bytesElements);
 
         const size_t bytesFlags = num_members * sizeof(uint16_t);
         member_flags = (uint16_t *)malloc(bytesFlags);
@@ -136,11 +137,11 @@ struct RelationMem {
         if (!input)
             Error::err("Could not read number of members from input stream");
 
-        const size_t bytesIds = num_members * sizeof(uint64_t);
-        member_ids = (uint64_t *)malloc(bytesIds);
-        if (member_ids == NULL)
-            Error::err("Could not allocate memory for RelationMem::member_ids");
-        input.read((char *)member_ids, bytesIds);
+        const size_t bytesElements = num_members * sizeof(OSMElement);
+        members = (OSMElement *)malloc(bytesElements);
+        if (members == NULL)
+            Error::err("Could not allocate memory for RelationMem::members");
+        input.read((char *)members, bytesElements);
         if (!input)
             Error::err("Could not read all members from input stream");
 
@@ -154,8 +155,8 @@ struct RelationMem {
     }
 
     ~RelationMem() {
-        if (member_ids != NULL)
-            free(member_ids);
+        if (members != NULL)
+            free(members);
         if (member_flags != NULL)
             free(member_flags);
     }
@@ -165,8 +166,8 @@ struct RelationMem {
         if (!output)
             Error::err("Could not write number of members to output stream");
 
-        const size_t bytesIds = num_members * sizeof(uint64_t);
-        output.write((char *)member_ids, bytesIds);
+        const size_t bytesElements = num_members * sizeof(OSMElement);
+        output.write((char *)members, bytesElements);
         if (!output)
             Error::err("Could not write all members to output stream");
 
@@ -178,7 +179,7 @@ struct RelationMem {
     }
 
     uint32_t num_members;
-    uint64_t *member_ids;
+    OSMElement *members;
     uint16_t *member_flags;
 };
 
