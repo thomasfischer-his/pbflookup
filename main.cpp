@@ -158,15 +158,17 @@ int main(int argc, char *argv[])
                 Timer timer;
                 OsmPbfReader osmPbfReader;
                 osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
-                const int64_t elapsed = timer.elapsed();
-                Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+                int64_t cputime, walltime;
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
             }
         } else {
             Timer timer;
             OsmPbfReader osmPbfReader;
             osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
-            const int64_t elapsed = timer.elapsed();
-            Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+            int64_t cputime, walltime;
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
         }
         fileteststream.close();
         /// Clean up the protobuf lib
@@ -202,8 +204,9 @@ int main(int argc, char *argv[])
             sweden = new Sweden(in, n2c, w2n, relmem);
         }
 
-        int64_t elapsed = timer.elapsed();
-        Error::info("Spent CPU time to read/write own files: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+        int64_t cputime, walltime;
+        timer.elapsed(&cputime, &walltime);
+        Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
         if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL && sweden != NULL) {
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
@@ -227,13 +230,13 @@ int main(int argc, char *argv[])
                 //wns.dump();
             }
 
-            elapsed = timer.elapsed();
-            Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
             timer.start();
             sweden->test();
-            elapsed = timer.elapsed();
-            Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
         }
 
         timer.start();
@@ -247,8 +250,8 @@ int main(int argc, char *argv[])
             delete relmem;
         if (sweden != NULL)
             delete sweden;
-        elapsed = timer.elapsed();
-        Error::info("Spent CPU time to free memory: %lius == %.1fs", elapsed, elapsed / 1000000.0);
+        timer.elapsed(&cputime, &walltime);
+        Error::info("Spent CPU time to free memory: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
     } else
         return 1;
 
