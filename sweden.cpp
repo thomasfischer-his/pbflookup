@@ -185,8 +185,9 @@ public:
                     bool *wayattached = new bool[rel.num_members];
                     uint32_t expected_outer_members = 0;
                     for (int i = rel.num_members - 1; i >= 0; --i) {
-                        wayattached[i] = false;
-                        if (rel.members[i].type == OSMElement::Way && (rel.member_flags[i] & RelationFlags::RoleOuter) > 0) ++expected_outer_members;
+                        wayattached[i] = false; ///< initially, no way is added to any polygon
+                        /// Compute how many ways are expected to describe the outer boundary of a polygon
+                        if (rel.members[i].type == OSMElement::Way && (rel.member_flags[i] & RelationFlags::RoleInnerOuter) > 0) ++expected_outer_members;
                     }
 
                     uint32_t successful_additions = 0;
