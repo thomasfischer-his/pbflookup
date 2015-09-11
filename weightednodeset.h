@@ -59,7 +59,8 @@ public:
     bool appendRelation(uint64_t id, int s, size_t wordlen);
     bool appendRelation(uint64_t id, double weight = 1.0);
 
-    void dump();
+    void dump() const;
+    void dumpGpx() const;
     void normalize();
 
     void powerCluster(double alpha, double p);

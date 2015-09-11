@@ -19,6 +19,7 @@
 #include <cmath>
 
 #include <algorithm>
+#include <iostream>
 
 #include "error.h"
 #include "sweden.h"
@@ -95,7 +96,7 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
         return false;
 }
 
-void WeightedNodeSet::dump() {
+void WeightedNodeSet::dump() const {
     int i = 0;
     for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 10; ++it, ++i) {
         const WeightedNode &wn = *it;
@@ -104,6 +105,20 @@ void WeightedNodeSet::dump() {
             Error::debug("  http://www.openstreetmap.org/node/%llu", wn.id);
         }
     }
+}
+
+void WeightedNodeSet::dumpGpx() const {
+    std::cout << "<?xml version=\"1.0\"?>" << std::endl;
+    std::cout << "<gpx creator=\"pbflookup\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:ogr=\"http://osgeo.org/gdal\" xmlns=\"http://www.topografix.com/GPX/1/1\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">" << std::endl;
+    int i = 0;
+    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 10; ++it, ++i) {
+        const WeightedNode &wn = *it;
+        if (wn.weight > 0.01) {
+            std::cout << "<wpt lat=\"" << Coord::toLatitude(wn.y) << "\" lon=\"" <<  Coord::toLongitude(wn.x) << "\">" << std::endl;
+            std::cout << "</wpt>" << std::endl;
+        }
+    }
+    std::cout << "</gpx>" << std::endl;
 }
 
 void WeightedNodeSet::normalize() {
