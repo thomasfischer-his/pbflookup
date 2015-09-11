@@ -90,7 +90,7 @@ struct WayNodes {
     uint64_t *nodes;
 };
 
-enum RelationFlags {RoleOuter = 1};
+enum RelationFlags {RoleOuter = 1, RoleInner = 2, RoleInnerOuter = RoleOuter | RoleInner };
 
 struct RelationMem {
     RelationMem() {

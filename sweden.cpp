@@ -53,7 +53,7 @@ public:
     IdTree<RelationMem> *relmem;
 
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
-    std::map<int, std::deque<Coord> > scbcode_to_polygon, nuts3code_to_polygon;
+    std::map<int, std::vector<std::deque<Coord> > > scbcode_to_polygons, nuts3code_to_polygons;
 
     struct {
         std::vector<uint64_t> european[100];
@@ -168,15 +168,20 @@ public:
         return false;
     }
 
-    int nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::deque<Coord> > &code_to_polygon) {
-        if (code_to_polygon.empty()) {
+    std::vector<int> nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::vector<std::deque<Coord> > > &code_to_polygons) {
+        if (code_to_polygons.empty()) {
+            /// code_to_polygons in maps a code as given code (SCB, NUTS) to a vector (list) of polygons (list of coordinates)
+            /// This data structure may be empty when this function is called for the first time, so it has to be assembled first
+
             for (std::map<int, uint64_t>::const_iterator it = code_to_relationid.cbegin(); it != code_to_relationid.cend(); ++it) {
+                /// Go through all code-relation pairs ...
                 const int code = (*it).first;
                 const uint64_t relid = (*it).second;
                 RelationMem rel;
                 if (relmem->retrieve(relid, rel) && rel.num_members > 0) {
-                    std::deque<Coord> polygon;
+                    std::vector<std::deque<Coord> > polygonlist;
 
+                    /// Keep track of which ways of a relation have already been added to one of the polygons
                     bool *wayattached = new bool[rel.num_members];
                     uint32_t expected_outer_members = 0;
                     for (int i = rel.num_members - 1; i >= 0; --i) {
@@ -189,99 +194,141 @@ public:
                     /// may be required to identify all ways in the correct order for insertion
                     for (uint32_t wrap_around = 0; successful_additions < expected_outer_members && wrap_around < rel.num_members + 5; ++wrap_around)
                         for (uint32_t i = 0; i < rel.num_members && successful_additions < expected_outer_members; ++i) {
-                            if (wayattached[i]) continue;
-                            if (rel.members[i].type != OSMElement::Way) continue; ///< consider only ways as relation members
-                            if ((rel.member_flags[i] & RelationFlags::RoleOuter) == 0) continue; ///< consider only members of role 'outer'
+                            if (wayattached[i]) continue; ///< skip ways that got added in previous wrap_around iterations
+                            if (rel.members[i].type != OSMElement::Way) continue; ///< consider only ways as polygon boundaries
+                            if ((rel.member_flags[i] & RelationFlags::RoleInnerOuter) == 0) continue; ///< consider only members of role 'outer' or 'inner'
 
                             WayNodes wn;
-#ifdef DEBUG
-                            Coord coord;
-#endif // DEBUG
                             const uint64_t memid = rel.members[i].id;
                             if (waynodes->retrieve(memid, wn)) {
-                                if (addWayToPolygon(wn, polygon)) {
+                                bool successfullyAdded = false;
+                                for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); !successfullyAdded && it != polygonlist.end(); ++it) {
+                                    /// Test existing polygons if current way can be attached
+                                    if (addWayToPolygon(wn, *it)) {
+                                        successfullyAdded = true;
+                                    }
+                                }
+                                if (!successfullyAdded) {
+                                    /// No existing polygon was feasible to attach the way to,
+                                    /// so create a new polygon, add way, and add polygon to list of polygons
+                                    std::deque<Coord> polygon;
+                                    if (addWayToPolygon(wn, polygon)) {
+                                        successfullyAdded = true;
+                                        polygonlist.push_back(polygon);
+                                    }
+                                }
+
+                                if (successfullyAdded) {
                                     ++successful_additions;
                                     wayattached[i] = true;
                                 }
-                            }
-#ifdef DEBUG
-                            else if (coords->retrieve(memid, coord)) {
-                                /// ignoring node ids
                             } else {
                                 /// Warn about member ids that are not ways (and not nodes)
-                                Error::warn("Id %llu is member of relation %llu, but no way with this id is not known", memid, relid);
+                                Error::warn("Id %llu is way in relation %llu, but no nodes could be retrieved for this way", memid, relid);
                             }
-#endif // DEBUG
                         }
 
                     if (successful_additions < expected_outer_members) {
-#ifdef DEBUG
-                        Error::warn("The following ways could not be attached to polygon for relation %llu (%i<%i)", relid, successful_additions, expected_outer_members);
-                        Error::warn("Polyon start: lat=%.5f, lon=%.5f", (*polygon.cbegin()).latitude(), (*polygon.cbegin()).longitude());
-                        Error::warn("Polyon end: lat=%.5f, lon=%.5f", (*polygon.cend()).latitude(), (*polygon.cend()).longitude());
-                        for (int i = rel.num_members - 1; i >= 0; --i)
-                            if (!wayattached[i]) {
-                                Error::warn("  Relation member %llu of type %d", rel.members[i].id, rel.members[i].type);
-                                WayNodes wn;
-                                if (rel.members[i].type == OSMElement::Way && waynodes->retrieve(rel.members[i].id, wn)) {
-                                    Coord coord;
-                                    if (coords->retrieve(wn.nodes[0], coord)) {
-                                        Error::warn("    Start  lat=%.5f, lon=%.5f", coord.latitude(), coord.longitude());
-                                    }
-                                    if (coords->retrieve(wn.nodes[wn.num_nodes - 1], coord)) {
-                                        Error::warn("    End  lat=%.5f, lon=%.5f", coord.latitude(), coord.longitude());
-                                    }
-                                }
-                            }
-#else // DEBUG
                         Error::warn("Only %i out of %i elements could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
-#endif // DEBUG
                     }
 
                     delete[] wayattached;
+
+                    bool stillMatchingPolygons = true;
+                    while (stillMatchingPolygons && polygonlist.size() > 1) {
+                        stillMatchingPolygons = false;
+
+                        for (std::vector<std::deque<Coord> >::iterator itA = polygonlist.begin(); itA != polygonlist.end(); ++itA) {
+                            /// Look for 'open' polygons
+                            std::deque<Coord> &polygonA = *itA;
+                            const Coord &firstA = polygonA.front();
+                            const Coord &lastA = polygonA.back();
+                            if (firstA.x != lastA.x || firstA.y != lastA.y) {
+                                /// Look for a matching second polygon
+                                for (std::vector<std::deque<Coord> >::iterator itB = itA + 1; itB != polygonlist.end();) {
+                                    std::deque<Coord> &polygonB = *itB;
+                                    const Coord &firstB = polygonB.front();
+                                    const Coord &lastB = polygonB.back();
+                                    if (firstA.x == firstB.x && firstA.y == firstB.y) {
+                                        for (std::deque<Coord>::const_iterator itP = polygonB.cbegin() + 1; itP != polygonB.cend(); ++itP)
+                                            polygonA.push_front(*itP);
+                                        itB = polygonlist.erase(itB);
+                                        stillMatchingPolygons = true;
+                                    } else if (firstA.x == lastB.x && firstA.y == lastB.y) {
+                                        for (std::deque<Coord>::const_reverse_iterator itP = polygonB.crbegin() + 1; itP != polygonB.crend(); ++itP)
+                                            polygonA.push_front(*itP);
+                                        itB = polygonlist.erase(itB);
+                                        stillMatchingPolygons = true;
+                                    } else if (lastA.x == firstB.x && lastA.y == firstB.y) {
+                                        for (std::deque<Coord>::const_iterator itP = polygonB.cbegin() + 1; itP != polygonB.cend(); ++itP)
+                                            polygonA.push_back(*itP);
+                                        itB = polygonlist.erase(itB);
+                                        stillMatchingPolygons = true;
+                                    } else if (lastA.x == lastB.x && lastA.y == lastB.y) {
+                                        for (std::deque<Coord>::const_reverse_iterator itP = polygonB.crbegin() + 1; itP != polygonB.crend(); ++itP)
+                                            polygonA.push_back(*itP);
+                                        itB = polygonlist.erase(itB);
+                                        stillMatchingPolygons = true;
+                                    } else
+                                        ++itB;
+                                }
+                            }
+                        }
+                    }
 
                     if (successful_additions == expected_outer_members) {
                         /// If all members of the relation could be attached
                         /// to the polygon, the relation is contained completely
                         /// in the geographic database and as such may be considered
                         /// in the following analysis
-                        polygon.pop_back();
-                        code_to_polygon.insert(std::pair<int, std::deque<Coord> >(code, polygon));
+
+                        int i = 0;
+                        for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); it != polygonlist.end(); ++it, ++i) {
+                            std::deque<Coord> &polygon = *it;
+                            const Coord &first = polygon.front();
+                            const Coord &last = polygon.back();
+                            if (first.x == last.x && first.y == last.y) {
+                                /// First and last element in polygon are identical,
+                                /// but as that is redundant for the polygon, remove last element
+                                polygon.pop_back();
+                            } else
+                                Error::warn("Unexpectedly, the first and last element in polygon %d for code %d and relation %llu do not match", i, code, relid);
+                        }
+                        code_to_polygons.insert(std::pair<int, std::vector<std::deque<Coord> > >(code, polygonlist));
                     } else
                         Error::info("Could not insert relation %llu, not all ways found/known?", relid);
                 }
             }
         }
 
+        std::vector<int> result;
         Coord coord;
         if (coords->retrieve(nodeid, coord)) {
-            int resultCode = -1;
-            for (std::map<int, std::deque<Coord> >::const_iterator it = code_to_polygon.cbegin(); it != code_to_polygon.cend(); ++it) {
-                const int code = (*it).first;
-                /// For a good explanation, see here: http://alienryderflex.com/polygon/
-                const std::deque<Coord> &polygon = (*it).second;
-                const int polyCorners = polygon.size();
-                int j = polyCorners - 1;
-                bool oddNodes = false;
+            for (std::map<int, std::vector<std::deque<Coord> > >::const_iterator itA = code_to_polygons.cbegin(); itA != code_to_polygons.cend(); ++itA) {
+                const int code = (*itA).first;
+                for (std::vector<std::deque<Coord> >::const_iterator itB = (*itA).second.cbegin(); itB != (*itA).second.cend(); ++itB) {
+                    const std::deque<Coord> &polygon = *itB;
+                    /// For a good explanation, see here: http://alienryderflex.com/polygon/
+                    const int polyCorners = polygon.size();
+                    int j = polyCorners - 1;
+                    bool oddNodes = false;
 
-                for (int i = 0; i < polyCorners; i++) {
-                    if (((polygon[i].y < coord.y && polygon[j].y >= coord.y) || (polygon[j].y < coord.y && polygon[i].y >= coord.y)) && (polygon[i].x <= coord.x || polygon[j].x <= coord.x)) {
-                        const int intermediate = polygon[i].x + (coord.y - polygon[i].y) * (polygon[j].x - polygon[i].x) / (polygon[j].y - polygon[i].y);
-                        oddNodes ^= intermediate < coord.x;
+                    for (int i = 0; i < polyCorners; ++i) {
+                        if (((polygon[i].y < coord.y && polygon[j].y >= coord.y) || (polygon[j].y < coord.y && polygon[i].y >= coord.y)) && (polygon[i].x <= coord.x || polygon[j].x <= coord.x)) {
+                            const int intermediate = polygon[i].x + (coord.y - polygon[i].y) * (polygon[j].x - polygon[i].x) / (polygon[j].y - polygon[i].y);
+                            oddNodes ^= intermediate < coord.x;
+                        }
+                        j = i;
                     }
-                    j = i;
-                }
 
-                if (oddNodes) {
-                    if (resultCode >= 0)
-                        Error::warn("There is another code already matching for this area: %d != %d", resultCode, code);
-                    resultCode = code;
+                    if (oddNodes) {
+                        result.push_back(code);
+                    }
                 }
             }
-            return resultCode;
         }
 
-        return -1;
+        return result;
     }
 
     void loadSCBcodeNames() {
@@ -452,66 +499,99 @@ void Sweden::test() {
     if (d->coords->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
-    int scbcode = insideSCBarea(id);
-    if (scbcode <= 0)
+    std::vector<int> scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
         Error::warn("No SCB code found for node %llu", id);
-    else if (scbcode == 2361) {
-        Error::info("Found correct SCB code for node %llu is %i", id, scbcode);
-        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+    else if (scbcodes.front() == 2361) {
+        Error::info("Found correct SCB code for node %llu which is %i", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     } else {
-        Error::warn("Found SCB code for node %llu is %i, should be 2361", id, scbcode);
-        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+        Error::warn("Found SCB code for node %llu is %i, should be 2361 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
-    int nuts3code = insideNUTS3area(id);
-    if (nuts3code > 0) {
-        Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
-        Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
-    } else
-        Error::warn("No NUTS3 code found for node %llu", id);
+// FIXME nuts
 
     id = 541187594;
     if (d->coords->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
-    scbcode = insideSCBarea(id);
-    if (scbcode <= 0)
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
         Error::warn("No SCB code found for node %llu", id);
-    else if (scbcode == 2034) {
-        Error::info("Found correct SCB code for node %llu is %i", id, scbcode);
-        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+    else if (scbcodes.front() == 2034) {
+        Error::info("Found correct SCB code for node %llu which is %i", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     } else {
-        Error::warn("Found SCB code for node %llu is %i, should be 2034", id, scbcode);
-        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+        Error::warn("Found SCB code for node %llu is %i, should be 2034 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
-    nuts3code = insideNUTS3area(id);
-    if (nuts3code > 0) {
-        Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
-        Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
-    } else
-        Error::warn("No NUTS3 code found for node %llu", id);
+    // FIXME nuts
 
 
     id = 3170517078;
     if (d->coords->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
-    scbcode = insideSCBarea(id);
-    if (scbcode <= 0)
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
         Error::warn("No SCB code found for node %llu", id);
-    else if (scbcode == 2161) {
-        Error::info("Found correct SCB code for node %llu is %i", id, scbcode);
-        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+    else if (scbcodes.front() == 2161) {
+        Error::info("Found correct SCB code for node %llu which is %i", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     } else {
-        Error::warn("Found SCB code for node %llu is %i, should be 2161", id, scbcode);
-        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcode);
+        Error::warn("Found SCB code for node %llu is %i, should be 2161 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
-    nuts3code = insideNUTS3area(id);
-    if (nuts3code > 0) {
-        Error::info("NUTS3 code for node %llu is %i", id, nuts3code);
-        Error::debug("  http://nuts.geovocab.org/id/SE%i.html", nuts3code);
-    } else
-        Error::warn("No NUTS3 code found for node %llu", id);
+    // FIXME nuts
 
+    id = 3037352826;
+    if (d->coords->retrieve(id, coord)) {
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
+    }
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
+        Error::warn("No SCB code found for node %llu", id);
+    else if (scbcodes.front() == 2583) {
+        Error::info("Found correct SCB code for node %llu which is %i", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    } else {
+        Error::warn("Found SCB code for node %llu is %i, should be 2583 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    }
+    // FIXME nuts
+
+    id = 3037352827;
+    if (d->coords->retrieve(id, coord)) {
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
+    }
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
+        Error::warn("No SCB code found for node %llu", id);
+    else if (scbcodes.front() == 2518) {
+        Error::info("Found correct SCB code for node %llu which is %i", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    } else {
+        Error::warn("Found SCB code for node %llu is %i, should be 2518 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    }
+    // FIXME nuts
+
+    id = 3296599772;
+    if (d->coords->retrieve(id, coord)) {
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
+    }
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
+        Error::warn("No SCB code found for node %llu", id);
+    else if (scbcodes.size() == 2 && ((scbcodes.front() == 2518 && scbcodes.back() == 2583) || (scbcodes.front() == 2583 && scbcodes.back() == 2518))) {
+        Error::info("Found correct SCB codes for node %llu which are %i and %i", id, scbcodes.front(), scbcodes.back());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.back());
+    } else {
+        Error::warn("Found SCB code for node %llu is %i, should be 2518 and 2583", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    }
+    // FIXME nuts
 }
 
 std::ostream &Sweden::write(std::ostream &output) {
@@ -599,16 +679,16 @@ void Sweden::insertSCBarea(const int code, uint64_t relid) {
     d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
 
-int Sweden::insideSCBarea(uint64_t nodeid) {
-    return d->nodeIdToAreaCode(nodeid, d->scbcode_to_relationid, d->scbcode_to_polygon);
+std::vector<int> Sweden::insideSCBarea(uint64_t nodeid) {
+    return d->nodeIdToAreaCode(nodeid, d->scbcode_to_relationid, d->scbcode_to_polygons);
 }
 
 void Sweden::insertNUTS3area(const int code, uint64_t relid) {
     d->nuts3code_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
 
-int Sweden::insideNUTS3area(uint64_t nodeid) {
-    return d->nodeIdToAreaCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygon);
+std::vector<int> Sweden::insideNUTS3area(uint64_t nodeid) {
+    return d->nodeIdToAreaCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygons);
 }
 
 void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {

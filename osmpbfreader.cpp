@@ -31,131 +31,6 @@
 #include "swedishtexttree.h"
 #include "error.h"
 
-const uint64_t OsmPbfReader::exclaveInclaveWays[] = {
-    43222536,///<  Rattviks/Leksand
-    132851007,///< Kristianstad/Tomelilla
-    132851008,///< Kristianstad/Tomelilla
-    132865858,///< Simrishamn/Tomelilla
-    185009590,///< Simrishamn/Kristianstad
-    220234512,///< Rattviks/Leksand
-    220234513,///< Rattviks/Leksand
-    220234514,///< Rattviks/Leksand
-    220234515,///< Rattviks/Leksand
-    220234516,///< Rattviks/Leksand
-    220234517,///< Mora/Leksand
-    220234518,///< Rattviks/Leksand
-    220234519,///< Mora/Leksand
-    220234520,///< Rattviks/Leksand
-    220234521,///< Rattviks/Leksand
-    220234522,///< Rattviks/Mora
-    220234523,///< Rattviks/Leksand
-    220234524,///< Rattviks/Leksand
-    220234525,///< Rattviks/Mora
-    220234526,///< Rattviks/Mora
-    220234527,///< Rattviks/Leksand
-    220234529,///< Rattviks/Leksand
-    220234531,///< Rattviks/Leksand
-    220234534,///< Mora/Leksand
-    220234536,///< Rattviks/Leksand
-    220234538,///< Rattviks/Leksand
-    220234541,///< Mora/Leksand
-    248228620,///< Rattviks/Leksand
-    248228621,///< Mora/Leksand
-    248228622,///< Mora/Leksand
-    248228624,///< Mora/Leksand
-    248228625,///< Rattviks/Leksand
-    248228626,///< Mora/Leksand
-    248228627,///< Rattviks/Leksand
-    248228629,///< Rattviks/Mora
-    248228630,///< Rattviks/Leksand
-    248228631,///< Rattviks/Mora
-    265522459,///< Sater/Borlange
-    265522461,///< Sater/Borlange
-    265522463,///< Sater/Borlange
-    265522465,///< Sater/Borlange
-    265714858,///< Ludvika/Gagnef
-    265714859,///< Ludvika/Gagnef
-    293357456,///< Skovde/Skara/Falkoping
-    293357457,///< Skovde/Skara
-    293357458,///< Skovde/Skara/Falkoping
-    293357462,///< Skovde/Skara
-    316109917,///< Rattviks/Leksand
-    317893972,///< Alingsas/Lilla Edet
-    317893975,///< Lilla Edet/Ale
-    317893976,///< Lilla Edet/Ale
-    320653723,///< Overtornea/Pajala
-    320657324,///< Overtornea/Overkalix
-    320774776,///< Overtornea/Kalix
-    320843769,///< Overtornea/Kalix
-    320843770,///< Overkalix/Kalix
-    320844361,///< Overtornea/Kalix
-    320844363,///< Overtornea/Kalix
-    320858953,///< Overtornea/Haparanda
-    320861160,///< Overtornea/Kalix
-    320861815,///< Overtornea/Haparanda
-    320861816,///< Overtornea/Haparanda
-    320861817,///< Overtornea/Haparanda
-    320878424,///< Mullsjo/Falkoping
-    321283487,///< Lilla Edet/Ale
-    321283488,///< Lilla Edet/Ale
-    321283489,///< Lilla Edet/Ale
-    321283490,///< Lilla Edet/Ale
-    322861926,///< Overtornea/Haparanda
-    322861930,///< Overtornea/Haparanda
-    322861931,///< Overtornea/Haparanda
-    322861933,///< Overtornea/Haparanda
-    322861936,///< Overtornea/Haparanda
-    322865818,///< Overtornea/Haparanda
-    322865819,///< Overtornea/Haparanda
-    322865821,///< Overtornea/Haparanda
-    322865822,///< Overtornea/Haparanda
-    322865824,///< Overtornea/Haparanda
-    322865827,///< Overtornea/Haparanda
-    322869227,///< Overtornea/Haparanda
-    322869228,///< Overtornea/Haparanda
-    322869229,///< Overtornea/Haparanda
-    322869230,///< Overtornea/Haparanda
-    322896970,///< Overtornea/Haparanda
-    322896973,///< Overtornea/Haparanda
-    322896976,///< Overtornea/Haparanda
-    322896978,///< Overtornea/Haparanda
-    322896982,///< Overtornea/Haparanda
-    322896984,///< Overtornea/Haparanda
-    322896988,///< Overtornea/Haparanda
-    322896991,///< Overtornea/Haparanda
-    322896996,///< Overtornea/Haparanda
-    322897000,///< Overtornea/Haparanda
-    322897003,///< Overtornea/Haparanda
-    322897005,///< Overtornea/Haparanda
-    322897008,///< Overtornea/Haparanda
-    322899033,///< Overtornea/Haparanda
-    322899034,///< Overtornea/Haparanda
-    322899037,///< Overtornea/Haparanda
-    322899039,///< Overtornea/Haparanda
-    322921739,///< Overtornea/Pajala
-    322921747,///< Overtornea/Pajala
-    322921749,///< Overtornea/Pajala
-    322921751,///< Overtornea/Pajala
-    322921754,///< Overtornea/Pajala
-    322923364,///< Overtornea/Pajala
-    322924431,///< Overkalix/Pajala
-    322925103,///< Overkalix/Pajala
-    322925104,///< Overkalix/Pajala
-    322925105,///< Overtornea/Pajala
-    322925106,///< Overtornea/Haparanda
-    322957346,///< Skovde/Skara/Falkoping
-    327004712,///< Overkalix/Kalix
-    327004713,///< Overkalix/Kalix
-    327004714,///< Overkalix/Kalix
-    327004715,///< Overkalix/Kalix
-    327004716,///< Overkalix/Kalix
-    327004717,///< Overkalix/Kalix
-    327004719,///< Overkalix/Kalix
-    327004720,///< Overkalix/Kalix
-    327004721,///< Overkalix/Kalix
-    0
-};
-
 OsmPbfReader::OsmPbfReader()
 {
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
@@ -428,11 +303,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
                         const uint64_t wayId = pg.ways(w).id();
-                        bool isBlacklisted = false;
-                        for (int ei = 0; !isBlacklisted && exclaveInclaveWays[ei] > 0; ++ei)
-                            isBlacklisted = exclaveInclaveWays[ei] == wayId;
-                        if (isBlacklisted) continue; ///< skip black-listed ways
-
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
@@ -463,8 +333,6 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
                 if (pg.relations_size() > 0) {
                     found_items = true;
-                    static const int blacklistVectorSize = 8192;
-                    static bool blacklistVector[blacklistVectorSize];
 
                     const int maxrelations = pg.relations_size();
                     for (int i = 0; i < maxrelations; ++i) {
@@ -486,26 +354,20 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             }
                         }
 
-                        int countBlacklisted = 0;
                         uint64_t memId = 0;
-                        for (int k = 0; k < pg.relations(i).memids_size() && k < blacklistVectorSize; ++k) {
-                            memId += pg.relations(i).memids(k);
-                            bool isBlacklisted = false;
-                            for (int ei = 0; !isBlacklisted && exclaveInclaveWays[ei] > 0; ++ei)
-                                isBlacklisted = exclaveInclaveWays[ei] == memId;
-                            if (isBlacklisted) ++countBlacklisted;
-                            blacklistVector[k] = isBlacklisted;
-                        }
-
-                        RelationMem rm(pg.relations(i).memids_size() - countBlacklisted);
-                        memId = 0;
-                        int p = 0;
                         for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
                             memId += pg.relations(i).memids(k);
-                            if (k < blacklistVectorSize && blacklistVector[k]) continue; ///< skip black-listed ways
+                        }
+
+                        RelationMem rm(pg.relations(i).memids_size());
+                        memId = 0;
+                        for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
+                            memId += pg.relations(i).memids(k);
                             uint16_t flags = 0;
                             if (strcmp("outer", primblock.stringtable().s(pg.relations(i).roles_sid(k)).c_str()) == 0)
                                 flags |= RelationFlags::RoleOuter;
+                            else if (strcmp("inner", primblock.stringtable().s(pg.relations(i).roles_sid(k)).c_str()) == 0)
+                                flags |= RelationFlags::RoleInner;
                             OSMElement::ElementType type = OSMElement::Unknown;
                             if (pg.relations(i).types(k) == 0)
                                 type = OSMElement::Node;
@@ -515,12 +377,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                 type = OSMElement::Relation;
                             else
                                 Error::warn("Unknown relation type for member %llu in relation %llu : type=%d", memId, relId, pg.relations(i).types(k));
-                            rm.members[p] = OSMElement(memId, type);
-                            rm.member_flags[p] = flags;
-                            ++p;
+                            rm.members[k] = OSMElement(memId, type);
+                            rm.member_flags[k] = flags;
                         }
-                        if (p + countBlacklisted != pg.relations(i).memids_size())
-                            Error::err("Relation with black-listed ways has wrong size: p=%d  countBlacklisted=%d  num-members=%d", p, countBlacklisted, pg.relations(i).memids_size());
                         (*relmem)->insert(relId, rm);
                     }
                 }

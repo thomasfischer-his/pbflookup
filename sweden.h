@@ -37,9 +37,9 @@ public:
     std::ostream &write(std::ostream &output);
 
     void insertSCBarea(const int code, uint64_t relid);
-    int insideSCBarea(uint64_t nodeid);
+    std::vector<int> insideSCBarea(uint64_t nodeid);
     void insertNUTS3area(const int code, uint64_t relid);
-    int insideNUTS3area(uint64_t nodeid);
+    std::vector<int> insideNUTS3area(uint64_t nodeid);
 
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);

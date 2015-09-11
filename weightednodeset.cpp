@@ -169,7 +169,7 @@ void WeightedNodeSet::powerMunicipalityCluster(double p) {
     if (empty()) return;
 
     double change[size()];
-    int scbcode[size()];
+    std::vector<int> scbcode[size()];
     for (int i = size() - 1; i >= 0; --i) {
         change[i] = 0;
         scbcode[i] = sweden->insideSCBarea(at(i).id);
