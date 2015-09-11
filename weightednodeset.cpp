@@ -173,15 +173,16 @@ void WeightedNodeSet::powerMunicipalityCluster(double p) {
     for (int i = size() - 1; i >= 0; --i) {
         change[i] = 0;
         scbcode[i] = sweden->insideSCBarea(at(i).id);
+        if (scbcode[i].empty()) scbcode[i].push_back(-i - 1);
     }
 
     for (int i = size() - 2; i >= 0; --i)
-        for (unsigned int j = i + 1; j < size(); ++j)
-            if (scbcode[i] == scbcode[j]) {
+        for (unsigned int j = i + 1; j < size(); ++j) {
+            if (scbcode[i].front() == scbcode[j].front()) {
                 change[i] += at(i).weight * p;
                 change[j] += at(j).weight * p;
             }
-
+        }
 
     for (int i = size() - 1; i >= 0; --i) {
         WeightedNode &wn = at(i);
