@@ -220,19 +220,31 @@ std::vector<OSMElement> Tree::retrieve(const char *word) {
     Node *cur = root;
     unsigned int pos = 0;
     while (pos < code.size()) {
-        if (cur->children == NULL)
-            return result;
+        if (cur->children == NULL) {
+#ifdef DEBUG
+            Error::debug("SwedishText::Tree node has no children to follow for word %s at position %d", word, pos);
+#endif // DEBUG
+            return result; ///< empty
+        }
         Node *next = cur->children[code[pos]];
-        if (next == NULL)
-            return result;
+        if (next == NULL) {
+#ifdef DEBUG
+            Error::debug("SwedishText::Tree node has no children to follow for word %s at position %d for code %d", word, pos, code[pos]);
+#endif // DEBUG
+            return result; ///< empty
+        }
         ++pos;
         cur = next;
     }
 
     if (cur == NULL)
-        return result;
-    if (cur->ids == NULL)
-        return result;
+        return result; ///< empty
+    if (cur->elements_size == 0 || cur->elements == NULL) {
+#ifdef DEBUG
+        Error::debug("SwedishText::Tree did not find valid leaf for word %s", word);
+#endif // DEBUG
+        return result; ///< empty
+    }
 
     for (unsigned int idx = 1; idx < cur->elements_size && cur->elements[idx].id != 0; ++idx) {
         result.push_back(cur->elements[idx]);

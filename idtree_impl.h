@@ -150,6 +150,9 @@ public:
         uint64_t workingId = id;
         for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
             if (cur->children == NULL) {
+#ifdef DEBUG
+                Error::debug("IdTree node has no children to follow id %llu", id);
+#endif // DEBUG
                 return NULL;
             }
 
@@ -163,6 +166,9 @@ public:
 #endif // REVERSE_ID_TREE
 
             if (cur->children[lowerBits] == NULL) {
+#ifdef DEBUG
+                Error::debug("IdTree node has no children at pos %d to follow id %llu", lowerBits, id);
+#endif // DEBUG
                 return NULL;
             }
 
