@@ -146,6 +146,7 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
 }
 
 void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const {
+    static const std::string swedishWordRv("rv"); ///< as in Rv. 43
     static const std::string swedishWordWay("v\xc3\xa4g");
     static const std::string swedishWordTheWay("v\xc3\xa4gen");
     static const std::string swedishWordNationalWay("riksv\xc3\xa4g");
@@ -185,7 +186,7 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
                 Error::debug("Not a road number:%s", cur);
                 roadNumber = -1;
             }
-        } else if (i < words.size() - 1 && (swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+        } else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
             roadType = Sweden::National;
             char *next;
             const char *cur = words[i + 1].c_str();
