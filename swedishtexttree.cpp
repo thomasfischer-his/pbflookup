@@ -317,14 +317,14 @@ unsigned int Tree::code_char(const unsigned char &prev_c, const unsigned char &c
     if (c == 0)
         return 0;
     else if (c >= 'a' && c <= 'z')
-        return c - 'a' + 1; // 1..26
+        return c - 'a' + 1; /// 1..26
     else if (c >= '0' && c <= '9')
-        return c - '0' + 27; // 27..36
+        return c - '0' + 27; /// 27..36
     else if (prev_c == 0xc3) {
         switch (c) {
         case 0xa5: /// a-ring
             return 37;
-        case 0xa4: // a-uml
+        case 0xa4: /// a-uml
             return 38;
         case 0xb6: /// o-uml
             return 39;
@@ -350,5 +350,5 @@ unsigned int Tree::code_char(const unsigned char &prev_c, const unsigned char &c
         return code_unknown;
 }
 
-} // namespace SwedishText
+} /// namespace SwedishText
 
