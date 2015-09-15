@@ -97,13 +97,23 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
 }
 
 void WeightedNodeSet::dump() const {
+    double lat = 0.0, lon = 0.0, sumweight = 0.0;
     int i = 0;
-    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 10; ++it, ++i) {
+    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 20; ++it, ++i) {
         const WeightedNode &wn = *it;
         if (wn.weight > 0.01) {
             Error::info("Node %5i, id=%8llu, weight=%5.3f, x=%i, y=%i", i, wn.id, wn.weight, wn.x, wn.y);
             Error::debug("  http://www.openstreetmap.org/node/%llu", wn.id);
+            lat += Coord::toLatitude(wn.y) * wn.weight;
+            lon += Coord::toLongitude(wn.x) * wn.weight;
+            sumweight += wn.weight;
         }
+    }
+    if (sumweight > 0.0) {
+        lat /= sumweight;
+        lon /= sumweight;
+        Error::info("Center location: lat= %.5f  lon= %.5f", lat, lon);
+        Error::debug("  http://www.openstreetmap.org/#map=15/%.5f/%.5f", lat, lon);
     }
 }
 
