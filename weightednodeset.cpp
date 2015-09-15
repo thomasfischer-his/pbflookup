@@ -141,17 +141,19 @@ void WeightedNodeSet::powerCluster(double alpha, double p) {
         change[i] = 0;
 
     Error::info("alpha=%.7f  p=%.7f", alpha, p);
-    const double delta_ybound = (71.2 - 53.8) * 111412.24; ///< latitude
-    const double delta_xbound = (31.2 - 4.4) * 55799.98; ///< longitude
-    const double max_dist = sqrt(delta_ybound * delta_ybound + delta_xbound * delta_xbound);
+    static const int delta_ybound = (71.2 - 53.8) * decimeterDegreeLatitude + 0.5; ///< latitude
+    static const int delta_xbound = (31.2 - 4.4) * decimeterDegreeLongitude + 0.5; ///< longitude
+    static const int64_t max_distsq = (int64_t)delta_ybound * delta_ybound + (int64_t)delta_xbound * delta_xbound;
+    static const double max_dist = sqrt(max_distsq);
     for (int i = size() - 2; i >= 0; --i) {
         for (unsigned int j = i + 1; j < size(); ++j) {
             const int delta_y = at(i).y - at(j).y;
             const int delta_x = at(i).x - at(j).x;
-            const double dist = sqrt(delta_x * delta_x + delta_y * delta_y);
-            if (dist >= max_dist) {
+            const int64_t distsq = (int64_t)delta_x * delta_x + (int64_t)delta_y * delta_y;
+            if (distsq >= max_distsq) {
                 Error::warn("Distance is larger than max_dist");
             }
+            const double dist = sqrt(distsq);
             const double reldist = (max_dist - dist) / max_dist;
             const double poweredreldist = exp(log(reldist) * alpha) * p;
             change[i] += poweredreldist;

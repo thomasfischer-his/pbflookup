@@ -22,6 +22,9 @@
 
 #include "idtree.h"
 
+extern const double decimeterDegreeLongitude;
+extern const double decimeterDegreeLatitude;
+
 class Sweden
 {
 public:
