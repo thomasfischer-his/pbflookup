@@ -52,8 +52,12 @@ public:
     IdTree<WayNodes> *waynodes;
     IdTree<RelationMem> *relmem;
 
+    struct Region {
+        std::vector<std::deque<Coord> > polygons;
+        int minx, miny, maxx, maxy;
+    };
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
-    std::map<int, std::vector<std::deque<Coord> > > scbcode_to_polygons, nuts3code_to_polygons;
+    std::map<int, Region> scbcode_to_polygons, nuts3code_to_polygons;
 
     struct {
         std::vector<uint64_t> european[100];
@@ -168,7 +172,7 @@ public:
         return false;
     }
 
-    std::vector<int> nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, std::vector<std::deque<Coord> > > &code_to_polygons) {
+    std::vector<int> nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
         if (code_to_polygons.empty()) {
             /// code_to_polygons in maps a code as given code (SCB, NUTS) to a vector (list) of polygons (list of coordinates)
             /// This data structure may be empty when this function is called for the first time, so it has to be assembled first
@@ -177,6 +181,7 @@ public:
                 /// Go through all code-relation pairs ...
                 const int code = (*it).first;
                 const uint64_t relid = (*it).second;
+                int minx = INT_RANGE, miny = INT_RANGE, maxx = -1, maxy = -1;
                 RelationMem rel;
                 if (relmem->retrieve(relid, rel) && rel.num_members > 0) {
                     std::vector<std::deque<Coord> > polygonlist;
@@ -222,6 +227,18 @@ public:
                                 if (successfullyAdded) {
                                     ++successful_additions;
                                     wayattached[i] = true;
+
+                                    /// Go through all nodes inside the just added way,
+                                    /// retrieve coordinates and record min/max coordinates
+                                    /// later used to determine bounding rectangle around polygons
+                                    Coord c;
+                                    for (int i = wn.num_nodes - 1; i >= 0; --i)
+                                        if (coords->retrieve(wn.nodes[i], c)) {
+                                            if (c.x < minx) minx = c.x;
+                                            if (c.x > maxx) maxx = c.x;
+                                            if (c.y < miny) miny = c.y;
+                                            if (c.y > maxy) maxy = c.y;
+                                        }
                                 }
                             } else {
                                 /// Warn about member ids that are not ways (and not nodes)
@@ -295,7 +312,13 @@ public:
                             } else
                                 Error::warn("Unexpectedly, the first and last element in polygon %d for code %d and relation %llu do not match", i, code, relid);
                         }
-                        code_to_polygons.insert(std::pair<int, std::vector<std::deque<Coord> > >(code, polygonlist));
+                        Region region;
+                        region.polygons = polygonlist;
+                        region.minx = minx;
+                        region.miny = miny;
+                        region.maxx = maxx;
+                        region.maxy = maxy;
+                        code_to_polygons.insert(std::pair<int, Region>(code, region));
                     } else
                         Error::info("Could not insert relation %llu, not all ways found/known?", relid);
                 }
@@ -305,9 +328,12 @@ public:
         std::vector<int> result;
         Coord coord;
         if (coords->retrieve(nodeid, coord)) {
-            for (std::map<int, std::vector<std::deque<Coord> > >::const_iterator itA = code_to_polygons.cbegin(); itA != code_to_polygons.cend(); ++itA) {
+            for (std::map<int, Region>::const_iterator itA = code_to_polygons.cbegin(); itA != code_to_polygons.cend(); ++itA) {
+                const Region &region = (*itA).second;
+                if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) continue; ///< quick check if node is outside rectangle that encloses all polygons
+
                 const int code = (*itA).first;
-                for (std::vector<std::deque<Coord> >::const_iterator itB = (*itA).second.cbegin(); itB != (*itA).second.cend(); ++itB) {
+                for (std::vector<std::deque<Coord> >::const_iterator itB = region.polygons.cbegin(); itB != region.polygons.cend(); ++itB) {
                     const std::deque<Coord> &polygon = *itB;
                     /// For a good explanation, see here: http://alienryderflex.com/polygon/
                     const int polyCorners = polygon.size();
