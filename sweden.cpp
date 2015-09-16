@@ -330,7 +330,10 @@ public:
         if (coords->retrieve(nodeid, coord)) {
             for (std::map<int, Region>::const_iterator itA = code_to_polygons.cbegin(); itA != code_to_polygons.cend(); ++itA) {
                 const Region &region = (*itA).second;
-                if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) continue; ///< quick check if node is outside rectangle that encloses all polygons
+
+                /// Quick check if node is outside rectangle that encloses all polygons,
+                /// avoids costly operations further below
+                if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) continue;
 
                 const int code = (*itA).first;
                 for (std::vector<std::deque<Coord> >::const_iterator itB = region.polygons.cbegin(); itB != region.polygons.cend(); ++itB) {
