@@ -536,7 +536,7 @@ void Sweden::test() {
         Error::warn("Found SCB code for node %llu is %i, should be 2361 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
         Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
-// FIXME nuts
+    // FIXME nuts
 
     id = 541187594;
     if (d->coords->retrieve(id, coord)) {
