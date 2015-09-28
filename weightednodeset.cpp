@@ -117,6 +117,114 @@ void WeightedNodeSet::dump() const {
     }
 }
 
+void WeightedNodeSet::buildRingCluster() {
+    static const int maxRingCount = 6;
+    /// Used to keep fixed-point rational numbers in int types
+    static const int weightMultiplicationFactor = 1000;
+
+    if (!ringClusters.empty()) {
+        /// Clear any previous ring settings
+        ringClusters.clear();
+        for (auto it = begin(); it != end(); ++it) {
+            WeightedNode &wn = *it;
+            wn.usedInRingCluster = false;
+        }
+    }
+
+    /// Sort by weight, heaviest first
+    std::sort(begin(), end(), std::greater<WeightedNode>());
+    /// Go through all nodes, start from the heaviest
+    for (auto outerIt = begin(); outerIt != end(); ++outerIt) {
+        WeightedNode &centerWn = *outerIt;
+        if (centerWn.usedInRingCluster) continue; ///< Node is already used in some ring cluster
+
+        /// Start a new ring cluster
+        RingCluster ringCluster(centerWn.id);
+        centerWn.usedInRingCluster = true;
+        /// Initialize ring cluster's components
+        ringCluster.sumWeight = centerWn.weight;
+        ringCluster.weightedCenterX = centerWn.x * (centerWn.weight * weightMultiplicationFactor);
+        ringCluster.weightedCenterY = centerWn.y * (centerWn.weight * weightMultiplicationFactor);
+        ringCluster.neighbourNodeIds.push_back(&centerWn);
+
+        /// Build a data structure of rings, containing all so-far unused nodes
+        /// categorized by 'ring distance'
+        std::vector<WeightedNode *> nodesInRing[maxRingCount];
+        for (auto innerIt = begin(); innerIt != end(); ++innerIt) {
+            WeightedNode &wn = *innerIt;
+            if (wn.usedInRingCluster) continue; /// node already used, skip
+
+            const int64_t squareDistance = (int64_t)(wn.x - centerWn.x) * (wn.x - centerWn.x) + (int64_t)(wn.y - centerWn.y) * (wn.y - centerWn.y);
+            const int ring = squareDistanceToRing(squareDistance);
+            /// All rings more far away that the outmost ring are placed in this outmost ring
+            nodesInRing[ring < maxRingCount ? ring : maxRingCount - 1].push_back(&wn);
+        }
+
+        size_type num_members = 0;
+        /// Probe which rings should be part of this cluster
+        // TODO it is speculative which criteria should be applied for best results
+        for (ringCluster.ringSize = 0; ringCluster.ringSize < maxRingCount - 2; ++ringCluster.ringSize) ///< Skip outermost ring, collects all far-distant nodes
+        {
+            num_members += nodesInRing[ringCluster.ringSize].size();
+            if (ringCluster.ringSize >= 2 && num_members > nodesInRing[ringCluster.ringSize + 1].size() * 2)
+                break;
+        }
+
+        /// Go through all rings considered to be part of this cluster
+        for (int i = 0; i <= ringCluster.ringSize; ++i) {
+            /// Go through all nodes in each ring
+            for (auto innerIt = nodesInRing[i].begin(); innerIt != nodesInRing[i].end(); ++innerIt) {
+                WeightedNode &wn = *(*innerIt);
+                wn.usedInRingCluster = true; ///< Mark node as used in a ring cluster
+                ringCluster.sumWeight += wn.weight;
+                ringCluster.weightedCenterX += wn.x * (wn.weight * weightMultiplicationFactor);
+                ringCluster.weightedCenterY += wn.y * (wn.weight * weightMultiplicationFactor);
+            }
+            /// Record nodes as belonging to this ring cluster
+            ringCluster.neighbourNodeIds.insert(ringCluster.neighbourNodeIds.end(), nodesInRing[i].cbegin(), nodesInRing[i].cend());
+        }
+
+        /// Calculate cluster's weighted center
+        ringCluster.weightedCenterX /= ringCluster.sumWeight * weightMultiplicationFactor;
+        ringCluster.weightedCenterY /= ringCluster.sumWeight * weightMultiplicationFactor;
+
+        ringClusters.push_back(ringCluster);
+    }
+
+    /// Sort ring clusters by weight, heaviest first
+    std::sort(ringClusters.begin(), ringClusters.end(), std::greater<RingCluster>());
+}
+
+void WeightedNodeSet::dumpRingCluster() const {
+    Error::info("Number of Ring Clusters: %d    Number of nodes= %d", ringClusters.size(), size());
+    for (auto it = ringClusters.cbegin(); it != ringClusters.cend(); ++it) {
+        const RingCluster &ringCluster = *it;
+        Error::debug(" Center node= %llu", ringCluster.centerNodeId);
+        Error::debug("  Num nodes= %d", ringCluster.neighbourNodeIds.size());
+        Error::debug("  Ring size= %d", ringCluster.ringSize);
+        Error::debug("  Weight= %.2f", ringCluster.sumWeight);
+        Error::debug("  weightedCenter  lon= %.4f  lat= %.4f", Coord::toLongitude(ringCluster.weightedCenterX), Coord::toLatitude(ringCluster.weightedCenterY));
+    }
+}
+
+int WeightedNodeSet::squareDistanceToRing(int64_t sqDistInDecimeter) const {
+    int remaining = sqDistInDecimeter / 100000000; ///< to square-kilometers
+    if (remaining == 0) return 0; ///< less than 1km radius
+    int result = 1; ///< at least 1km radius
+
+    while (remaining >= 100) {
+        remaining /= 100; ///< steps of 10^2
+        result += 3; ///< three rings per power of 10
+    }
+
+    if (remaining >= 44) ///< approx (10/3*2)^2
+        return result + 2;
+    else if (remaining >= 11) ///< approx (10/3)^2
+        return result + 1;
+    else
+        return result;
+}
+
 void WeightedNodeSet::dumpGpx() const {
     std::cout << "<?xml version=\"1.0\"?>" << std::endl;
     std::cout << "<gpx creator=\"pbflookup\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:ogr=\"http://osgeo.org/gdal\" xmlns=\"http://www.topografix.com/GPX/1/1\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">" << std::endl;
