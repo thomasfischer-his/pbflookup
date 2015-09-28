@@ -99,7 +99,7 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
 void WeightedNodeSet::dump() const {
     double lat = 0.0, lon = 0.0, sumweight = 0.0;
     int i = 0;
-    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 20; ++it, ++i) {
+    for (WeightedNodeSet::const_iterator it = cbegin(); it != cend() && i < 20; ++it, ++i) {
         const WeightedNode &wn = *it;
         if (wn.weight > 0.01) {
             Error::info("Node %5i, id=%8llu, weight=%5.3f, x=%i, y=%i", i, wn.id, wn.weight, wn.x, wn.y);
@@ -229,18 +229,16 @@ void WeightedNodeSet::dumpGpx() const {
     std::cout << "<?xml version=\"1.0\"?>" << std::endl;
     std::cout << "<gpx creator=\"pbflookup\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:ogr=\"http://osgeo.org/gdal\" xmlns=\"http://www.topografix.com/GPX/1/1\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">" << std::endl;
     int i = 0;
-    for (WeightedNodeSet::const_iterator it = begin(); it != end() && i < 10; ++it, ++i) {
+    for (WeightedNodeSet::const_iterator it = cbegin(); it != cend() && i < 10; ++it, ++i) {
         const WeightedNode &wn = *it;
-        if (wn.weight > 0.01) {
-            std::cout << "<wpt lat=\"" << Coord::toLatitude(wn.y) << "\" lon=\"" <<  Coord::toLongitude(wn.x) << "\">" << std::endl;
-            std::cout << "</wpt>" << std::endl;
-        }
+        std::cout << "<wpt lat=\"" << Coord::toLatitude(wn.y) << "\" lon=\"" <<  Coord::toLongitude(wn.x) << "\">" << std::endl;
+        std::cout << "</wpt>" << std::endl;
     }
     std::cout << "</gpx>" << std::endl;
 }
 
 void WeightedNodeSet::normalize() {
-    if (begin() == end()) return; ///< empty vector
+    if (cbegin() == cend()) return; ///< empty vector
 
     /// Sort by weight, heaviest first
     std::sort(begin(), end(), std::greater<WeightedNode>());
