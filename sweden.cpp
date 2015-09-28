@@ -619,6 +619,23 @@ void Sweden::test() {
         Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
     // FIXME nuts
+
+    id = 2005653590;
+    if (d->coords->retrieve(id, coord)) {
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
+    }
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
+        Error::warn("No SCB code found for node %llu", id);
+    else if (scbcodes.size() == 2 && ((scbcodes.front() == 1880 && scbcodes.back() == 428) || (scbcodes.front() == 428 && scbcodes.back() == 1880))) {
+        Error::info("Found correct SCB codes for node %llu which are %04i and %04i", id, scbcodes.front(), scbcodes.back());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.back());
+    } else {
+        Error::warn("Found SCB code for node %llu is %04i, should be 1880 and 0428", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    }
+    // FIXME nuts
 }
 
 std::ostream &Sweden::write(std::ostream &output) {
