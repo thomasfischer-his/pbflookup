@@ -87,6 +87,9 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
             case OSMElement::Way:
                 appendWay(rm.members[i].id, weightPerMember);
                 break;
+            case OSMElement::Relation:
+                appendRelation(rm.members[i].id, weightPerMember);
+                break;
             default:
                 Error::debug("Can only append nodes or ways to relations (relation %llu, member %llu of type %d)", id, rm.members[i].id, rm.members[i].type);
             }
