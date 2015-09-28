@@ -258,10 +258,12 @@ int main(int argc, char *argv[])
                 Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
             }
 
+            /*
             timer.start();
-            //sweden->test();
+            sweden->test();
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+            */
         }
 
         timer.start();
