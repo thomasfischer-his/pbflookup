@@ -29,6 +29,7 @@ public:
     IdTree<WayNodes> *waynodes;
     IdTree<RelationMem> *relmem;
     Sweden *sweden;
+    std::vector<struct Sweden::Road> knownRoads;
 
     explicit Private(SwedishText::Tree *_swedishTextTree, IdTree<Coord> *_coords, IdTree<WayNodes> *_waynodes, IdTree<RelationMem> *_relmem, Sweden *_sweden)
         : swedishTextTree(_swedishTextTree), coords(_coords), waynodes(_waynodes), relmem(_relmem), sweden(_sweden)
@@ -151,6 +152,8 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
     static const std::string swedishWordTheWay("v\xc3\xa4gen");
     static const std::string swedishWordNationalWay("riksv\xc3\xa4g");
 
+    d->knownRoads.clear();
+
     for (size_t i = 0; i < words.size(); ++i) {
         uint16_t roadNumber = 0;
         Sweden::RoadType roadType = Sweden::National;
@@ -198,6 +201,7 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
             Error::info("Found road %i (type %i)", roadNumber, roadType);
 #endif // DEBUG
 
+            /*
             double weight = 2.0; ///< default weight for regional roads
             if (roadType == Sweden::National) weight = 5.0; ///< weight for national roads
             else if (roadType == Sweden::Europe) weight = 15.0; ///< weight for European roads
@@ -206,6 +210,18 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
             for (std::vector<uint64_t>::const_iterator it = ways.cbegin(); it != ways.cend(); ++it) {
                 wns.appendWay(*it, weight);
             }
+            */
+
+            bool known = false;
+            for (auto it = d->knownRoads.cbegin(); !known && it != d->knownRoads.cend(); ++it) {
+                const Sweden::Road &road = *it;
+                known = (road.type == roadType) && (road.number == roadNumber);
+            }
+            if (!known) d->knownRoads.push_back(Sweden::Road(roadType, roadNumber));
         }
     }
+}
+
+std::vector<struct Sweden::Road> &TokenProcessor::knownRoads() const {
+    return d->knownRoads;
 }

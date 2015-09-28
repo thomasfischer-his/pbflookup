@@ -19,12 +19,11 @@
 
 #include "idtree.h"
 #include "weightednodeset.h"
+#include "sweden.h"
 
 namespace SwedishText {
 class Tree;
 }
-
-class Sweden;
 
 class TokenProcessor
 {
@@ -34,6 +33,7 @@ public:
 
     void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
     void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
+    std::vector<struct Sweden::Road> &knownRoads() const;
 
 private:
     class Private;

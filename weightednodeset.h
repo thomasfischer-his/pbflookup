@@ -103,13 +103,14 @@ public:
     void buildRingCluster();
     void dumpRingCluster() const;
 
+    std::vector<RingCluster> ringClusters;
+
 private:
     IdTree<Coord> *n2c;
     IdTree<WayNodes> *w2n;
     IdTree<RelationMem> *relmem;
     Sweden *sweden;
 
-    std::vector<RingCluster> ringClusters;
 
     int squareDistanceToRing(int64_t sqDist) const;
 };

@@ -394,6 +394,27 @@ public:
             }
         }
     }
+
+    void closestPointToWay(int x, int y, uint64_t wayId, uint64_t &resultNodeId, int64_t &minSqDistance) {
+        resultNodeId = 0;
+        minSqDistance = INT64_MAX;
+
+        WayNodes wn;
+        if (waynodes->retrieve(wayId, wn)) {
+            for (uint32_t i = 0; i < wn.num_nodes; ++i) {
+                Coord c;
+                if (coords->retrieve(wn.nodes[i], c)) {
+                    const int64_t dX = c.x - x;
+                    const int64_t dY = c.y - y;
+                    const int64_t sqDist = dX * dX + dY * dY;
+                    if (sqDist < minSqDistance) {
+                        resultNodeId = wn.nodes[i];
+                        minSqDistance = sqDist;
+                    }
+                }
+            }
+        }
+    }
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
@@ -885,4 +906,41 @@ Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
         if (Private::EuropeanRoadNumbers[i] == roadNumber)
             return Europe;
     return LanE;
+}
+
+void Sweden::closestPointToRoad(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const {
+    std::vector<uint64_t> *wayIds = NULL;
+    bestNode = 0;
+    minSqDistance = INT64_MAX;
+
+    switch (road.type) {
+    case Europe:
+        wayIds = &d->roads.european[road.number];
+        break;
+    case National:
+        wayIds = &d->roads.national[road.number];
+    default:
+        const int idx = (int)road.type - 2;
+        if (idx >= 0 && idx < 22 && road.number > 0) {
+            const int firstIndex = road.number / 100, secondIndex = road.number % 100;
+            if (d->roads.regional[idx] != NULL && d->roads.regional[idx][firstIndex] != NULL && d->roads.regional[idx][firstIndex][secondIndex] != NULL)
+                wayIds = d->roads.regional[idx][firstIndex][secondIndex];
+        }
+    }
+
+    if (wayIds != NULL) {
+        for (auto it = wayIds->cbegin(); it != wayIds->cend(); ++it) {
+            const uint64_t &wayId = *it;
+            uint64_t node = 0;
+            int64_t dist = INT64_MAX;
+            d->closestPointToWay(x, y, wayId, node, dist);
+            if (dist < minSqDistance) {
+                minSqDistance = dist;
+                bestNode = node;
+            }
+        }
+        if (minSqDistance < INT64_MAX && bestNode > 0) {
+            Error::debug("Closest node of road %d to x=%d,y=%d is node %llu at distance %.3f km", road.number, x, y, bestNode, sqrt(minSqDistance) / 10000.0);
+        }
+    }
 }

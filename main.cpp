@@ -241,6 +241,19 @@ int main(int argc, char *argv[])
                 wns.buildRingCluster();
                 wns.dumpRingCluster();
 
+                if (!wns.ringClusters.empty()) {
+                    if (tokenProcessor.knownRoads().empty())
+                        Error::warn("No roads known");
+                    else
+                        for (auto it = tokenProcessor.knownRoads().cbegin(); it != tokenProcessor.knownRoads().cend(); ++it) {
+                            const Sweden::Road &road = *it;
+                            int64_t minSqDistance = INT64_MAX;
+                            uint64_t bestNode = 0;
+                            sweden->closestPointToRoad(wns.ringClusters.front().weightedCenterX, wns.ringClusters.front().weightedCenterY, road, bestNode, minSqDistance);
+                        }
+                } else
+                    Error::warn("wns.ringClusters is empty");
+
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
             }
