@@ -16,8 +16,6 @@
 
 #include "weightednodeset.h"
 
-#include <cmath>
-
 #include <algorithm>
 #include <iostream>
 
@@ -28,11 +26,6 @@ WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *_n2c, IdTree<WayNodes> *_w2n, Id
     : n2c(_n2c), w2n(_w2n), relmem(_relmem), sweden(_sweden)
 {
     /// nothing
-}
-
-bool WeightedNodeSet::appendNode(uint64_t id, int s, size_t wordlen) {
-    const double weight = 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
-    return appendNode(id, weight);
 }
 
 bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
@@ -52,11 +45,6 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
         return false;
 }
 
-bool WeightedNodeSet::appendWay(uint64_t id, int s, size_t wordlen) {
-    const double weight = 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
-    return appendWay(id, weight);
-}
-
 bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
     WayNodes wn;
     const bool found = w2n->retrieve(id, wn);
@@ -67,11 +55,6 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
         return true;
     } else
         return false;
-}
-
-bool WeightedNodeSet::appendRelation(uint64_t id, int s, size_t wordlen) {
-    const double weight = 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
-    return appendRelation(id, weight);
 }
 
 bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {

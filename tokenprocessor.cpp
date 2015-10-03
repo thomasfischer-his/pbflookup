@@ -16,6 +16,8 @@
 
 #include "tokenprocessor.h"
 
+#include <cmath>
+
 #include "sweden.h"
 #include "swedishtexttree.h"
 
@@ -88,6 +90,10 @@ public:
 
         return Sweden::UnknownRoadType;
     }
+
+    static inline double initialWeight(int s, size_t wordlen) {
+        return 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
+    }
 };
 
 TokenProcessor::TokenProcessor(SwedishText::Tree *swedishTextTree, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem, Sweden *sweden)
@@ -126,17 +132,17 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/node/%llu", id);
 #endif // DEBUG
-                            wns.appendNode(id, s, wordlen);
+                            wns.appendNode(id, Private::initialWeight(s, wordlen));
                         } else if (type == OSMElement::Way) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/way/%llu", id);
 #endif // DEBUG
-                            wns.appendWay(id, s, wordlen);
+                            wns.appendWay(id, Private::initialWeight(s, wordlen));
                         } else if (type == OSMElement::Relation) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
 #endif // DEBUG
-                            wns.appendRelation(id, s, wordlen);
+                            wns.appendRelation(id, Private::initialWeight(s, wordlen));
                         } else
                             Error::warn("  Neither node, way, nor relation: %llu", id);
                     }
