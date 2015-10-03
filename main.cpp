@@ -30,6 +30,7 @@
 #include "weightednodeset.h"
 #include "sweden.h"
 #include "tokenprocessor.h"
+#include "htmloutput.h"
 
 using namespace std;
 
@@ -234,17 +235,18 @@ int main(int argc, char *argv[])
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
         if (relmem != NULL && w2n != NULL && n2c != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
+            Tokenizer tokenizer(mapname);
+            std::vector<std::string> words;
+            WeightedNodeSet wns(n2c, w2n, relmem, sweden);
+
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
             if (textfile.is_open()) {
                 Error::info("Reading token from '%s'", filenamebuffer);
-                Tokenizer tokenizer(mapname);
-                std::vector<std::string> words;
                 timer.start();
                 tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 
-                WeightedNodeSet wns(n2c, w2n, relmem, sweden);
 
                 TokenProcessor tokenProcessor(swedishTextTree, n2c, w2n, relmem, sweden);
                 tokenProcessor.evaluteWordCombinations(words, wns);
@@ -289,6 +291,9 @@ int main(int argc, char *argv[])
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
             */
+
+            HtmlOutput htmlOutput(tokenizer, *nodeNames, wns);
+            htmlOutput.write(words, std::string("/tmp/html"));
         }
 
         timer.start();
