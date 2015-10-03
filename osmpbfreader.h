@@ -59,7 +59,7 @@ public:
     ~OsmPbfReader();
 
     SwedishText::Tree *parse(std::istream &input);
-    bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **, IdTree<WayNodes> **, IdTree<RelationMem> **, Sweden **sweden);
+    bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **,  IdTree<WriteableString> **, IdTree<WayNodes> **, IdTree<RelationMem> **, Sweden **sweden);
 
 private:
     /// Buffer for reading a compressed blob from file

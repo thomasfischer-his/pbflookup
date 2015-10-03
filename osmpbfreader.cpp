@@ -47,9 +47,10 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem, Sweden **sweden) {
+bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WriteableString> **nodeNames, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem, Sweden **sweden) {
     *swedishTextTree = NULL;
     *n2c = NULL;
+    *nodeNames = NULL;
     *w2n = NULL;
     *relmem = NULL;
     *sweden = NULL;
@@ -61,6 +62,9 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     *n2c = new IdTree<Coord>();
     if (n2c == NULL)
         Error::err("Could not allocate memory for n2c");
+    *nodeNames = new IdTree<WriteableString>();
+    if (nodeNames == NULL)
+        Error::err("Could not allocate memory for nodeNames");
     *w2n = new IdTree<WayNodes>();
     if (w2n == NULL)
         Error::err("Could not allocate memory for w2n");
@@ -252,6 +256,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                 const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
+                                (*nodeNames)->insert(id, WriteableString(primblock.stringtable().s(pg.nodes(j).keys(k))));
                             }
                         }
                     }
@@ -290,6 +295,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                                     const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(value), element);
                                     if (!result)
                                         Error::warn("Cannot insert %s", primblock.stringtable().s(value).c_str());
+                                    (*nodeNames)->insert(last_id, WriteableString(primblock.stringtable().s(value)));
                                 }
                             }
                         }

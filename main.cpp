@@ -77,6 +77,27 @@ void loadOrSaveN2c(IdTree<Coord> **n2c, const char *tempdir, const char *mapname
     }
 }
 
+void loadOrSaveNodeNames(IdTree<WriteableString> **nodeNames, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*nodeNames != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream nnfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(nnfile);
+        (*nodeNames)->write(out);
+    } else {
+        snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
+        Error::debug("Reading from '%s'", filenamebuffer);
+        ifstream nnfile(filenamebuffer);
+        boost::iostreams::filtering_istream in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(nnfile);
+        *nodeNames = new IdTree<WriteableString>(in);
+    }
+}
+
 void loadOrSaveW2n(IdTree<WayNodes> **w2n, const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
     if (*w2n != NULL) {
@@ -145,6 +166,7 @@ int main(int argc, char *argv[])
         IdTree<Coord> *n2c = NULL;
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
+        IdTree<WriteableString> *nodeNames = NULL;
         Sweden *sweden = NULL;
 
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
@@ -157,7 +179,7 @@ int main(int argc, char *argv[])
             if (length < 10) {
                 Timer timer;
                 OsmPbfReader osmPbfReader;
-                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
+                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &nodeNames, &w2n, &relmem, &sweden);
                 int64_t cputime, walltime;
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
@@ -165,7 +187,7 @@ int main(int argc, char *argv[])
         } else {
             Timer timer;
             OsmPbfReader osmPbfReader;
-            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
+            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &nodeNames, &w2n, &relmem, &sweden);
             int64_t cputime, walltime;
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
@@ -180,6 +202,8 @@ int main(int argc, char *argv[])
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveN2c(loadOrSaveN2c, &n2c, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadOrSaveNodeNames(loadOrSaveNodeNames, &nodeNames, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveW2n(loadOrSaveW2n, &w2n, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrRelMem(loadOrSaveRelMem, &relmem, tempdir, mapname);
@@ -189,12 +213,13 @@ int main(int argc, char *argv[])
         Error::debug("Waiting for threads to join");
         threadLoadOrSaveSwedishTextTree.join();
         threadLoadOrSaveN2c.join();
+        threadLoadOrSaveNodeNames.join();
         threadLoadOrSaveW2n.join();
         threadLoadOrRelMem.join();
         threadSaveSweden.join();
         Error::debug("All threads joined");
 
-        if (sweden == NULL && n2c != NULL && w2n != NULL && relmem != NULL) {
+        if (sweden == NULL && n2c != NULL && nodeNames != NULL && w2n != NULL && relmem != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
             ifstream swedenfile(filenamebuffer);
@@ -208,7 +233,7 @@ int main(int argc, char *argv[])
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
-        if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL && sweden != NULL) {
+        if (relmem != NULL && w2n != NULL && n2c != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
             if (textfile.is_open()) {
@@ -271,6 +296,8 @@ int main(int argc, char *argv[])
             delete swedishTextTree;
         if (n2c != NULL)
             delete n2c;
+        if (nodeNames != NULL)
+            delete nodeNames;
         if (w2n != NULL)
             delete w2n;
         if (relmem != NULL)
