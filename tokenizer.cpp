@@ -49,6 +49,8 @@ private:
     }
 
 public:
+    std::vector<std::string> input_lines;
+
     Private(Tokenizer *parent, const char *mapname)
         : p(parent) {
         char filenamebuffer[1024];
@@ -102,10 +104,12 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
     std::string line, lastword;
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
     std::unordered_set<std::string> known_words;
+    d->input_lines.clear();
 
     while (getline(input, line))
     {
         if (line[0] == 0 || line[0] == '#') continue; // skip empty lines and comments
+        d->input_lines.push_back(line);
 
         unsigned char prev_c = 0;
         for (std::string::iterator it = line.begin(); it != line.end(); ++it) {
@@ -140,4 +144,13 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
     }
 
     return words.size();
+}
+
+std::string Tokenizer::input_text() const {
+    std::string result;
+    for (auto it = d->input_lines.cbegin(); it != d->input_lines.cend(); ++it) {
+        if (!result.empty()) result.append("\n");
+        result.append(*it);
+    }
+    return result;
 }
