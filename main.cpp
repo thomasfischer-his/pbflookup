@@ -30,6 +30,7 @@
 #include "weightednodeset.h"
 #include "sweden.h"
 #include "tokenprocessor.h"
+#include "htmloutput.h"
 
 using namespace std;
 
@@ -74,6 +75,27 @@ void loadOrSaveN2c(IdTree<Coord> **n2c, const char *tempdir, const char *mapname
         in.push(boost::iostreams::gzip_decompressor());
         in.push(n2cfile);
         *n2c = new IdTree<Coord>(in);
+    }
+}
+
+void loadOrSaveNodeNames(IdTree<WriteableString> **nodeNames, const char *tempdir, const char *mapname) {
+    char filenamebuffer[1024];
+    if (*nodeNames != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        ofstream nnfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(nnfile);
+        (*nodeNames)->write(out);
+    } else {
+        snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
+        Error::debug("Reading from '%s'", filenamebuffer);
+        ifstream nnfile(filenamebuffer);
+        boost::iostreams::filtering_istream in;
+        in.push(boost::iostreams::gzip_decompressor());
+        in.push(nnfile);
+        *nodeNames = new IdTree<WriteableString>(in);
     }
 }
 
@@ -145,6 +167,7 @@ int main(int argc, char *argv[])
         IdTree<Coord> *n2c = NULL;
         IdTree<WayNodes> *w2n = NULL;
         IdTree<RelationMem> *relmem = NULL;
+        IdTree<WriteableString> *nodeNames = NULL;
         Sweden *sweden = NULL;
 
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
@@ -157,7 +180,7 @@ int main(int argc, char *argv[])
             if (length < 10) {
                 Timer timer;
                 OsmPbfReader osmPbfReader;
-                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
+                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &nodeNames, &w2n, &relmem, &sweden);
                 int64_t cputime, walltime;
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
@@ -165,7 +188,7 @@ int main(int argc, char *argv[])
         } else {
             Timer timer;
             OsmPbfReader osmPbfReader;
-            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &w2n, &relmem, &sweden);
+            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &nodeNames, &w2n, &relmem, &sweden);
             int64_t cputime, walltime;
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
@@ -180,6 +203,8 @@ int main(int argc, char *argv[])
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveN2c(loadOrSaveN2c, &n2c, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadOrSaveNodeNames(loadOrSaveNodeNames, &nodeNames, tempdir, mapname);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveW2n(loadOrSaveW2n, &w2n, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrRelMem(loadOrSaveRelMem, &relmem, tempdir, mapname);
@@ -189,12 +214,13 @@ int main(int argc, char *argv[])
         Error::debug("Waiting for threads to join");
         threadLoadOrSaveSwedishTextTree.join();
         threadLoadOrSaveN2c.join();
+        threadLoadOrSaveNodeNames.join();
         threadLoadOrSaveW2n.join();
         threadLoadOrRelMem.join();
         threadSaveSweden.join();
         Error::debug("All threads joined");
 
-        if (sweden == NULL && n2c != NULL && w2n != NULL && relmem != NULL) {
+        if (sweden == NULL && n2c != NULL && nodeNames != NULL && w2n != NULL && relmem != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
             ifstream swedenfile(filenamebuffer);
@@ -208,35 +234,66 @@ int main(int argc, char *argv[])
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
-        if (relmem != NULL && w2n != NULL && n2c != NULL && swedishTextTree != NULL && sweden != NULL) {
+        if (relmem != NULL && w2n != NULL && n2c != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
+            Tokenizer tokenizer(mapname);
+            std::vector<std::string> words;
+            WeightedNodeSet wns(n2c, w2n, relmem, sweden);
+
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
             if (textfile.is_open()) {
                 Error::info("Reading token from '%s'", filenamebuffer);
-                Tokenizer tokenizer(mapname);
-                std::vector<std::string> words;
                 timer.start();
                 tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 
-                WeightedNodeSet wns(n2c, w2n, relmem, sweden);
 
                 TokenProcessor tokenProcessor(swedishTextTree, n2c, w2n, relmem, sweden);
                 tokenProcessor.evaluteWordCombinations(words, wns);
                 tokenProcessor.evaluteRoads(words, wns);
 
-                //wns.powerCluster(2.0, 2.0 / wns.size());
+                /*
+                Error::debug("Running 'powerCluster'");
+                wns.powerCluster(2.0, 2.0 / wns.size());
+                Error::debug("Running 'powerMunicipalityCluster'");
+                wns.powerMunicipalityCluster(5.0 / wns.size());
+                Error::debug("Running 'normalize'");
                 wns.normalize();
-                //wns.dump();
+                wns.dumpGpx();
+                */
+
+                Error::debug("Running 'powerCluster'");
+                wns.powerCluster(2.0, 2.0 / wns.size());
+                Error::debug("Running 'buildRingCluster'");
+                wns.buildRingCluster();
+                wns.dumpRingCluster();
+
+                if (!wns.ringClusters.empty()) {
+                    if (tokenProcessor.knownRoads().empty())
+                        Error::warn("No roads known");
+                    else
+                        for (auto it = tokenProcessor.knownRoads().cbegin(); it != tokenProcessor.knownRoads().cend(); ++it) {
+                            const Sweden::Road &road = *it;
+                            int64_t minSqDistance = INT64_MAX;
+                            uint64_t bestNode = 0;
+                            sweden->closestPointToRoad(wns.ringClusters.front().weightedCenterX, wns.ringClusters.front().weightedCenterY, road, bestNode, minSqDistance);
+                        }
+                } else
+                    Error::warn("wns.ringClusters is empty");
 
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
             }
 
+            /*
             timer.start();
             sweden->test();
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+            */
+
+            HtmlOutput htmlOutput(tokenizer, *nodeNames, wns);
+            htmlOutput.write(words, std::string("/tmp/html"));
         }
 
         timer.start();
@@ -244,6 +301,8 @@ int main(int argc, char *argv[])
             delete swedishTextTree;
         if (n2c != NULL)
             delete n2c;
+        if (nodeNames != NULL)
+            delete nodeNames;
         if (w2n != NULL)
             delete w2n;
         if (relmem != NULL)

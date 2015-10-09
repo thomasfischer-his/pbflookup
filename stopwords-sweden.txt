@@ -133,6 +133,7 @@ ha
 hade
 haft
 han
+hand
 hans
 har
 heller
@@ -211,6 +212,7 @@ långsamt
 långt
 man
 med
+medan
 mellan
 men
 mer
@@ -323,6 +325,7 @@ så
 sådan
 sådana
 sådant
+ta
 tack
 tidig
 tidigare
@@ -394,6 +397,7 @@ vårt
 ännu
 är
 även
+år
 åt
 åtminstone
 åtta

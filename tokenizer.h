@@ -24,10 +24,13 @@ class Tokenizer
 {
 public:
     enum Multiplicity { Unique = 0, Duplicates = 1 };
+
     explicit Tokenizer(const char *mapname);
     ~Tokenizer();
 
     int read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity);
+
+    std::string input_text() const;
 
 private:
     class Private;

@@ -29,6 +29,15 @@ class Sweden
 {
 public:
     enum RoadType {Europe = 0, National = 1, LanM = 2, LanK = 3, LanI = 4, LanH = 5, LanG = 6, LanN = 7, LanO = 8, LanF = 9, LanE = 10, LanD = 11, LanAB = 12, LanC = 13, LanU = 14, LanT = 15, LanS = 16, LanW = 17, LanX = 18, LanZ = 19, LanY = 20, LanAC = 21, LanBD = 22, UnknownRoadType = 23};
+    struct Road {
+        Road(Sweden::RoadType _type, int _number)
+            : type(_type), number(_number) {
+            /// nothing
+        }
+
+        Sweden::RoadType type;
+        int number;
+    };
 
     explicit Sweden(IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem);
     explicit Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem);
@@ -51,6 +60,8 @@ public:
     * or roads in East Gothland
     */
     static RoadType identifyEroad(uint16_t roadNumber);
+
+    void closestPointToRoad(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const;
 
 private:
     class Private;

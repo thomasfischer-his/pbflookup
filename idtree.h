@@ -183,6 +183,46 @@ struct RelationMem {
     uint16_t *member_flags;
 };
 
+class WriteableString : public std::string {
+public:
+    WriteableString()
+        : std::string() {
+        /// nothing
+    }
+
+    WriteableString(const std::string &other)
+        : std::string(other) {
+        /// nothing
+    }
+
+    WriteableString(std::istream &input)
+        : std::string() {
+        size_t len;
+        input.read((char *)&len, sizeof(len));
+        if (!input)
+            Error::err("Could not string len from input stream");
+        char *data = (char *)malloc(sizeof(char) * len);
+        input.read(data, len);
+        if (!input)
+            Error::err("Could not read coordinates from input stream");
+
+        append(data, len);
+        free(data);
+    }
+
+    std::ostream &write(std::ostream &output) {
+        const char *data = c_str();
+        const size_t len = strlen(data);
+        output.write((char *)&len, sizeof(len));
+        if (!output)
+            Error::err("Could not write coordinates to output stream");
+        output.write(data, len);
+        if (!output)
+            Error::err("Could not write coordinates to output stream");
+        return output;
+    }
+};
+
 struct Coord {
     Coord() {
         x = y = 0;

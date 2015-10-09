@@ -26,12 +26,13 @@ struct WeightedNode {
         id = 0;
         weight = 0.0;
         x = y = 0;
+        usedInRingCluster = false;
     }
 
     explicit WeightedNode(uint64_t _id, double _weight, int _y, int _x)
         : id(_id), weight(_weight), x(_x), y(_y)
     {
-        /// nothing
+        usedInRingCluster = false;
     }
 
     bool operator< (const WeightedNode &other) const
@@ -47,17 +48,40 @@ struct WeightedNode {
     uint64_t id;
     double weight;
     int x, y;
+    bool usedInRingCluster;
+};
+
+struct RingCluster {
+    explicit RingCluster(uint64_t _centerNodeId)
+        : centerNodeId(_centerNodeId) {
+        ringSize = -1;
+        sumWeight = 0.0;
+        weightedCenterX = weightedCenterY = 0;
+    }
+
+    bool operator< (const RingCluster &other) const
+    {
+        return sumWeight < other.sumWeight;
+    }
+
+    inline bool operator> (const RingCluster &other) const
+    {
+        return !operator<(other);
+    }
+
+    uint64_t centerNodeId;
+    std::vector<WeightedNode *> neighbourNodeIds;
+    int ringSize;
+    double sumWeight;
+    int64_t weightedCenterX, weightedCenterY;
 };
 
 class WeightedNodeSet : public std::vector<WeightedNode> {
 public:
     WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem, Sweden *sweden);
-    bool appendNode(uint64_t id, int s, size_t wordlen);
-    bool appendNode(uint64_t id, double weight = 1.0);
-    bool appendWay(uint64_t id, int s, size_t wordlen);
-    bool appendWay(uint64_t id, double weight = 1.0);
-    bool appendRelation(uint64_t id, int s, size_t wordlen);
-    bool appendRelation(uint64_t id, double weight = 1.0);
+    bool appendNode(uint64_t id, double weight);
+    bool appendWay(uint64_t id, double weight);
+    bool appendRelation(uint64_t id, double weight);
 
     void dump() const;
     void dumpGpx() const;
@@ -66,11 +90,26 @@ public:
     void powerCluster(double alpha, double p);
     void powerMunicipalityCluster(double p);
 
+    /**
+     * Put nodes into ring-based clusters.
+     * Starting from a heavy, central node, add nodes to a grown cluster
+     * until the number of nearby nodes drops off.
+     * Every node can only be in one cluster, i.e. becomes tabu for any
+     * other cluster.
+     */
+    void buildRingCluster();
+    void dumpRingCluster() const;
+
+    std::vector<RingCluster> ringClusters;
+
 private:
     IdTree<Coord> *n2c;
     IdTree<WayNodes> *w2n;
     IdTree<RelationMem> *relmem;
     Sweden *sweden;
+
+
+    int squareDistanceToRing(int64_t sqDist) const;
 };
 
 #endif // WEIGHTED_NODE_SET_H

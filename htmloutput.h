@@ -14,30 +14,26 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>.  *
  ***************************************************************************/
 
-#ifndef TOKENPROCESSOR_H
-#define TOKENPROCESSOR_H
+#ifndef HTMLOUTPUT_H
+#define HTMLOUTPUT_H
 
-#include "idtree.h"
+#include <string>
+
+#include "tokenizer.h"
 #include "weightednodeset.h"
-#include "sweden.h"
+#include "idtree.h"
 
-namespace SwedishText {
-class Tree;
-}
-
-class TokenProcessor
+class HtmlOutput
 {
 public:
-    explicit TokenProcessor(SwedishText::Tree *swedishTextTree, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem, Sweden *sweden);
-    ~TokenProcessor();
+    explicit HtmlOutput(const Tokenizer &tokenizer, const IdTree<WriteableString> &nodeNames, const WeightedNodeSet &wns);
+    ~HtmlOutput();
 
-    void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    std::vector<struct Sweden::Road> &knownRoads() const;
+    bool write(const std::vector<std::string> &tokenizedWords, const std::string &outputDirectory) const;
 
 private:
     class Private;
     Private *const d;
 };
 
-#endif // TOKENPROCESSOR_H
+#endif // HTMLOUTPUT_H

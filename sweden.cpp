@@ -397,6 +397,27 @@ public:
             }
         }
     }
+
+    void closestPointToWay(int x, int y, uint64_t wayId, uint64_t &resultNodeId, int64_t &minSqDistance) {
+        resultNodeId = 0;
+        minSqDistance = INT64_MAX;
+
+        WayNodes wn;
+        if (waynodes->retrieve(wayId, wn)) {
+            for (uint32_t i = 0; i < wn.num_nodes; ++i) {
+                Coord c;
+                if (coords->retrieve(wn.nodes[i], c)) {
+                    const int64_t dX = c.x - x;
+                    const int64_t dY = c.y - y;
+                    const int64_t sqDist = dX * dX + dY * dY;
+                    if (sqDist < minSqDistance) {
+                        resultNodeId = wn.nodes[i];
+                        minSqDistance = sqDist;
+                    }
+                }
+            }
+        }
+    }
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
@@ -539,7 +560,7 @@ void Sweden::test() {
         Error::warn("Found SCB code for node %llu is %i, should be 2361 (%d codes in total)", id, scbcodes.front(), scbcodes.size());
         Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
-// FIXME nuts
+    // FIXME nuts
 
     id = 541187594;
     if (d->coords->retrieve(id, coord)) {
@@ -619,6 +640,23 @@ void Sweden::test() {
         Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.back());
     } else {
         Error::warn("Found SCB code for node %llu is %i, should be 2518 and 2583", id, scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+    }
+    // FIXME nuts
+
+    id = 2005653590;
+    if (d->coords->retrieve(id, coord)) {
+        Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
+    }
+    scbcodes = insideSCBarea(id);
+    if (scbcodes.empty())
+        Error::warn("No SCB code found for node %llu", id);
+    else if (scbcodes.size() == 2 && ((scbcodes.front() == 1880 && scbcodes.back() == 428) || (scbcodes.front() == 428 && scbcodes.back() == 1880))) {
+        Error::info("Found correct SCB codes for node %llu which are %04i and %04i", id, scbcodes.front(), scbcodes.back());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
+        Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.back());
+    } else {
+        Error::warn("Found SCB code for node %llu is %04i, should be 1880 and 0428", id, scbcodes.front());
         Error::debug("  http://www.ekonomifakta.se/sv/Fakta/Regional-statistik/Din-kommun-i-siffror/Oversikt-for-region/?region=%i", scbcodes.front());
     }
     // FIXME nuts
@@ -871,4 +909,41 @@ Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
         if (Private::EuropeanRoadNumbers[i] == roadNumber)
             return Europe;
     return LanE;
+}
+
+void Sweden::closestPointToRoad(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const {
+    std::vector<uint64_t> *wayIds = NULL;
+    bestNode = 0;
+    minSqDistance = INT64_MAX;
+
+    switch (road.type) {
+    case Europe:
+        wayIds = &d->roads.european[road.number];
+        break;
+    case National:
+        wayIds = &d->roads.national[road.number];
+    default:
+        const int idx = (int)road.type - 2;
+        if (idx >= 0 && idx < 22 && road.number > 0) {
+            const int firstIndex = road.number / 100, secondIndex = road.number % 100;
+            if (d->roads.regional[idx] != NULL && d->roads.regional[idx][firstIndex] != NULL && d->roads.regional[idx][firstIndex][secondIndex] != NULL)
+                wayIds = d->roads.regional[idx][firstIndex][secondIndex];
+        }
+    }
+
+    if (wayIds != NULL) {
+        for (auto it = wayIds->cbegin(); it != wayIds->cend(); ++it) {
+            const uint64_t &wayId = *it;
+            uint64_t node = 0;
+            int64_t dist = INT64_MAX;
+            d->closestPointToWay(x, y, wayId, node, dist);
+            if (dist < minSqDistance) {
+                minSqDistance = dist;
+                bestNode = node;
+            }
+        }
+        if (minSqDistance < INT64_MAX && bestNode > 0) {
+            Error::debug("Closest node of road %d to x=%d,y=%d is node %llu at distance %.3f km", road.number, x, y, bestNode, sqrt(minSqDistance) / 10000.0);
+        }
+    }
 }
