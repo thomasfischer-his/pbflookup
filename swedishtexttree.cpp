@@ -18,36 +18,34 @@
 
 #include "error.h"
 
-namespace SwedishText {
+const int SwedishTextTree::num_codes = 48;
+const unsigned int SwedishTextTree::default_num_indices = 8;
+const int SwedishTextTree::code_word_sep = SwedishTextTree::num_codes - 2;
+const int SwedishTextTree::code_unknown = SwedishTextTree::num_codes - 1;
 
-const int Tree::num_codes = 48;
-const unsigned int Tree::default_num_indices = 8;
-const int Tree::code_word_sep = Tree::num_codes - 2;
-const int Tree::code_unknown = Tree::num_codes - 1;
-
-Node::Node() {
+SwedishTextNode::SwedishTextNode() {
     children = NULL;
     elements_size = 0;
     elements = NULL;
 }
 
-Node::Node(std::istream &input) {
+SwedishTextNode::SwedishTextNode(std::istream &input) {
     char chr;
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'N') {
         children = NULL;
     } else if (chr == 'C') {
-        const size_t bytes = Tree::num_codes * sizeof(Node *);
-        children = (Node **)malloc(bytes);
+        const size_t bytes = SwedishTextTree::num_codes * sizeof(SwedishTextNode *);
+        children = (SwedishTextNode **)malloc(bytes);
 
-        for (int i = 0; i < Tree::num_codes; ++i) {
+        for (int i = 0; i < SwedishTextTree::num_codes; ++i) {
             input.read((char *)&chr, sizeof(chr));
             if (chr == '0') {
                 /// No child at this position
                 children[i] = NULL;
             } else if (chr == '1') {
-                children[i] = new Node(input);
+                children[i] = new SwedishTextNode(input);
             } else
                 Error::warn("Expected '0' or '1', got '0x%02x'", chr);
         }
@@ -67,16 +65,16 @@ Node::Node(std::istream &input) {
         Error::warn("Expected 'n' or 'i', got '0x%02x'", chr);
 }
 
-Node::~Node() {
+SwedishTextNode::~SwedishTextNode() {
     if (children != NULL) {
-        for (int i = 0; i < Tree::num_codes; ++i)
+        for (int i = 0; i < SwedishTextTree::num_codes; ++i)
             if (children[i] != NULL) delete children[i];
         free(children);
     }
     if (elements != NULL) free(elements);
 }
 
-std::ostream &Node::write(std::ostream &output) {
+std::ostream &SwedishTextNode::write(std::ostream &output) {
     char chr = '\0';
     if (children == NULL) {
         chr = 'N';
@@ -84,7 +82,7 @@ std::ostream &Node::write(std::ostream &output) {
     } else {
         chr = 'C';
         output.write((char *)&chr, sizeof(chr));
-        for (int i = 0; i < Tree::num_codes; ++i) {
+        for (int i = 0; i < SwedishTextTree::num_codes; ++i) {
             if (children[i] == NULL) {
                 chr = '0';
                 output.write((char *)&chr, sizeof(chr));
@@ -110,25 +108,25 @@ std::ostream &Node::write(std::ostream &output) {
 }
 
 
-Tree::Tree() {
-    root = new Node();
+SwedishTextTree::SwedishTextTree() {
+    root = new SwedishTextNode();
     _size = 0;
 }
 
-Tree::Tree(std::istream &input) {
-    root = new Node(input);
+SwedishTextTree::SwedishTextTree(std::istream &input) {
+    root = new SwedishTextNode(input);
     _size = 0;
 }
 
-Tree::~Tree() {
+SwedishTextTree::~SwedishTextTree() {
     delete root;
 }
 
-std::ostream &Tree::write(std::ostream &output) {
+std::ostream &SwedishTextTree::write(std::ostream &output) {
     return root->write(output);
 }
 
-bool Tree::insert(const std::string &input, const OSMElement &element) {
+bool SwedishTextTree::insert(const std::string &input, const OSMElement &element) {
     bool result = true;
     std::vector<std::string> words;
     const int num_components = separate_words(input, words);
@@ -157,26 +155,26 @@ bool Tree::insert(const std::string &input, const OSMElement &element) {
         return false;
 }
 
-bool Tree::internal_insert(const char *word, const OSMElement &element) {
+bool SwedishTextTree::internal_insert(const char *word, const OSMElement &element) {
     ++_size;
     std::vector<unsigned int> code = code_word(word);
     if (code.empty())
         return false;
 
-    Node *cur = root;
+    SwedishTextNode *cur = root;
     unsigned int pos = 0;
     while (pos < code.size()) {
         const unsigned int nc = code[pos];
         if (cur->children == NULL) {
-            cur->children = (Node **)calloc(num_codes, sizeof(Node *));
+            cur->children = (SwedishTextNode **)calloc(num_codes, sizeof(SwedishTextNode *));
             if (cur->children == NULL) {
                 Error::err("Could not allocate memory for cur->children");
                 return false;
             }
         }
-        Node *next = cur->children[nc];
+        SwedishTextNode *next = cur->children[nc];
         if (next == NULL) {
-            next = cur->children[nc] = new Node();
+            next = cur->children[nc] = new SwedishTextNode();
             if (next == NULL) {
                 Error::err("Could not allocate memory for next Node");
                 return false;
@@ -213,11 +211,11 @@ bool Tree::internal_insert(const char *word, const OSMElement &element) {
     return true;
 }
 
-std::vector<OSMElement> Tree::retrieve(const char *word) {
+std::vector<OSMElement> SwedishTextTree::retrieve(const char *word) {
     std::vector<unsigned int> code = code_word(word);
     std::vector<OSMElement> result;
 
-    Node *cur = root;
+    SwedishTextNode *cur = root;
     unsigned int pos = 0;
     while (pos < code.size()) {
         if (cur->children == NULL) {
@@ -226,7 +224,7 @@ std::vector<OSMElement> Tree::retrieve(const char *word) {
 #endif // DEBUG
             return result; ///< empty
         }
-        Node *next = cur->children[code[pos]];
+        SwedishTextNode *next = cur->children[code[pos]];
         if (next == NULL) {
 #ifdef DEBUG
             Error::debug("SwedishText::Tree node has no children to follow for word %s at position %d for code %d", word, pos, code[pos]);
@@ -253,11 +251,11 @@ std::vector<OSMElement> Tree::retrieve(const char *word) {
     return result;
 }
 
-size_t Tree::size() const {
+size_t SwedishTextTree::size() const {
     return _size;
 }
 
-int Tree::separate_words(const std::string &input, std::vector<std::string> &words) const {
+int SwedishTextTree::separate_words(const std::string &input, std::vector<std::string> &words) const {
     std::string lastword;
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
 
@@ -283,14 +281,14 @@ int Tree::separate_words(const std::string &input, std::vector<std::string> &wor
     return words.size();
 }
 
-unsigned char Tree::utf8tolower(const unsigned char &prev_c, unsigned char c) const {
+unsigned char SwedishTextTree::utf8tolower(const unsigned char &prev_c, unsigned char c) const {
     if ((c >= 'A' && c <= 'Z') ||
             (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */))
         c |= 0x20;
     return c;
 }
 
-std::vector<unsigned int> Tree::code_word(const char *word)  const {
+std::vector<unsigned int> SwedishTextTree::code_word(const char *word)  const {
     std::vector<unsigned int> result;
 
     const unsigned int len = strlen(word);
@@ -313,7 +311,7 @@ std::vector<unsigned int> Tree::code_word(const char *word)  const {
     return result;
 }
 
-unsigned int Tree::code_char(const unsigned char &prev_c, const unsigned char &c) const {
+unsigned int SwedishTextTree::code_char(const unsigned char &prev_c, const unsigned char &c) const {
     if (c == 0)
         return 0;
     else if (c >= 'a' && c <= 'z')
@@ -349,6 +347,3 @@ unsigned int Tree::code_char(const unsigned char &prev_c, const unsigned char &c
     } else
         return code_unknown;
 }
-
-} /// namespace SwedishText
-

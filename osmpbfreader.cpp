@@ -30,6 +30,7 @@
 
 #include "swedishtexttree.h"
 #include "error.h"
+#include "globalobjects.h"
 
 OsmPbfReader::OsmPbfReader()
 {
@@ -47,31 +48,33 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTree, IdTree<Coord> **n2c, IdTree<WriteableString> **nodeNames, IdTree<WayNodes> **w2n, IdTree<RelationMem> **relmem, Sweden **sweden) {
-    *swedishTextTree = NULL;
-    *n2c = NULL;
-    *nodeNames = NULL;
-    *w2n = NULL;
-    *relmem = NULL;
-    *sweden = NULL;
+bool OsmPbfReader::parse(std::istream &input) {
+    swedishTextTree = NULL;
+    node2Coord = NULL;
+    nodeNames = NULL;
+    wayNodes = NULL;
+    relMembers = NULL;
+    sweden = NULL;
 
     if (!input || !input.good())
         return false;
 
-    *swedishTextTree = new SwedishText::Tree();
-    *n2c = new IdTree<Coord>();
-    if (n2c == NULL)
-        Error::err("Could not allocate memory for n2c");
-    *nodeNames = new IdTree<WriteableString>();
+    swedishTextTree = new SwedishTextTree();
+    if (swedishTextTree == NULL)
+        Error::err("Could not allocate memory for swedishTextTree");
+    node2Coord = new IdTree<Coord>();
+    if (node2Coord == NULL)
+        Error::err("Could not allocate memory for node2Coord");
+    nodeNames = new IdTree<WriteableString>();
     if (nodeNames == NULL)
         Error::err("Could not allocate memory for nodeNames");
-    *w2n = new IdTree<WayNodes>();
-    if (w2n == NULL)
-        Error::err("Could not allocate memory for w2n");
-    *relmem = new IdTree<RelationMem>();
-    if (relmem == NULL)
+    wayNodes = new IdTree<WayNodes>();
+    if (wayNodes == NULL)
+        Error::err("Could not allocate memory for wayNodes");
+    relMembers = new IdTree<RelationMem>();
+    if (relMembers == NULL)
         Error::err("Could not allocate memory for relmem");
-    *sweden = new Sweden(*n2c, *w2n, *relmem);
+    sweden = new Sweden();
     if (sweden == NULL)
         Error::err("Could not allocate memory for Sweden");
 
@@ -245,18 +248,18 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                     for (int j = 0; j < maxnodes; ++j) {
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        (*n2c)->insert(pg.nodes(j).id(), Coord::fromLatLon(lon, lat));
+                        node2Coord->insert(pg.nodes(j).id(), Coord::fromLatLon(lon, lat));
 
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const uint64_t id = pg.nodes(j).id();
-                                (*n2c)->increaseUseCounter(id);
+                                node2Coord->increaseUseCounter(id);
                                 const OSMElement element(id, OSMElement::Node);
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), element);
+                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
-                                (*nodeNames)->insert(id, WriteableString(primblock.stringtable().s(pg.nodes(j).keys(k))));
+                                nodeNames->insert(id, WriteableString(primblock.stringtable().s(pg.nodes(j).keys(k))));
                             }
                         }
                     }
@@ -273,7 +276,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        (*n2c)->insert(last_id, Coord::fromLatLon(last_lon, last_lat));
+                        node2Coord->insert(last_id, Coord::fromLatLon(last_lon, last_lat));
 
                         bool isKey = true;
                         int key = 0, value = 0;
@@ -290,12 +293,12 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
 
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
-                                    (*n2c)->increaseUseCounter(last_id);
+                                    node2Coord->increaseUseCounter(last_id);
                                     const OSMElement element(last_id, OSMElement::Node);
-                                    const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(value), element);
+                                    const bool result = swedishTextTree->insert(primblock.stringtable().s(value), element);
                                     if (!result)
                                         Error::warn("Cannot insert %s", primblock.stringtable().s(value).c_str());
-                                    (*nodeNames)->insert(last_id, WriteableString(primblock.stringtable().s(value)));
+                                    nodeNames->insert(last_id, WriteableString(primblock.stringtable().s(value)));
                                 }
                             }
                         }
@@ -313,11 +316,11 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const OSMElement element(wayId, OSMElement::Way);
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.ways(w).vals(k)), element);
+                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.ways(w).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
                             } else if (strcmp("ref", ckey) == 0) {
-                                (*sweden)->insertWayAsRoad(wayId, primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
+                                sweden->insertWayAsRoad(wayId, primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
                             }
                         }
 
@@ -327,13 +330,13 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
                         }
 
-                        const int simplifiedWaySize = applyRamerDouglasPeucker(pg.ways(w), *n2c, simplifiedWay);
+                        const int simplifiedWaySize = applyRamerDouglasPeucker(pg.ways(w), simplifiedWay);
 
                         WayNodes wn(simplifiedWaySize);
                         memcpy(wn.nodes, simplifiedWay, sizeof(uint64_t)*simplifiedWaySize);
                         for (int k = 0; k < simplifiedWaySize; ++k)
-                            (*n2c)->increaseUseCounter(simplifiedWay[k]);
-                        (*w2n)->insert(wayId, wn);
+                            node2Coord->increaseUseCounter(simplifiedWay[k]);
+                        wayNodes->insert(wayId, wn);
                     }
                 }
 
@@ -348,15 +351,15 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const OSMElement element(relId, OSMElement::Relation);
-                                const bool result = (*swedishTextTree)->insert(primblock.stringtable().s(pg.relations(i).vals(k)), element);
+                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.relations(i).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
                             } else if (strcmp("ref:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
-                                (*sweden)->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), relId);
+                                sweden->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), relId);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
-                                (*sweden)->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), relId);
+                                sweden->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), relId);
                             }
                         }
 
@@ -386,7 +389,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
                             rm.members[k] = OSMElement(memId, type);
                             rm.member_flags[k] = flags;
                         }
-                        (*relmem)->insert(relId, rm);
+                        relMembers->insert(relId, rm);
                     }
                 }
 
@@ -410,7 +413,7 @@ bool OsmPbfReader::parse(std::istream &input, SwedishText::Tree **swedishTextTre
     return true;
 }
 
-int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result) {
+int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, uint64_t *result) {
     uint64_t nodeId = 0;
     const int numberOfNodes = ways.refs_size();
     for (int i = 0; i < numberOfNodes; ++i) {
@@ -430,7 +433,7 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coo
         int dnode = -1;
         for (int i = a + 1; i < b; ++i) {
             if (result[i] == 0) continue;
-            const int dsquare = shortestSquareDistanceToSegment(result[a], result[i], result[b], n2c);
+            const int dsquare = shortestSquareDistanceToSegment(result[a], result[i], result[b]);
             if (dsquare > dmax) {
                 dmax = dsquare;
                 dnode = i;
@@ -444,7 +447,7 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coo
         }
         else
             for (int i = a + 1; i < b; ++i)
-                if (n2c->useCounter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
+                if (node2Coord->useCounter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
                     result[i] = 0;
                 }
     }
@@ -458,10 +461,10 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coo
     return p;
 }
 
-int OsmPbfReader::shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const {
+int OsmPbfReader::shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB) const {
     Coord coordA, coordInBetween, coordB;
 
-    if (n2c->retrieve(nodeA, coordA) && n2c->retrieve(nodeInBetween, coordInBetween) && n2c->retrieve(nodeB, coordB)) {
+    if (node2Coord->retrieve(nodeA, coordA) && node2Coord->retrieve(nodeInBetween, coordInBetween) && node2Coord->retrieve(nodeB, coordB)) {
         /// http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
         const int d1 = coordB.x - coordA.x;
         const int d2 = coordB.y - coordA.y;

@@ -14,29 +14,18 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>.  *
  ***************************************************************************/
 
-#ifndef TOKENPROCESSOR_H
-#define TOKENPROCESSOR_H
+#ifndef GLOBAL_OBJECTS_H
+#define GLOBAL_OBJECTS_H
 
-#include "weightednodeset.h"
+#include "idtree.h"
+#include "swedishtexttree.h"
 #include "sweden.h"
 
-namespace SwedishText {
-class Tree;
-}
+extern IdTree<WayNodes> *wayNodes; ///< defined in 'main.cpp'
+extern IdTree<Coord> *node2Coord; ///< defined in 'main.cpp'
+extern IdTree<RelationMem> *relMembers; ///< defined in 'main.cpp'
+extern IdTree<WriteableString> *nodeNames; ///< defined in 'main.cpp'
+extern SwedishTextTree *swedishTextTree; ///< defined in 'main.cpp'
+extern Sweden *sweden; ///< defined in 'main.cpp'
 
-class TokenProcessor
-{
-public:
-    explicit TokenProcessor();
-    ~TokenProcessor();
-
-    void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    std::vector<struct Sweden::Road> &knownRoads() const;
-
-private:
-    class Private;
-    Private *const d;
-};
-
-#endif // TOKENPROCESSOR_H
+#endif // GLOBAL_OBJECTS_H

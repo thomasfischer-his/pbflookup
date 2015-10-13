@@ -20,21 +20,16 @@
 
 #include "sweden.h"
 #include "swedishtexttree.h"
+#include "globalobjects.h"
 
 #define min(a,b) ((b)>(a)?(a):(b))
 
 class TokenProcessor::Private
 {
 public:
-    SwedishText::Tree *swedishTextTree;
-    IdTree<Coord> *coords;
-    IdTree<WayNodes> *waynodes;
-    IdTree<RelationMem> *relmem;
-    Sweden *sweden;
     std::vector<struct Sweden::Road> knownRoads;
 
-    explicit Private(SwedishText::Tree *_swedishTextTree, IdTree<Coord> *_coords, IdTree<WayNodes> *_waynodes, IdTree<RelationMem> *_relmem, Sweden *_sweden)
-        : swedishTextTree(_swedishTextTree), coords(_coords), waynodes(_waynodes), relmem(_relmem), sweden(_sweden)
+    explicit Private()
     {
         /// nothing
     }
@@ -96,8 +91,8 @@ public:
     }
 };
 
-TokenProcessor::TokenProcessor(SwedishText::Tree *swedishTextTree, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem, Sweden *sweden)
-    : d(new Private(swedishTextTree, coords, waynodes, relmem, sweden))
+TokenProcessor::TokenProcessor()
+    : d(new Private())
 {
     /// nothing
 }
@@ -119,7 +114,7 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
             }
 
             const size_t wordlen = strlen(combined);
-            std::vector<OSMElement> id_list = d->swedishTextTree->retrieve(combined);
+            std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined);
             if (!id_list.empty()) {
                 if (id_list.size() > 1000)
                     Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);

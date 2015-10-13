@@ -26,7 +26,7 @@
 class HtmlOutput
 {
 public:
-    explicit HtmlOutput(const Tokenizer &tokenizer, const IdTree<WriteableString> &nodeNames, const WeightedNodeSet &wns);
+    explicit HtmlOutput(const Tokenizer &tokenizer, const WeightedNodeSet &wns);
     ~HtmlOutput();
 
     bool write(const std::vector<std::string> &tokenizedWords, const std::string &outputDirectory) const;

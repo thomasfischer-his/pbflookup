@@ -24,15 +24,13 @@
 
 #include "types.h"
 
-namespace SwedishText {
+struct SwedishTextNode;
 
-struct Node;
-
-class Tree {
+class SwedishTextTree {
 public:
-    explicit Tree();
-    explicit Tree(std::istream &input);
-    ~Tree();
+    explicit SwedishTextTree();
+    explicit SwedishTextTree(std::istream &input);
+    ~SwedishTextTree();
 
     bool insert(const std::string &input, const OSMElement &element);
     std::vector<OSMElement> retrieve(const char *word);
@@ -48,7 +46,7 @@ private:
     static const int code_word_sep;
     static const int code_unknown;
 
-    Node *root;
+    SwedishTextNode *root;
     size_t _size;
 
     bool internal_insert(const char *word, const OSMElement &element);
@@ -59,18 +57,16 @@ private:
     unsigned int code_char(const unsigned char &prev_c, const unsigned char &c) const;
 };
 
-struct Node {
-    explicit Node();
-    explicit Node(std::istream &input);
-    ~Node();
+struct SwedishTextNode {
+    explicit SwedishTextNode();
+    explicit SwedishTextNode(std::istream &input);
+    ~SwedishTextNode();
 
     std::ostream &write(std::ostream &output);
 
-    Node **children;
+    SwedishTextNode **children;
     size_t elements_size;
     OSMElement *elements;
 };
-
-} // namespace SwedishText
 
 #endif // SWEDISHTEXTTREE_H

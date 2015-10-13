@@ -25,6 +25,7 @@
 #include <sstream>
 
 #include "error.h"
+#include "globalobjects.h"
 
 class HtmlOutput::Private
 {
@@ -33,11 +34,10 @@ private:
 
 public:
     const Tokenizer &tokenizer;
-    const IdTree<WriteableString> &nodeNames;
     const WeightedNodeSet &wns;
 
-    explicit Private(HtmlOutput *parent, const Tokenizer &_tokenizer, const IdTree<WriteableString> &_nodeNames, const WeightedNodeSet &_wns)
-        : p(parent), tokenizer(_tokenizer), nodeNames(_nodeNames), wns(_wns) {
+    explicit Private(HtmlOutput *parent, const Tokenizer &_tokenizer, const WeightedNodeSet &_wns)
+        : p(parent), tokenizer(_tokenizer), wns(_wns) {
         /// nothing
     }
 
@@ -50,8 +50,8 @@ public:
     }
 };
 
-HtmlOutput::HtmlOutput(const Tokenizer &tokenizer, const IdTree<WriteableString> &nodeNames, const WeightedNodeSet &wns)
-    : d(new HtmlOutput::Private(this, tokenizer, nodeNames, wns)) {
+HtmlOutput::HtmlOutput(const Tokenizer &tokenizer, const WeightedNodeSet &wns)
+    : d(new HtmlOutput::Private(this, tokenizer, wns)) {
     /// nothing
 }
 

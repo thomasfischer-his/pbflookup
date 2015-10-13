@@ -31,8 +31,15 @@
 #include "sweden.h"
 #include "tokenprocessor.h"
 #include "htmloutput.h"
+#include "global.h"
+#include "globalobjects.h"
 
-using namespace std;
+IdTree<WayNodes> *wayNodes = NULL; ///< declared in 'globalobjects.h'
+IdTree<Coord> *node2Coord = NULL; ///< declared in 'globalobjects.h'
+IdTree<RelationMem> *relMembers = NULL; ///< declared in 'globalobjects.h'
+IdTree<WriteableString> *nodeNames = NULL; ///< declared in 'globalobjects.h'
+SwedishTextTree *swedishTextTree = NULL; ///< declared in 'globalobjects.h'
+Sweden *sweden = NULL; ///< declared in 'globalobjects.h'
 
 inline bool ends_with(std::string const &value, std::string const &ending)
 {
@@ -40,113 +47,113 @@ inline bool ends_with(std::string const &value, std::string const &ending)
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
-void loadOrSaveSwedishTextTree(SwedishText::Tree **swedishTextTree, const char *tempdir, const char *mapname) {
+void loadOrSaveSwedishTextTree(const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
-    if (*swedishTextTree != NULL) {
+    if (swedishTextTree != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
         Error::debug("Writing to '%s'", filenamebuffer);
-        ofstream swedishtexttreefile(filenamebuffer);
-        (*swedishTextTree)->write(swedishtexttreefile);
+        std::ofstream swedishtexttreefile(filenamebuffer);
+        swedishTextTree->write(swedishtexttreefile);
         swedishtexttreefile.close();
     } else {
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
         Error::debug("Reading from '%s'", filenamebuffer);
-        ifstream swedishtexttreefile(filenamebuffer);
-        *swedishTextTree = new SwedishText::Tree(swedishtexttreefile);
+        std::ifstream swedishtexttreefile(filenamebuffer);
+        swedishTextTree = new SwedishTextTree(swedishtexttreefile);
         swedishtexttreefile.close();
     }
 }
 
-void loadOrSaveN2c(IdTree<Coord> **n2c, const char *tempdir, const char *mapname) {
+void loadOrSaveNode2Coord(const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
-    if (*n2c != NULL) {
+    if (node2Coord != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
         Error::debug("Writing to '%s'", filenamebuffer);
-        ofstream n2cfile(filenamebuffer);
+        std::ofstream node2CoordFile(filenamebuffer);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
-        out.push(n2cfile);
-        (*n2c)->write(out);
+        out.push(node2CoordFile);
+        node2Coord->write(out);
     } else {
         snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
         Error::debug("Reading from '%s'", filenamebuffer);
-        ifstream n2cfile(filenamebuffer);
+        std::ifstream node2CoordFile(filenamebuffer);
         boost::iostreams::filtering_istream in;
         in.push(boost::iostreams::gzip_decompressor());
-        in.push(n2cfile);
-        *n2c = new IdTree<Coord>(in);
+        in.push(node2CoordFile);
+        node2Coord = new IdTree<Coord>(in);
     }
 }
 
-void loadOrSaveNodeNames(IdTree<WriteableString> **nodeNames, const char *tempdir, const char *mapname) {
+void loadOrSaveNodeNames(const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
-    if (*nodeNames != NULL) {
+    if (nodeNames != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
         Error::debug("Writing to '%s'", filenamebuffer);
-        ofstream nnfile(filenamebuffer);
+        std::ofstream nnfile(filenamebuffer);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(nnfile);
-        (*nodeNames)->write(out);
+        nodeNames->write(out);
     } else {
         snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
         Error::debug("Reading from '%s'", filenamebuffer);
-        ifstream nnfile(filenamebuffer);
+        std::ifstream nnfile(filenamebuffer);
         boost::iostreams::filtering_istream in;
         in.push(boost::iostreams::gzip_decompressor());
         in.push(nnfile);
-        *nodeNames = new IdTree<WriteableString>(in);
+        nodeNames = new IdTree<WriteableString>(in);
     }
 }
 
-void loadOrSaveW2n(IdTree<WayNodes> **w2n, const char *tempdir, const char *mapname) {
+void loadOrSaveWayNodes(const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
-    if (*w2n != NULL) {
+    if (wayNodes != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
         Error::debug("Writing to '%s'", filenamebuffer);
-        ofstream w2nfile(filenamebuffer);
+        std::ofstream wayNodeFile(filenamebuffer);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
-        out.push(w2nfile);
-        (*w2n)->write(out);
+        out.push(wayNodeFile);
+        wayNodes->write(out);
     } else {
         snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
         Error::debug("Reading from '%s'", filenamebuffer);
-        ifstream w2nfile(filenamebuffer);
+        std::ifstream wayNodeFile(filenamebuffer);
         boost::iostreams::filtering_istream in;
         in.push(boost::iostreams::gzip_decompressor());
-        in.push(w2nfile);
-        *w2n = new IdTree<WayNodes>(in);
+        in.push(wayNodeFile);
+        wayNodes = new IdTree<WayNodes>(in);
     }
 }
 
-void loadOrSaveRelMem(IdTree<RelationMem> **relmem, const char *tempdir, const char *mapname) {
+void loadOrSaveRelMem(const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
-    if (*relmem != NULL) {
+    if (relMembers != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
         Error::debug("Writing to '%s'", filenamebuffer);
-        ofstream relmemfile(filenamebuffer);
-        (*relmem)->write(relmemfile);
+        std::ofstream relmemfile(filenamebuffer);
+        relMembers->write(relmemfile);
         relmemfile.close();
     } else {
         snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
         Error::debug("Reading from '%s'", filenamebuffer);
-        ifstream relmemfile(filenamebuffer);
-        *relmem = new IdTree<RelationMem>(relmemfile);
+        std::ifstream relmemfile(filenamebuffer);
+        relMembers = new IdTree<RelationMem>(relmemfile);
         relmemfile.close();
     }
 }
 
-void saveSweden(Sweden **sweden, const char *tempdir, const char *mapname) {
+void saveSweden(const char *tempdir, const char *mapname) {
     char filenamebuffer[1024];
-    if (*sweden != NULL) {
+    if (sweden != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
         Error::debug("Writing to '%s'", filenamebuffer);
-        ofstream swedenfile(filenamebuffer);
+        std::ofstream swedenfile(filenamebuffer);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(swedenfile);
-        (*sweden)->write(out);
+        sweden->write(out);
     }
 }
 
@@ -161,17 +168,17 @@ int main(int argc, char *argv[])
     char filenamebuffer[1024];
     const char *mapname = (argc < 2) ? "sweden" : argv[argc - 1];
     snprintf(filenamebuffer, 1024, "%s/git/pbflookup/%s.osm.pbf", getenv("HOME"), mapname);
-    ifstream fp(filenamebuffer, ifstream::in | ifstream::binary);
+    std::ifstream fp(filenamebuffer, std::ifstream::in | std::ifstream::binary);
     if (fp) {
-        SwedishText::Tree *swedishTextTree = NULL;
-        IdTree<Coord> *n2c = NULL;
-        IdTree<WayNodes> *w2n = NULL;
-        IdTree<RelationMem> *relmem = NULL;
-        IdTree<WriteableString> *nodeNames = NULL;
-        Sweden *sweden = NULL;
+        swedishTextTree = NULL;
+        node2Coord = NULL;
+        wayNodes = NULL;
+        relMembers = NULL;
+        nodeNames = NULL;
+        sweden = NULL;
 
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
-        ifstream fileteststream(filenamebuffer);
+        std::ifstream fileteststream(filenamebuffer);
         if (fileteststream && fileteststream.good()) {
             fileteststream.seekg(0, fileteststream.end);
             const int length = fileteststream.tellg();
@@ -180,7 +187,7 @@ int main(int argc, char *argv[])
             if (length < 10) {
                 Timer timer;
                 OsmPbfReader osmPbfReader;
-                osmPbfReader.parse(fp, &swedishTextTree, &n2c, &nodeNames, &w2n, &relmem, &sweden);
+                osmPbfReader.parse(fp);
                 int64_t cputime, walltime;
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
@@ -188,7 +195,7 @@ int main(int argc, char *argv[])
         } else {
             Timer timer;
             OsmPbfReader osmPbfReader;
-            osmPbfReader.parse(fp, &swedishTextTree, &n2c, &nodeNames, &w2n, &relmem, &sweden);
+            osmPbfReader.parse(fp);
             int64_t cputime, walltime;
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
@@ -199,56 +206,56 @@ int main(int argc, char *argv[])
         fp.close();
 
         Timer timer;
-        boost::thread threadLoadOrSaveSwedishTextTree(loadOrSaveSwedishTextTree, &swedishTextTree, tempdir, mapname);
+        boost::thread threadLoadOrSaveSwedishTextTree(loadOrSaveSwedishTextTree, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrSaveN2c(loadOrSaveN2c, &n2c, tempdir, mapname);
+        boost::thread threadLoadOrSaveNode2Cood(loadOrSaveNode2Coord, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrSaveNodeNames(loadOrSaveNodeNames, &nodeNames, tempdir, mapname);
+        boost::thread threadLoadOrSaveNodeNames(loadOrSaveNodeNames, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrSaveW2n(loadOrSaveW2n, &w2n, tempdir, mapname);
+        boost::thread threadLoadOrSaveWayNodes(loadOrSaveWayNodes, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrRelMem(loadOrSaveRelMem, &relmem, tempdir, mapname);
+        boost::thread threadLoadOrRelMem(loadOrSaveRelMem, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadSaveSweden(saveSweden, &sweden, tempdir, mapname);
+        boost::thread threadSaveSweden(saveSweden, tempdir, mapname);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         Error::debug("Waiting for threads to join");
         threadLoadOrSaveSwedishTextTree.join();
-        threadLoadOrSaveN2c.join();
+        threadLoadOrSaveNode2Cood.join();
         threadLoadOrSaveNodeNames.join();
-        threadLoadOrSaveW2n.join();
+        threadLoadOrSaveWayNodes.join();
         threadLoadOrRelMem.join();
         threadSaveSweden.join();
         Error::debug("All threads joined");
 
-        if (sweden == NULL && n2c != NULL && nodeNames != NULL && w2n != NULL && relmem != NULL) {
+        if (sweden == NULL && node2Coord != NULL && nodeNames != NULL && wayNodes != NULL && relMembers != NULL) {
             snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
             Error::debug("Reading from '%s'", filenamebuffer);
-            ifstream swedenfile(filenamebuffer);
+            std::ifstream swedenfile(filenamebuffer);
             boost::iostreams::filtering_istream in;
             in.push(boost::iostreams::gzip_decompressor());
             in.push(swedenfile);
-            sweden = new Sweden(in, n2c, w2n, relmem);
+            sweden = new Sweden(in);
         }
 
         int64_t cputime, walltime;
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
-        if (relmem != NULL && w2n != NULL && n2c != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
-            Tokenizer tokenizer(mapname);
-            std::vector<std::string> words;
-            WeightedNodeSet wns(n2c, w2n, relmem, sweden);
+        if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
 
             snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
             std::ifstream textfile(filenamebuffer);
             if (textfile.is_open()) {
                 Error::info("Reading token from '%s'", filenamebuffer);
                 timer.start();
+
+                std::vector<std::string> words;
+                Tokenizer tokenizer(mapname);
                 tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 
-
-                TokenProcessor tokenProcessor(swedishTextTree, n2c, w2n, relmem, sweden);
+                WeightedNodeSet wns;
+                TokenProcessor tokenProcessor;
                 tokenProcessor.evaluteWordCombinations(words, wns);
                 tokenProcessor.evaluteRoads(words, wns);
 
@@ -283,6 +290,9 @@ int main(int argc, char *argv[])
 
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+
+                HtmlOutput htmlOutput(tokenizer, wns);
+                htmlOutput.write(words, std::string("/tmp/html"));
             }
 
             /*
@@ -291,22 +301,19 @@ int main(int argc, char *argv[])
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
             */
-
-            HtmlOutput htmlOutput(tokenizer, *nodeNames, wns);
-            htmlOutput.write(words, std::string("/tmp/html"));
         }
 
         timer.start();
         if (swedishTextTree != NULL)
             delete swedishTextTree;
-        if (n2c != NULL)
-            delete n2c;
+        if (node2Coord != NULL)
+            delete node2Coord;
         if (nodeNames != NULL)
             delete nodeNames;
-        if (w2n != NULL)
-            delete w2n;
-        if (relmem != NULL)
-            delete relmem;
+        if (wayNodes != NULL)
+            delete wayNodes;
+        if (relMembers != NULL)
+            delete relMembers;
         if (sweden != NULL)
             delete sweden;
         timer.elapsed(&cputime, &walltime);

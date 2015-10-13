@@ -14,29 +14,13 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>.  *
  ***************************************************************************/
 
-#ifndef TOKENPROCESSOR_H
-#define TOKENPROCESSOR_H
+#ifndef GLOBAL_H
+#define GLOBAL_H
 
-#include "weightednodeset.h"
-#include "sweden.h"
+/// Minimum latitude and longitude for Sweden
+extern const double minlon, minlat; ///< defined in 'sweden.cpp'
 
-namespace SwedishText {
-class Tree;
-}
+/// Decimeter per degree longitude and latitude at N 60 (north of Uppsala)
+extern const double decimeterDegreeLongitude, decimeterDegreeLatitude; ///< defined in 'sweden.cpp'
 
-class TokenProcessor
-{
-public:
-    explicit TokenProcessor();
-    ~TokenProcessor();
-
-    void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    std::vector<struct Sweden::Road> &knownRoads() const;
-
-private:
-    class Private;
-    Private *const d;
-};
-
-#endif // TOKENPROCESSOR_H
+#endif // GLOBAL_H

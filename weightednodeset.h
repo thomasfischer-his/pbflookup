@@ -19,8 +19,6 @@
 
 #include "idtree.h"
 
-class Sweden;
-
 struct WeightedNode {
     explicit WeightedNode() {
         id = 0;
@@ -78,7 +76,7 @@ struct RingCluster {
 
 class WeightedNodeSet : public std::vector<WeightedNode> {
 public:
-    WeightedNodeSet(IdTree<Coord> *n2c, IdTree<WayNodes> *w2n, IdTree<RelationMem> *relmem, Sweden *sweden);
+    WeightedNodeSet();
     bool appendNode(uint64_t id, double weight);
     bool appendWay(uint64_t id, double weight);
     bool appendRelation(uint64_t id, double weight);
@@ -103,12 +101,6 @@ public:
     std::vector<RingCluster> ringClusters;
 
 private:
-    IdTree<Coord> *n2c;
-    IdTree<WayNodes> *w2n;
-    IdTree<RelationMem> *relmem;
-    Sweden *sweden;
-
-
     int squareDistanceToRing(int64_t sqDist) const;
 };
 

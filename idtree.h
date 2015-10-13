@@ -24,13 +24,7 @@
 
 #include "error.h"
 #include "types.h"
-
-
-/// Minimum latitude and longitude for Sweden
-extern const double minlon, minlat;
-/// Decimeter per degree longitude and latitude at N 60 (north of Uppsala)
-extern const double decimeterDegreeLongitude, decimeterDegreeLatitude;
-
+#include "global.h"
 
 struct WayNodes {
     WayNodes() {

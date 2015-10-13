@@ -21,16 +21,16 @@
 
 #include "error.h"
 #include "sweden.h"
+#include "globalobjects.h"
 
-WeightedNodeSet::WeightedNodeSet(IdTree<Coord> *_n2c, IdTree<WayNodes> *_w2n, IdTree<RelationMem> *_relmem, Sweden *_sweden)
-    : n2c(_n2c), w2n(_w2n), relmem(_relmem), sweden(_sweden)
+WeightedNodeSet::WeightedNodeSet()
 {
     /// nothing
 }
 
 bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
     Coord c;
-    const bool found = n2c->retrieve(id, c);
+    const bool found = node2Coord->retrieve(id, c);
     if (found) {
         bool alreadyKnown = false;
         for (int i = size() - 1; !alreadyKnown && i >= 0; --i)
@@ -47,7 +47,7 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
 
 bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
     WayNodes wn;
-    const bool found = w2n->retrieve(id, wn);
+    const bool found = wayNodes->retrieve(id, wn);
     if (found) {
         const double weightPerNode = weight / wn.num_nodes;
         for (uint32_t i = 0; i < wn.num_nodes; ++i)
@@ -59,7 +59,7 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
 
 bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
     RelationMem rm;
-    const bool found = relmem->retrieve(id, rm);
+    const bool found = relMembers->retrieve(id, rm);
     if (found) {
         const double weightPerMember = weight / rm.num_members;
         for (uint32_t i = 0; i < rm.num_members; ++i) {

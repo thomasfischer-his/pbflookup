@@ -21,9 +21,7 @@
 #include <map>
 
 #include "idtree.h"
-
-extern const double decimeterDegreeLongitude;
-extern const double decimeterDegreeLatitude;
+#include "global.h"
 
 class Sweden
 {
@@ -39,8 +37,8 @@ public:
         int number;
     };
 
-    explicit Sweden(IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem);
-    explicit Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem);
+    explicit Sweden();
+    explicit Sweden(std::istream &input);
     ~Sweden();
 
     void dump() const;

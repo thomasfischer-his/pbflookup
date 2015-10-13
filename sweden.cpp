@@ -23,14 +23,14 @@
 #include <deque>
 
 #include "error.h"
+#include "globalobjects.h"
 
-
-const double minlon = 4.4;
-const double minlat = 53.8;
+const double minlon = 4.4; ///< declared in 'global.h'
+const double minlat = 53.8; ///< declared in 'global.h'
 
 /// Values come from  http://www.csgnetwork.com/degreelenllavcalc.html
-const double decimeterDegreeLongitude = 557999.790;
-const double decimeterDegreeLatitude = 1114122.402;
+const double decimeterDegreeLongitude = 557999.790; ///< declared in 'global.h'
+const double decimeterDegreeLatitude = 1114122.402; ///< declared in 'global.h'
 
 
 class Sweden::Private {
@@ -50,10 +50,6 @@ private:
     std::map<int, Land> lands;
 
 public:
-    IdTree<Coord> *coords;
-    IdTree<WayNodes> *waynodes;
-    IdTree<RelationMem> *relmem;
-
     struct Region {
         std::vector<std::deque<Coord> > polygons;
         int minx, miny, maxx, maxy;
@@ -68,8 +64,8 @@ public:
     } roads;
     static const int EuropeanRoadNumbers[];
 
-    explicit Private(Sweden *parent, IdTree<Coord> *_coords, IdTree<WayNodes> *_waynodes, IdTree<RelationMem> *_relmem)
-        : p(parent), coords(_coords), waynodes(_waynodes), relmem(_relmem) {
+    explicit Private(Sweden *parent)
+        : p(parent) {
         for (int i = 0; i < 22; ++i)
             roads.regional[i] = NULL;
     }
@@ -105,7 +101,7 @@ public:
             for (uint32_t j = 0; j < wn.num_nodes; ++j) {
                 const uint64_t nodeid = wn.nodes[j];
                 Coord coord;
-                if (coords->retrieve(nodeid, coord))
+                if (node2Coord->retrieve(nodeid, coord))
                     polygon.push_back(coord);
                 else
                     Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
@@ -116,7 +112,7 @@ public:
         /// Retrieve the coordinates of one end of the way
         /// as described by the WayNodes object
         Coord coord;
-        if (!coords->retrieve(wn.nodes[0], coord)) {
+        if (!node2Coord->retrieve(wn.nodes[0], coord)) {
             Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[0]);
             return false;
         }
@@ -124,7 +120,7 @@ public:
         /// Test if the way can be attached to one side of the (growing) polygon
         if (polygon[0].x == coord.x && polygon[0].y == coord.y) {
             for (uint32_t j = 1; j < wn.num_nodes; ++j) {
-                if (coords->retrieve(wn.nodes[j], coord))
+                if (node2Coord->retrieve(wn.nodes[j], coord))
                     polygon.push_front(coord);
                 else
                     Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
@@ -134,7 +130,7 @@ public:
             /// Test if the way can be attached to other side of the (growing) polygon
             if (polygon[polygon.size() - 1].x == coord.x && polygon[polygon.size() - 1].y == coord.y) {
                 for (uint32_t j = 1; j < wn.num_nodes; ++j) {
-                    if (coords->retrieve(wn.nodes[j], coord))
+                    if (node2Coord->retrieve(wn.nodes[j], coord))
                         polygon.push_back(coord);
                     else
                         Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
@@ -144,7 +140,7 @@ public:
 
         /// Retrieve the coordinates of the other end of the way
         /// as described by the WayNodes object
-        if (!coords->retrieve(wn.nodes[wn.num_nodes - 1], coord)) {
+        if (!node2Coord->retrieve(wn.nodes[wn.num_nodes - 1], coord)) {
             Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[wn.num_nodes - 1]);
             return false;
         }
@@ -152,7 +148,7 @@ public:
         /// Test if the way can be attached to one side of the (growing) polygon
         if (polygon[0].x == coord.x && polygon[0].y == coord.y) {
             for (int j = wn.num_nodes - 2; j >= 0; --j) {
-                if (coords->retrieve(wn.nodes[j], coord))
+                if (node2Coord->retrieve(wn.nodes[j], coord))
                     polygon.push_front(coord);
                 else
                     Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
@@ -162,7 +158,7 @@ public:
             /// Test if the way can be attached to other side of the (growing) polygon
             if (polygon[polygon.size() - 1].x == coord.x && polygon[polygon.size() - 1].y == coord.y) {
                 for (int j = wn.num_nodes - 2; j >= 0; --j) {
-                    if (coords->retrieve(wn.nodes[j], coord))
+                    if (node2Coord->retrieve(wn.nodes[j], coord))
                         polygon.push_back(coord);
                     else
                         Error::warn("Cannot retrieve coordinates for node %llu", wn.nodes[j]);
@@ -185,7 +181,7 @@ public:
                 const uint64_t relid = (*it).second;
                 int minx = INT_RANGE, miny = INT_RANGE, maxx = -1, maxy = -1;
                 RelationMem rel;
-                if (relmem->retrieve(relid, rel) && rel.num_members > 0) {
+                if (relMembers->retrieve(relid, rel) && rel.num_members > 0) {
                     std::vector<std::deque<Coord> > polygonlist;
 
                     /// Keep track of which ways of a relation have already been added to one of the polygons
@@ -208,7 +204,7 @@ public:
 
                             WayNodes wn;
                             const uint64_t memid = rel.members[i].id;
-                            if (waynodes->retrieve(memid, wn)) {
+                            if (wayNodes->retrieve(memid, wn)) {
                                 bool successfullyAdded = false;
                                 for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); !successfullyAdded && it != polygonlist.end(); ++it) {
                                     /// Test existing polygons if current way can be attached
@@ -235,7 +231,7 @@ public:
                                     /// later used to determine bounding rectangle around polygons
                                     Coord c;
                                     for (int i = wn.num_nodes - 1; i >= 0; --i)
-                                        if (coords->retrieve(wn.nodes[i], c)) {
+                                        if (node2Coord->retrieve(wn.nodes[i], c)) {
                                             if (c.x < minx) minx = c.x;
                                             if (c.x > maxx) maxx = c.x;
                                             if (c.y < miny) miny = c.y;
@@ -329,7 +325,7 @@ public:
 
         std::vector<int> result;
         Coord coord;
-        if (coords->retrieve(nodeid, coord)) {
+        if (node2Coord->retrieve(nodeid, coord)) {
             for (std::map<int, Region>::const_iterator itA = code_to_polygons.cbegin(); itA != code_to_polygons.cend(); ++itA) {
                 const Region &region = (*itA).second;
 
@@ -405,10 +401,10 @@ public:
         minSqDistance = INT64_MAX;
 
         WayNodes wn;
-        if (waynodes->retrieve(wayId, wn)) {
+        if (wayNodes->retrieve(wayId, wn)) {
             for (uint32_t i = 0; i < wn.num_nodes; ++i) {
                 Coord c;
-                if (coords->retrieve(wn.nodes[i], c)) {
+                if (node2Coord->retrieve(wn.nodes[i], c)) {
                     const int64_t dX = c.x - x;
                     const int64_t dY = c.y - y;
                     const int64_t sqDist = dX * dX + dY * dY;
@@ -425,14 +421,14 @@ public:
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
 const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
 
-Sweden::Sweden(IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem)
-    : d(new Sweden::Private(this, coords, waynodes, relmem))
+Sweden::Sweden()
+    : d(new Sweden::Private(this))
 {
     d->loadSCBcodeNames();
 }
 
-Sweden::Sweden(std::istream &input, IdTree<Coord> *coords, IdTree<WayNodes> *waynodes, IdTree<RelationMem> *relmem)
-    : d(new Sweden::Private(this, coords, waynodes, relmem))
+Sweden::Sweden(std::istream &input)
+    : d(new Sweden::Private(this))
 {
     d->loadSCBcodeNames();
 
@@ -549,7 +545,7 @@ void Sweden::dump() const {
 void Sweden::test() {
     uint64_t id = 322746501;
     Coord coord;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     std::vector<int> scbcodes = insideSCBarea(id);
@@ -565,7 +561,7 @@ void Sweden::test() {
     // FIXME nuts
 
     id = 541187594;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcodes = insideSCBarea(id);
@@ -582,7 +578,7 @@ void Sweden::test() {
 
 
     id = 3170517078;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcodes = insideSCBarea(id);
@@ -598,7 +594,7 @@ void Sweden::test() {
     // FIXME nuts
 
     id = 3037352826;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcodes = insideSCBarea(id);
@@ -614,7 +610,7 @@ void Sweden::test() {
     // FIXME nuts
 
     id = 3037352827;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcodes = insideSCBarea(id);
@@ -630,7 +626,7 @@ void Sweden::test() {
     // FIXME nuts
 
     id = 3296599772;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcodes = insideSCBarea(id);
@@ -647,7 +643,7 @@ void Sweden::test() {
     // FIXME nuts
 
     id = 2005653590;
-    if (d->coords->retrieve(id, coord)) {
+    if (node2Coord->retrieve(id, coord)) {
         Error::info("node %llu is located at lat=%.5f (y=%d), lon=%.5f (x=%d)", id, coord.latitude(), coord.y, coord.longitude(), coord.x);
     }
     scbcodes = insideSCBarea(id);

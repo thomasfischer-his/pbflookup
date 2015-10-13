@@ -47,10 +47,7 @@
 
 #include "idtree.h"
 #include "sweden.h"
-
-namespace SwedishText {
-class Tree;
-}
+#include "swedishtexttree.h"
 
 class OsmPbfReader
 {
@@ -58,8 +55,7 @@ public:
     OsmPbfReader();
     ~OsmPbfReader();
 
-    SwedishText::Tree *parse(std::istream &input);
-    bool parse(std::istream &input, SwedishText::Tree **, IdTree<Coord> **,  IdTree<WriteableString> **, IdTree<WayNodes> **, IdTree<RelationMem> **, Sweden **sweden);
+    bool parse(std::istream &input);
 
 private:
     /// Buffer for reading a compressed blob from file
@@ -79,8 +75,8 @@ private:
     // pbf struct of an OSM PrimitiveBlock
     OSMPBF::PrimitiveBlock primblock;
 
-    int applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, IdTree<Coord> *n2c, uint64_t *result);
-    int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB, IdTree<Coord> *n2c) const;
+    int applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, uint64_t *result);
+    int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB) const;
 
     static const uint64_t exclaveInclaveWays[];
 };
