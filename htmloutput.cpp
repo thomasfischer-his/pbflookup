@@ -22,6 +22,7 @@
 #include <cstring>
 #include <fstream>
 #include <ostream>
+#include <sstream>
 
 #include "error.h"
 
@@ -38,6 +39,14 @@ public:
     explicit Private(HtmlOutput *parent, const Tokenizer &_tokenizer, const IdTree<WriteableString> &_nodeNames, const WeightedNodeSet &_wns)
         : p(parent), tokenizer(_tokenizer), nodeNames(_nodeNames), wns(_wns) {
         /// nothing
+    }
+
+    std::string openstreetmapUrl(double lat, double lon) const {
+        static const double deltaLat = .1;
+        static const double deltaLon = .1;
+        std::ostringstream stringStream;
+        stringStream << "http://www.openstreetmap.org/export/embed.html?bbox=" << (lon - deltaLon) << "," << (lat - deltaLat) << "," << (lon + deltaLon) << "," << (lat + deltaLat) << "&amp;layer=mapnik";
+        return stringStream.str();
     }
 };
 
@@ -74,6 +83,10 @@ bool HtmlOutput::write(const std::vector<std::string> &tokenizedWords, const std
         output << "  background:#def;" << std::endl;
         output << "}" << std::endl;
 
+        output << "th {" << std::endl;
+        output << "  text-align:left;" << std::endl;
+        output << "}" << std::endl;
+
         output.close();
     }
 
@@ -93,12 +106,12 @@ bool HtmlOutput::write(const std::vector<std::string> &tokenizedWords, const std
         output << "</head>" << std::endl << std::endl;
 
         output << "<frameset cols=\"50%,50%\">" << std::endl;
-        output << "<frameset rows=\"25%,25%,25%,25%\">" << std::endl;
-        output << "<frame src=\"inputtext.html\">" << std::endl;
-        output << "<frame src=\"tokenizedwords.html\">" << std::endl;
-        output << "<frame src=\"ringcluster.html\">" << std::endl;
+        output << "<frameset rows=\"25%,25%,25%,25%\" />" << std::endl;
+        output << "<frame src=\"inputtext.html\" />" << std::endl;
+        output << "<frame src=\"tokenizedwords.html\" />" << std::endl;
+        output << "<frame src=\"ringcluster.html\" />" << std::endl;
         output << "</frameset>" << std::endl << std::endl;
-        output << "<frame name=\"osmmap\" src=\"inputtexthttp://www.openstreetmap.org/#map=14/58.3929/13.8494\">" << std::endl;
+        output << "<frame name=\"osmmap\" src=\"" << d->openstreetmapUrl(58.3929, 13.8494) << "\" />" << std::endl;
         output << "</frameset>" << std::endl << std::endl;
 
         output << "</html>" << std::endl << std::endl;
@@ -189,15 +202,15 @@ bool HtmlOutput::write(const std::vector<std::string> &tokenizedWords, const std
             output << "<td>" << rc.neighbourNodeIds.size() << "</td>";
             const double lat = Coord::toLatitude(rc.weightedCenterY);
             const double lon = Coord::toLongitude(rc.weightedCenterX);
-            output << "<td><a target=\"osmmap\" href=\"https://www.openstreetmap.org/?mlat=" << lat << "&amp;mlon=" << lon << "#map=14/" << lat << "/" << lon << "\">OSM</a></td>";
+            output << "<td><a target=\"osmmap\" href=\"" << d->openstreetmapUrl(lat, lon) << "\">OSM</a></td>";
             WriteableString nodeName;
-            d->nodeNames.retrieve(rc.centerNodeId, nodeName);
-            output << "<td style=\"font-size:80%;\">"<<(nodeName.empty()?"[":"")<<"<a target=\"osmmap\" href=\"https://www.openstreetmap.org/node/" << rc.centerNodeId << "\">";
+            nodeNames->retrieve(rc.centerNodeId, nodeName);
+            output << "<td style=\"font-size:80%;\">" << (nodeName.empty() ? "[" : "") << "<a target=\"_blank\" href=\"https://www.openstreetmap.org/node/" << rc.centerNodeId << "\">";
             if (nodeName.empty())
                 output << rc.centerNodeId;
             else
                 output << nodeName;
-            output << "</a>"<<(nodeName.empty()?"]":"")<<"</td>";
+            output << "</a>" << (nodeName.empty() ? "]" : "") << "</td>";
             output << "</tr>" << std::endl;
         }
         output << "</tbody>" << std::endl;
