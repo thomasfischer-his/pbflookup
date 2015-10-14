@@ -18,13 +18,12 @@
 
 #include <cstring>
 
+/// see http://www.hyperrealm.com/libconfig/
 #include <libconfig.h++>
 
 #include "error.h"
 
 #define MAX_STRING_LEN 1024
-#define max(a,b) ((a)>(b))?(a):(b)
-#define min(a,b) ((a)<(b))?(a):(b)
 
 char tempdir[MAX_STRING_LEN];
 char mapname[MAX_STRING_LEN];
