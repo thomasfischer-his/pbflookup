@@ -17,6 +17,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+extern char tempdir[];
 extern char mapname[];
 extern char osmpbffilename[];
 

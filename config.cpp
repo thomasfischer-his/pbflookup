@@ -26,6 +26,7 @@
 #define max(a,b) ((a)>(b))?(a):(b)
 #define min(a,b) ((a)<(b))?(a):(b)
 
+char tempdir[MAX_STRING_LEN];
 char mapname[MAX_STRING_LEN];
 char osmpbffilename[MAX_STRING_LEN];
 
@@ -40,6 +41,19 @@ bool init_configuration(const char *configfilename) {
         char temp[MAX_STRING_LEN];
         const char *buffer;
         config.readFile(configfilename);
+
+        if (config.lookupValue("tempdir", buffer))
+            strncpy(tempdir, buffer, MAX_STRING_LEN - 1);
+        else {
+            const char *envtempdir = getenv("TEMPDIR");
+            if (envtempdir != NULL && envtempdir[0] != '\0')
+                strncpy(tempdir, envtempdir, MAX_STRING_LEN - 1);
+            else
+                snprintf(tempdir, MAX_STRING_LEN - 1, "/tmp");
+        }
+#ifdef DEBUG
+        Error::info("  tempdir = '%s'", tempdir);
+#endif // DEBUG
 
         if (config.lookupValue("mapname", buffer))
             strncpy(mapname, buffer, MAX_STRING_LEN - 1);

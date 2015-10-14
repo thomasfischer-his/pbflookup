@@ -48,7 +48,7 @@ inline bool ends_with(std::string const &value, std::string const &ending)
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
-void loadOrSaveSwedishTextTree(const char *tempdir) {
+void loadOrSaveSwedishTextTree() {
     char filenamebuffer[1024];
     if (swedishTextTree != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
@@ -65,7 +65,7 @@ void loadOrSaveSwedishTextTree(const char *tempdir) {
     }
 }
 
-void loadOrSaveNode2Coord(const char *tempdir) {
+void loadOrSaveNode2Coord() {
     char filenamebuffer[1024];
     if (node2Coord != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
@@ -86,7 +86,7 @@ void loadOrSaveNode2Coord(const char *tempdir) {
     }
 }
 
-void loadOrSaveNodeNames(const char *tempdir) {
+void loadOrSaveNodeNames() {
     char filenamebuffer[1024];
     if (nodeNames != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
@@ -107,7 +107,7 @@ void loadOrSaveNodeNames(const char *tempdir) {
     }
 }
 
-void loadOrSaveWayNodes(const char *tempdir) {
+void loadOrSaveWayNodes() {
     char filenamebuffer[1024];
     if (wayNodes != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
@@ -128,7 +128,7 @@ void loadOrSaveWayNodes(const char *tempdir) {
     }
 }
 
-void loadOrSaveRelMem(const char *tempdir) {
+void loadOrSaveRelMem() {
     char filenamebuffer[1024];
     if (relMembers != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
@@ -145,7 +145,7 @@ void loadOrSaveRelMem(const char *tempdir) {
     }
 }
 
-void saveSweden(const char *tempdir) {
+void saveSweden() {
     char filenamebuffer[1024];
     if (sweden != NULL) {
         snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
@@ -167,8 +167,6 @@ int main(int argc, char *argv[])
     char defaultconfigfile[1024];
     snprintf(defaultconfigfile, 1024, "%s/git/pbflookup/sweden.config", getenv("HOME"));
     init_configuration((argc < 2) ? defaultconfigfile : argv[argc - 1]);
-
-    const char *tempdir = getenv("TEMPDIR") == NULL || getenv("TEMPDIR")[0] == '\0' ? "/tmp" : getenv("TEMPDIR");
 
     std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
     if (fp) {
@@ -209,17 +207,17 @@ int main(int argc, char *argv[])
         fp.close();
 
         Timer timer;
-        boost::thread threadLoadOrSaveSwedishTextTree(loadOrSaveSwedishTextTree, tempdir);
+        boost::thread threadLoadOrSaveSwedishTextTree(loadOrSaveSwedishTextTree);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrSaveNode2Cood(loadOrSaveNode2Coord, tempdir);
+        boost::thread threadLoadOrSaveNode2Cood(loadOrSaveNode2Coord);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrSaveNodeNames(loadOrSaveNodeNames, tempdir);
+        boost::thread threadLoadOrSaveNodeNames(loadOrSaveNodeNames);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrSaveWayNodes(loadOrSaveWayNodes, tempdir);
+        boost::thread threadLoadOrSaveWayNodes(loadOrSaveWayNodes);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrRelMem(loadOrSaveRelMem, tempdir);
+        boost::thread threadLoadOrRelMem(loadOrSaveRelMem);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadSaveSweden(saveSweden, tempdir);
+        boost::thread threadSaveSweden(saveSweden);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         Error::debug("Waiting for threads to join");
         threadLoadOrSaveSwedishTextTree.join();
