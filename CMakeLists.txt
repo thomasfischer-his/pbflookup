@@ -9,6 +9,8 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 add_definitions(-DDEBUG)
 add_definitions(-DREVERSE_ID_TREE)
 
+find_package(PkgConfig REQUIRED)
+
 find_package(Protobuf REQUIRED)
 
 find_package(ZLIB REQUIRED)
@@ -19,11 +21,16 @@ find_package(Boost REQUIRED
   COMPONENTS iostreams system thread
 )
 
+pkg_check_modules(LIBCONFIG REQUIRED
+  libconfig++>=1.5
+)
+
 include_directories(
   ${PROTOBUF_INCLUDE_DIRS}
   ${ZLIB_INCLUDE_DIRS}
   ${OSMPBF_INCLUDE_DIRS}
   ${Boost_INCLUDE_DIRS}
+  ${LIBCONFIG_INCLUDE_DIRS}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -31,5 +38,6 @@ target_link_libraries(${PROJECT_NAME}
   ${ZLIB_LIBRARIES}
   ${OSMPBF_LIBRARIES}
   ${Boost_LIBRARIES}
+  ${LIBCONFIG_LIBRARIES}
 )
 
