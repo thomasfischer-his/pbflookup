@@ -166,7 +166,10 @@ int main(int argc, char *argv[])
 
     char defaultconfigfile[1024];
     snprintf(defaultconfigfile, 1024, "%s/git/pbflookup/sweden.config", getenv("HOME"));
-    init_configuration((argc < 2) ? defaultconfigfile : argv[argc - 1]);
+    if (!init_configuration((argc < 2) ? defaultconfigfile : argv[argc - 1])) {
+        Error::err("Cannot continue without properly parsing configuration file");
+        return 1;
+    }
 
     std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
     if (fp) {
