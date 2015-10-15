@@ -247,8 +247,8 @@ int main(int argc, char *argv[])
 
         if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
 
-            snprintf(filenamebuffer, 1024, "%s/git/pbflookup/input-%s.txt", getenv("HOME"), mapname);
-            std::ifstream textfile(filenamebuffer);
+
+            std::ifstream textfile(inputextfilename);
             if (textfile.is_open()) {
                 Error::info("Reading token from '%s'", filenamebuffer);
                 timer.start();

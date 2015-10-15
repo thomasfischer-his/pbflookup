@@ -54,9 +54,7 @@ public:
 
     Private(Tokenizer *parent)
         : p(parent) {
-        char filenamebuffer[1024];
-        snprintf(filenamebuffer, 1024, "%s/git/pbflookup/stopwords-%s.txt", getenv("HOME"), mapname);
-        load_stopwords(filenamebuffer);
+        load_stopwords(stopwordfilename);
     }
 
     ~Private() {
