@@ -108,33 +108,45 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
 
     while (getline(input, line))
     {
-        if (line[0] == 0 || line[0] == '#') continue; // skip empty lines and comments
-        d->input_lines.push_back(line);
+        if (line[0] == '\0' || line[0] == '#') continue; ///< skip empty lines and comments
+        d->input_lines.push_back(line); ///< store line for future reference
 
         unsigned char prev_c = 0;
         for (std::string::iterator it = line.begin(); it != line.end(); ++it) {
             if (gap.find(*it) == std::string::npos) {
+                /// Character is not a 'gap' character
+                /// First, convert character to lower case
                 const unsigned char c = Private::utf8tolower(prev_c, *it);
+                /// Second, add character to current word
                 lastword.append((char *)(&c), 1);
                 prev_c = c;
             } else if (!lastword.empty()) {
+                /// Character is a 'gap' character and the current word is not empty
                 if (!d->is_stopword(lastword)) {
+                    /// Current word is not a stop word
                     if (multiplicity == Duplicates)
+                        /// If duplicates are allowed, memorize word
                         words.push_back(lastword);
                     else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                        /// If no duplicates are allowed and word is not yet know, memorize it
                         words.push_back(lastword);
                         known_words.insert(lastword);
                     }
                 }
+                /// Reset current word
                 lastword.clear();
                 prev_c = 0;
             }
         }
         if (!lastword.empty()) {
+            /// Very last word in line is not empty
             if (!d->is_stopword(lastword)) {
+                /// Very last word is not a stop word
                 if (multiplicity == Duplicates)
+                    /// If duplicates are allowed, memorize word
                     words.push_back(lastword);
                 else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                    /// If no duplicates are allowed and word is not yet know, memorize it
                     words.push_back(lastword);
                     known_words.insert(lastword);
                 }
