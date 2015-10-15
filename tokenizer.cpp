@@ -102,7 +102,7 @@ Tokenizer::~Tokenizer() {
 
 
 int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity) {
-    std::string line, lastword;
+    std::string line;
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
     std::unordered_set<std::string> known_words;
     d->input_lines.clear();
@@ -112,8 +112,9 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
         if (line[0] == '\0' || line[0] == '#') continue; ///< skip empty lines and comments
         d->input_lines.push_back(line); ///< store line for future reference
 
-        unsigned char prev_c = 0;
-        for (std::string::iterator it = line.begin(); it != line.end(); ++it) {
+        unsigned char prev_c = '\0';
+        std::string lastword;
+        for (std::string::const_iterator it = line.cbegin(); it != line.cend(); ++it) {
             if (gap.find(*it) == std::string::npos) {
                 /// Character is not a 'gap' character
                 /// First, convert character to lower case
@@ -152,7 +153,6 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
                     known_words.insert(lastword);
                 }
             }
-            lastword.clear();
         }
     }
 
