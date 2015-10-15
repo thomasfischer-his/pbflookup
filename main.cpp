@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
                 timer.start();
 
                 std::vector<std::string> words;
-                Tokenizer tokenizer(mapname);
+                Tokenizer tokenizer;
                 tokenizer.read_words(textfile, words, Tokenizer::Unique);
                 textfile.close();
 

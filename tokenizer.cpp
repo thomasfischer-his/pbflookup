@@ -22,6 +22,7 @@
 #include <unordered_set>
 
 #include "error.h"
+#include "config.h"
 
 class Tokenizer::Private
 {
@@ -51,7 +52,7 @@ private:
 public:
     std::vector<std::string> input_lines;
 
-    Private(Tokenizer *parent, const char *mapname)
+    Private(Tokenizer *parent)
         : p(parent) {
         char filenamebuffer[1024];
         snprintf(filenamebuffer, 1024, "%s/git/pbflookup/stopwords-%s.txt", getenv("HOME"), mapname);
@@ -89,8 +90,8 @@ public:
 
 };
 
-Tokenizer::Tokenizer(const char *mapname)
-    : d(new Tokenizer::Private(this, mapname)) {
+Tokenizer::Tokenizer()
+    : d(new Tokenizer::Private(this)) {
     if (d == NULL)
         Error::err("Could not allocate memory for Tokenizer::Private");
 }
@@ -101,45 +102,57 @@ Tokenizer::~Tokenizer() {
 
 
 int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity) {
-    std::string line, lastword;
+    std::string line;
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
     std::unordered_set<std::string> known_words;
     d->input_lines.clear();
 
     while (getline(input, line))
     {
-        if (line[0] == 0 || line[0] == '#') continue; // skip empty lines and comments
-        d->input_lines.push_back(line);
+        if (line[0] == '\0' || line[0] == '#') continue; ///< skip empty lines and comments
+        d->input_lines.push_back(line); ///< store line for future reference
 
-        unsigned char prev_c = 0;
-        for (std::string::iterator it = line.begin(); it != line.end(); ++it) {
+        unsigned char prev_c = '\0';
+        std::string lastword;
+        for (std::string::const_iterator it = line.cbegin(); it != line.cend(); ++it) {
             if (gap.find(*it) == std::string::npos) {
+                /// Character is not a 'gap' character
+                /// First, convert character to lower case
                 const unsigned char c = Private::utf8tolower(prev_c, *it);
+                /// Second, add character to current word
                 lastword.append((char *)(&c), 1);
                 prev_c = c;
             } else if (!lastword.empty()) {
+                /// Character is a 'gap' character and the current word is not empty
                 if (!d->is_stopword(lastword)) {
+                    /// Current word is not a stop word
                     if (multiplicity == Duplicates)
+                        /// If duplicates are allowed, memorize word
                         words.push_back(lastword);
                     else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                        /// If no duplicates are allowed and word is not yet know, memorize it
                         words.push_back(lastword);
                         known_words.insert(lastword);
                     }
                 }
+                /// Reset current word
                 lastword.clear();
                 prev_c = 0;
             }
         }
         if (!lastword.empty()) {
+            /// Very last word in line is not empty
             if (!d->is_stopword(lastword)) {
+                /// Very last word is not a stop word
                 if (multiplicity == Duplicates)
+                    /// If duplicates are allowed, memorize word
                     words.push_back(lastword);
                 else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                    /// If no duplicates are allowed and word is not yet know, memorize it
                     words.push_back(lastword);
                     known_words.insert(lastword);
                 }
             }
-            lastword.clear();
         }
     }
 

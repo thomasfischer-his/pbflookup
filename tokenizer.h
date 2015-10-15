@@ -25,7 +25,7 @@ class Tokenizer
 public:
     enum Multiplicity { Unique = 0, Duplicates = 1 };
 
-    explicit Tokenizer(const char *mapname);
+    explicit Tokenizer();
     ~Tokenizer();
 
     int read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity);
