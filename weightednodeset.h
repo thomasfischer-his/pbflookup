@@ -17,6 +17,8 @@
 #ifndef WEIGHTED_NODE_SET_H
 #define WEIGHTED_NODE_SET_H
 
+#include <climits>
+
 #include "idtree.h"
 
 struct WeightedNode {
@@ -77,7 +79,7 @@ struct RingCluster {
 class WeightedNodeSet : public std::vector<WeightedNode> {
 public:
     WeightedNodeSet();
-    bool appendNode(uint64_t id, double weight);
+    bool appendNode(uint64_t id, double weight, int overwriteX = INT_MAX, int overwriteY = INT_MAX);
     bool appendWay(uint64_t id, double weight);
     bool appendRelation(uint64_t id, double weight);
 

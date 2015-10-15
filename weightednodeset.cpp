@@ -28,18 +28,21 @@ WeightedNodeSet::WeightedNodeSet()
     /// nothing
 }
 
-bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
+bool WeightedNodeSet::appendNode(uint64_t id, double weight, int overwriteX, int overwriteY) {
     Coord c;
     const bool found = node2Coord->retrieve(id, c);
     if (found) {
         bool alreadyKnown = false;
-        for (int i = size() - 1; !alreadyKnown && i >= 0; --i)
-            if (at(i).id == id) {
-                at(i).weight *= 1.2;
+        for (auto it = begin(); it != end(); ++it) {
+            WeightedNode &wn = *it;
+            if (wn.id == id) {
+                wn.weight *= 1.2; // TODO put into configuration file
                 alreadyKnown = true;
+                break;
             }
+        }
         if (!alreadyKnown)
-            push_back(WeightedNode(id, weight, c.y, c.x));
+            push_back(WeightedNode(id, weight, overwriteY == INT_MAX ? c.y : overwriteY, overwriteX == INT_MAX ? c.x : overwriteX));
         return true;
     } else {
         Error::err("Could not retrieve coordinates for node %llu", id);
@@ -55,7 +58,7 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
             /// Way is closed (e.g. a shape of a building)
             /// Compute a center for this shape
             int64_t sumX = 0, sumY = 0;
-            for (size_t i = 0; i < wn.num_nodes; ++i) {
+            for (size_t i = 0; i < wn.num_nodes - 1 /** skip last node, identical to first one */; ++i) {
                 Coord c;
                 const bool foundNode = node2Coord->retrieve(wn.nodes[i], c);
                 if (foundNode) {
@@ -66,8 +69,13 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
                     return false;
                 }
             }
+            sumY /= (wn.num_nodes - 1 /** skip last node, identical to first one */);
+            sumX /= (wn.num_nodes - 1);
             /// Store shape's center with way's first node id
-            push_back(WeightedNode(wn.nodes[0], weight, sumY / wn.num_nodes, sumX / wn.num_nodes));
+            if (!appendNode(wn.nodes[0], weight, sumX, sumY)) return false;
+#ifdef DEBUG
+            Error::debug("     Way %llu is closed, center is at http://www.openstreetmap.org/#map=17/%.4f/%.4f", id, Coord::toLatitude(sumY), Coord::toLongitude(sumX));
+#endif
         } else {
             /// Way is open
             const double weightPerNode = weight / wn.num_nodes;
@@ -92,7 +100,10 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
                 appendNode(rm.members[i].id, weightPerMember);
                 break;
             case OSMElement::Way:
-                appendWay(rm.members[i].id, weightPerMember);
+                if (!(rm.member_flags[i] & RelationFlags::RoleInner)) {
+                    /// skip ways that are 'inner' such as a building's inner courtyard
+                    appendWay(rm.members[i].id, weightPerMember);
+                }
                 break;
             case OSMElement::Relation:
                 appendRelation(rm.members[i].id, weightPerMember);
@@ -116,6 +127,12 @@ void WeightedNodeSet::dump() const {
         if (wn.weight > 0.01) {
             Error::info("Node %5i, id=%8llu, weight=%5.3f, x=%i, y=%i", i, wn.id, wn.weight, wn.x, wn.y);
             Error::debug("  http://www.openstreetmap.org/node/%llu", wn.id);
+            Coord nodeCoord;
+            if (node2Coord->retrieve(wn.id, nodeCoord) && (nodeCoord.x != wn.x || nodeCoord.y != wn.y))
+                /// A different coordinate has been set of the weighted node
+                /// than the node id may imply
+                Error::debug("   http://www.openstreetmap.org/#map=17/%.5f/%.5f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
+
             lat += Coord::toLatitude(wn.y) * wn.weight;
             lon += Coord::toLongitude(wn.x) * wn.weight;
             sumweight += wn.weight;
