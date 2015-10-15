@@ -241,7 +241,8 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
         return result; ///< empty
     if (cur->elements_size == 0 || cur->elements == NULL) {
 #ifdef DEBUG
-        Error::debug("SwedishText::Tree did not find valid leaf for word %s", word);
+        if (warnings & WarningWordNotInTree)
+            Error::debug("SwedishText::Tree did not find valid leaf for word %s", word);
 #endif // DEBUG
         return result; ///< empty
     }
