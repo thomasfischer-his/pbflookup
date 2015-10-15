@@ -116,11 +116,13 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
 
             const size_t wordlen = strlen(combined);
             std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-            if (!id_list.empty()) {
-                if (id_list.size() > 1000)
-                    Error::debug("Got too many hits (%i) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
+            if (id_list.empty())
+                Error::info("Got no hits for word '%s' (s=%i), skipping", combined, s);
+            else {
+                if (id_list.size() > 1000) // TODO put into configuration file
+                    Error::info("Got too many hits (%i>1000) for word '%s' (s=%i), skipping", id_list.size(), combined, s);
                 else {
-                    Error::debug("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
+                    Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
                     for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
