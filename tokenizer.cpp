@@ -22,6 +22,7 @@
 #include <unordered_set>
 
 #include "error.h"
+#include "config.h"
 
 class Tokenizer::Private
 {
@@ -51,7 +52,7 @@ private:
 public:
     std::vector<std::string> input_lines;
 
-    Private(Tokenizer *parent, const char *mapname)
+    Private(Tokenizer *parent)
         : p(parent) {
         char filenamebuffer[1024];
         snprintf(filenamebuffer, 1024, "%s/git/pbflookup/stopwords-%s.txt", getenv("HOME"), mapname);
@@ -89,8 +90,8 @@ public:
 
 };
 
-Tokenizer::Tokenizer(const char *mapname)
-    : d(new Tokenizer::Private(this, mapname)) {
+Tokenizer::Tokenizer()
+    : d(new Tokenizer::Private(this)) {
     if (d == NULL)
         Error::err("Could not allocate memory for Tokenizer::Private");
 }
