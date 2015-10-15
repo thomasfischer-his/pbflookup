@@ -254,7 +254,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 const uint64_t id = pg.nodes(j).id();
-                                node2Coord->increaseUseCounter(id);
+                                node2Coord->increaseCounter(id);
                                 const OSMElement element(id, OSMElement::Node);
                                 const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), element);
                                 if (!result)
@@ -293,7 +293,7 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
-                                    node2Coord->increaseUseCounter(last_id);
+                                    node2Coord->increaseCounter(last_id);
                                     const OSMElement element(last_id, OSMElement::Node);
                                     const bool result = swedishTextTree->insert(primblock.stringtable().s(value), element);
                                     if (!result)
@@ -335,7 +335,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         WayNodes wn(simplifiedWaySize);
                         memcpy(wn.nodes, simplifiedWay, sizeof(uint64_t)*simplifiedWaySize);
                         for (int k = 0; k < simplifiedWaySize; ++k)
-                            node2Coord->increaseUseCounter(simplifiedWay[k]);
+                            node2Coord->increaseCounter(simplifiedWay[k]);
                         wayNodes->insert(wayId, wn);
                     }
                 }
@@ -447,7 +447,7 @@ int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, uint64_t *
         }
         else
             for (int i = a + 1; i < b; ++i)
-                if (node2Coord->useCounter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
+                if (node2Coord->counter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
                     result[i] = 0;
                 }
     }

@@ -28,15 +28,15 @@ struct IdTreeNode {
 #ifdef DEBUG
         id = 0;
 #endif // DEBUG
-        useCount = 0;
+        counter = 0;
     }
 
     explicit IdTreeNode(std::istream &input) {
-        useCount = 0;
+        counter = 0;
 #ifdef DEBUG
         input.read((char *)&id, sizeof(id));
 #endif // DEBUG
-        input.read((char *)&useCount, sizeof(useCount));
+        input.read((char *)&counter, sizeof(counter));
         data = T(input);
 
         char chr;
@@ -76,7 +76,7 @@ struct IdTreeNode {
 #ifdef DEBUG
         output.write((char *)&id, sizeof(id));
 #endif // DEBUG
-        output.write((char *)&useCount, sizeof(useCount));
+        output.write((char *)&counter, sizeof(counter));
         data.write(output);
 
         char chr = '\0';
@@ -108,7 +108,7 @@ struct IdTreeNode {
 #endif // DEBUG
     T data;
 
-    uint16_t useCount;
+    uint16_t counter;
 };
 
 template <typename T>
@@ -311,20 +311,20 @@ bool IdTree<T>::remove(uint64_t id) {
 }
 
 template <class T>
-uint16_t IdTree<T>::useCounter(const uint64_t id) const {
+uint16_t IdTree<T>::counter(const uint64_t id) const {
     IdTreeNode<T> *cur = d->findNodeForId(id);
     if (cur == NULL)
         return 0;
 
-    return cur->useCount;
+    return cur->counter;
 }
 
 template <class T>
-void IdTree<T>::increaseUseCounter(const uint64_t id) {
+void IdTree<T>::increaseCounter(const uint64_t id) {
     IdTreeNode<T> *cur = d->findNodeForId(id);
 
     if (cur != NULL)
-        ++cur->useCount;
+        ++cur->counter;
 }
 
 template <class T>

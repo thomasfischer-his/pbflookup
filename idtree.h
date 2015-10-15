@@ -298,8 +298,8 @@ public:
     bool retrieve(const uint64_t id, T &) const;
     bool remove(uint64_t id);
 
-    uint16_t useCounter(const uint64_t id) const;
-    void increaseUseCounter(const uint64_t id);
+    uint16_t counter(const uint64_t id) const;
+    void increaseCounter(const uint64_t id);
 
     std::ostream &write(std::ostream &output);
 
