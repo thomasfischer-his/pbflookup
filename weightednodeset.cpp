@@ -41,8 +41,10 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight) {
         if (!alreadyKnown)
             push_back(WeightedNode(id, weight, c.y, c.x));
         return true;
-    } else
+    } else {
+        Error::err("Could not retrieve coordinates for node %llu", id);
         return false;
+    }
 }
 
 bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
@@ -73,8 +75,10 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
                 if (!appendNode(wn.nodes[i], weightPerNode)) return false;
         }
         return true;
-    } else
+    } else {
+        Error::err("Could not retrieve members for way %llu", id);
         return false;
+    }
 }
 
 bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
@@ -98,8 +102,10 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
             }
         }
         return true;
-    } else
+    } else {
+        Error::err("Could not retrieve members for relation %llu", id);
         return false;
+    }
 }
 
 void WeightedNodeSet::dump() const {
