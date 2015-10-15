@@ -17,6 +17,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
@@ -246,6 +247,20 @@ int main(int argc, char *argv[])
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
         if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
+            for (auto it = testsets.cbegin(); it != testsets.cend(); ++it) {
+                Error::info("Test set: %s", it->name.c_str());
+                std::stringstream ss(it->text);
+                std::vector<std::string> words;
+                Tokenizer tokenizer;
+                tokenizer.read_words(ss, words, Tokenizer::Unique);
+                WeightedNodeSet wns;
+                TokenProcessor tokenProcessor;
+                tokenProcessor.evaluteWordCombinations(words, wns);
+                tokenProcessor.evaluteRoads(words, wns);
+                wns.normalize();
+                wns.dump();
+                Error::info("======================================================");
+            }
 
 
             std::ifstream textfile(inputextfilename);
