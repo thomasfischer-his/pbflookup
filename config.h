@@ -17,9 +17,21 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <string>
+#include <vector>
+
 extern char tempdir[];
 extern char mapname[];
 extern char osmpbffilename[];
+extern char inputextfilename[];
+extern char stopwordfilename[];
+
+struct testset {
+    std::string name;
+    double lat, lon;
+    std::string text;
+};
+extern std::vector<struct testset> testsets;
 
 bool init_configuration(const char *configfilename);
 

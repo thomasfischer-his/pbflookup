@@ -28,6 +28,34 @@
 char tempdir[MAX_STRING_LEN];
 char mapname[MAX_STRING_LEN];
 char osmpbffilename[MAX_STRING_LEN];
+char inputextfilename[MAX_STRING_LEN];
+char stopwordfilename[MAX_STRING_LEN];
+
+std::vector<struct testset> testsets;
+
+void replacetildehome(char *text) {
+    if (text[0] == '~' && text[1] == '/') {
+        static const char *home = getenv("HOME");
+        static char temp[MAX_STRING_LEN];
+        strncpy(temp, text, MAX_STRING_LEN);
+        strncpy(text, home, MAX_STRING_LEN);
+        strncpy(text + strlen(home), temp + 1, MAX_STRING_LEN - strlen(home));
+    }
+}
+
+void replacevariablenames(char *text) {
+    static const char needle_mapname[] = "${mapname}";
+    char *needlepos = strstr(text, needle_mapname);
+    if (needlepos != NULL) {
+        static char temp[MAX_STRING_LEN];
+        strncpy(temp, text, MAX_STRING_LEN);
+        const size_t prefixlen = needlepos - text;
+        const size_t mapnamelen = strlen(mapname);
+        static const size_t variablelen = strlen(needle_mapname);
+        strncpy(needlepos, mapname, MAX_STRING_LEN - prefixlen);
+        strncpy(needlepos + mapnamelen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
+    }
+}
 
 bool init_configuration(const char *configfilename) {
 #ifdef DEBUG
@@ -35,9 +63,16 @@ bool init_configuration(const char *configfilename) {
 #endif // DEBUG
 
     libconfig::Config config;
+
+    const char *lastslash = rindex(configfilename, '/');
+    if (lastslash != NULL) {
+        char temp[MAX_STRING_LEN];
+        strncpy(temp, configfilename, lastslash - configfilename + 1);
+        config.setIncludeDir(temp);
+    }
+
     try
     {
-        char temp[MAX_STRING_LEN];
         const char *buffer;
         config.readFile(configfilename);
 
@@ -59,32 +94,63 @@ bool init_configuration(const char *configfilename) {
         else
             snprintf(mapname, MAX_STRING_LEN - 1, "sweden");
 #ifdef DEBUG
-        Error::info("  mapname = '%s'", mapname);
+        Error::debug("  mapname = '%s'", mapname);
 #endif // DEBUG
 
         if (config.lookupValue("osmpbffilename", buffer))
             strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
         else
             snprintf(osmpbffilename, MAX_STRING_LEN - 1, "~/git/pbflookup/${mapname}.osm.pbf");
-        if (osmpbffilename[0] == '~' && osmpbffilename[1] == '/') {
-            strncpy(temp, osmpbffilename, MAX_STRING_LEN);
-            const char *home = getenv("HOME");
-            strncpy(osmpbffilename, home, MAX_STRING_LEN);
-            strncpy(osmpbffilename + strlen(home), temp + 1, MAX_STRING_LEN - strlen(home));
-        }
-        char *needle = strstr(osmpbffilename, "${mapname}");
-        if (needle != NULL) {
-            strncpy(temp, osmpbffilename, MAX_STRING_LEN);
-            const size_t prefixlen = needle - osmpbffilename;
-            const size_t mapnamelen = strlen(mapname);
-            static const size_t variablelen = strlen("${mapname}");
-            strncpy(needle, mapname, MAX_STRING_LEN - prefixlen);
-            strncpy(needle + mapnamelen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
-        }
+        replacetildehome(osmpbffilename);
+        replacevariablenames(osmpbffilename);
 #ifdef DEBUG
-        Error::info("  osmpbffilename = '%s'", osmpbffilename);
+        Error::debug("  osmpbffilename = '%s'", osmpbffilename);
 #endif // DEBUG
 
+        if (config.lookupValue("inputextfilename", buffer))
+            strncpy(inputextfilename, buffer, MAX_STRING_LEN - 1);
+        else
+            snprintf(inputextfilename, MAX_STRING_LEN - 1, "~/git/pbflookup/input-${mapname}.txt");
+        replacetildehome(inputextfilename);
+        replacevariablenames(inputextfilename);
+#ifdef DEBUG
+        Error::debug("  inputextfilename = '%s'", inputextfilename);
+#endif // DEBUG
+
+        if (config.lookupValue("stopwordfilename", buffer))
+            strncpy(stopwordfilename, buffer, MAX_STRING_LEN - 1);
+        else
+            snprintf(stopwordfilename, MAX_STRING_LEN - 1, "~/git/pbflookup/stopwords-${mapname}.txt");
+        replacetildehome(stopwordfilename);
+        replacevariablenames(stopwordfilename);
+#ifdef DEBUG
+        Error::debug("  stopwordfilename = '%s'", stopwordfilename);
+#endif // DEBUG
+
+        testsets.clear();
+        if (config.exists("testsets")) {
+            libconfig::Setting &setting = config.lookup("testsets");
+            if (setting.isList()) {
+                Error::info("Testsets: %i in total", setting.getLength());
+                for (auto it = setting.begin(); it != setting.end(); ++it) {
+                    const libconfig::Setting &testsetSetting = *it;
+                    if (testsetSetting.isGroup()) {
+                        struct testset ts;
+                        ts.name = testsetSetting.lookup("name").c_str();
+                        ts.lat = testsetSetting.lookup("latitude");
+                        ts.lon = testsetSetting.lookup("longitude");
+                        ts.text = testsetSetting.lookup("text").c_str();
+                        Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.lat, ts.lon);
+                        testsets.push_back(ts);
+                    }
+                }
+            }
+        }
+    }
+    catch (libconfig::ParseException &pe)
+    {
+        Error::err("ParseException: Parsing configuration file '%s' failed in line %i: %s", pe.getFile(), pe.getLine(), pe.getError());
+        return false;
     }
     catch (std::exception &e)
     {
