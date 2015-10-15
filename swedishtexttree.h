@@ -28,12 +28,13 @@ struct SwedishTextNode;
 
 class SwedishTextTree {
 public:
+    enum Warnings {NoWarnings = 0, WarningWordNotInTree = 1, WarningsAll = 0x0fffffff};
     explicit SwedishTextTree();
     explicit SwedishTextTree(std::istream &input);
     ~SwedishTextTree();
 
     bool insert(const std::string &input, const OSMElement &element);
-    std::vector<OSMElement> retrieve(const char *word);
+    std::vector<OSMElement> retrieve(const char *word, Warnings warnings = WarningsAll);
 
     size_t size() const;
 
