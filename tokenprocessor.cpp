@@ -103,8 +103,9 @@ TokenProcessor::~TokenProcessor() {
 
 void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const {
     static const size_t combined_len = 8188;
+    static const int max_number_words_combined = 3; // TODO put into configuration file
     char combined[combined_len + 4];
-    for (int s = min(3, words.size()); s >= 1; --s) {
+    for (int s = min(max_number_words_combined, words.size()); s >= 1; --s) {
         for (size_t i = 0; i <= words.size() - s; ++i) {
             char *p = combined;
             for (int k = 0; k < s; ++k) {
