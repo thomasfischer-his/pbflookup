@@ -49,9 +49,29 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
     WayNodes wn;
     const bool found = wayNodes->retrieve(id, wn);
     if (found) {
-        const double weightPerNode = weight / wn.num_nodes;
-        for (uint32_t i = 0; i < wn.num_nodes; ++i)
-            if (!appendNode(wn.nodes[i], weightPerNode)) break;
+        if (wn.num_nodes > 1 && wn.nodes[0] == wn.nodes[wn.num_nodes - 1]) {
+            /// Way is closed (e.g. a shape of a building)
+            /// Compute a center for this shape
+            int64_t sumX = 0, sumY = 0;
+            for (size_t i = 0; i < wn.num_nodes; ++i) {
+                Coord c;
+                const bool foundNode = node2Coord->retrieve(wn.nodes[i], c);
+                if (foundNode) {
+                    sumX += c.x;
+                    sumY += c.y;
+                } else {
+                    Error::err("Could not retrieve coordinates for node %llu", wn.nodes[i]);
+                    return false;
+                }
+            }
+            /// Store shape's center with way's first node id
+            push_back(WeightedNode(wn.nodes[0], weight, sumY / wn.num_nodes, sumX / wn.num_nodes));
+        } else {
+            /// Way is open
+            const double weightPerNode = weight / wn.num_nodes;
+            for (uint32_t i = 0; i < wn.num_nodes; ++i)
+                if (!appendNode(wn.nodes[i], weightPerNode)) return false;
+        }
         return true;
     } else
         return false;
