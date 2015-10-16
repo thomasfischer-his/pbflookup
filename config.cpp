@@ -86,7 +86,7 @@ bool init_configuration(const char *configfilename) {
                 snprintf(tempdir, MAX_STRING_LEN - 1, "/tmp");
         }
 #ifdef DEBUG
-        Error::info("  tempdir = '%s'", tempdir);
+        Error::debug("  tempdir = '%s'", tempdir);
 #endif // DEBUG
 
         if (config.lookupValue("mapname", buffer))
