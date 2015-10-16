@@ -297,6 +297,12 @@ public:
     bool insert(uint64_t id, T const &);
     bool retrieve(const uint64_t id, T &) const;
     bool remove(uint64_t id);
+    /**
+     * The number of elements inserted (and not yet removed)
+     * into this tree.
+     * @return Number of elements
+     */
+    size_t size() const;
 
     uint16_t counter(const uint64_t id) const;
     void increaseCounter(const uint64_t id);

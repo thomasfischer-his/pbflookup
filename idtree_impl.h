@@ -127,12 +127,14 @@ private:
 public:
     static const unsigned int num_children;
     static const uint64_t mask;
+    size_t size;
 
     struct IdTreeNode<T> *root;
 
     Private(IdTree *parent)
         : p(parent) {
         root = NULL;
+        size = 0;
     }
 
     ~Private() {
@@ -264,6 +266,7 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
 #endif // DEBUG
     cur->data = data;
 
+    ++d->size;
     return true;
 }
 
@@ -308,6 +311,11 @@ bool IdTree<T>::remove(uint64_t id) {
     }
 
     return true;
+}
+
+template <class T>
+size_t IdTree<T>::size() const {
+    return d->size;
 }
 
 template <class T>
