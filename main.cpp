@@ -251,6 +251,7 @@ int main(int argc, char *argv[])
                 Error::info("Test set: %s", it->name.c_str());
                 std::stringstream ss(it->text);
                 std::vector<std::string> words;
+                Timer timer;
                 Tokenizer tokenizer;
                 tokenizer.read_words(ss, words, Tokenizer::Unique);
                 WeightedNodeSet wns;
@@ -258,7 +259,9 @@ int main(int argc, char *argv[])
                 tokenProcessor.evaluteWordCombinations(words, wns);
                 tokenProcessor.evaluteRoads(words, wns);
                 wns.normalize();
+                timer.elapsed(&cputime, &walltime);
                 wns.dump();
+                Error::info("Spent CPU time to run testset '%s': %lius == %.1fs  (wall time: %lius == %.1fs)", it->name.c_str(), cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
                 Error::info("======================================================");
             }
 
