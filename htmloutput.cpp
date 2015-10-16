@@ -61,9 +61,10 @@ HtmlOutput::~HtmlOutput() {
 
 bool HtmlOutput::write(const std::vector<std::string> &tokenizedWords, const std::string &outputDirectory) const {
     const int mkdirResult = mkdir(outputDirectory.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
-    if (mkdirResult != 0 && mkdirResult != EEXIST) {
-        Error::warn("Could not create directory '%s' (mkdirResult=%d)", outputDirectory.c_str(), mkdirResult);
-        //return false;
+    const int e = errno;
+    if (mkdirResult != 0 && e != EEXIST) {
+        Error::warn("Could not create directory '%s'", outputDirectory.c_str(), mkdirResult);
+        return false;
     }
 
 
