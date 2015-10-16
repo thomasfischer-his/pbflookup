@@ -45,7 +45,7 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight, int overwriteX, int
             push_back(WeightedNode(id, weight, overwriteY == INT_MAX ? c.y : overwriteY, overwriteX == INT_MAX ? c.x : overwriteX));
         return true;
     } else {
-        Error::err("Could not retrieve coordinates for node %llu", id);
+        Error::warn("Could not retrieve coordinates for node %llu", id);
         return false;
     }
 }
@@ -65,7 +65,7 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
                     sumX += c.x;
                     sumY += c.y;
                 } else {
-                    Error::err("Could not retrieve coordinates for node %llu", wn.nodes[i]);
+                    Error::warn("Could not retrieve coordinates for node %llu", wn.nodes[i]);
                     return false;
                 }
             }
@@ -84,7 +84,7 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
         }
         return true;
     } else {
-        Error::err("Could not retrieve members for way %llu", id);
+        Error::warn("Could not retrieve members for way %llu", id);
         return false;
     }
 }
