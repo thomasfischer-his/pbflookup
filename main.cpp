@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
 
             std::ifstream textfile(inputextfilename);
             if (textfile.is_open()) {
-                Error::info("Reading token from '%s'", filenamebuffer);
+                Error::info("Reading token from '%s'", inputextfilename);
                 timer.start();
 
                 std::vector<std::string> words;
