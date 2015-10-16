@@ -15,6 +15,7 @@
  ***************************************************************************/
 
 #include <vector>
+#include <typeinfo>
 
 template <typename T>
 struct IdTreeNode {
@@ -144,7 +145,7 @@ public:
 
     IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = NULL) const {
         if (root == NULL) {
-            Error::warn("Tree root is invalid, no id was ever added");
+            Error::warn("IdTree<%s> root is invalid, no id was ever added", typeid(T).name());
             return NULL;
         }
 
@@ -153,7 +154,7 @@ public:
         for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
             if (cur->children == NULL) {
 #ifdef DEBUG
-                Error::debug("IdTree node has no children to follow id %llu", id);
+                Error::debug("IdTree<%s> node has no children to follow id %llu", typeid(T).name(), id);
 #endif // DEBUG
                 return NULL;
             }
@@ -169,7 +170,7 @@ public:
 
             if (cur->children[lowerBits] == NULL) {
 #ifdef DEBUG
-                Error::debug("IdTree node has no children at pos %d to follow id %llu", lowerBits, id);
+                Error::debug("IdTree<%s> node has no children at pos %d to follow id %llu", typeid(T).name(), lowerBits, id);
 #endif // DEBUG
                 return NULL;
             }
@@ -181,7 +182,7 @@ public:
 
 #ifdef DEBUG
         if (cur->id != id) {
-            Error::warn("Ids do not match: %llu != %llu", cur->id, id);
+            Error::warn("IdTree<%s>: Ids do not match: %llu != %llu", typeid(T).name(), cur->id, id);
             return NULL;
         }
 #endif // DEBUG
@@ -203,9 +204,9 @@ IdTree<T>::IdTree()
     if (d == NULL)
         Error::err("Could not allocate memory for IdTree<T>::Private");
 #ifdef REVERSE_ID_TREE
-    Error::debug("Using most significant bits as first sorting critera in IdTree");
+    Error::debug("Using most significant bits as first sorting critera in IdTree<%s>", typeid(T).name());
 #else // REVERSE_ID_TREE
-    Error::debug("Using least significant bits as first sorting critera in IdTree");
+    Error::debug("Using least significant bits as first sorting critera in IdTree<%s>", typeid(T).name());
 #endif // REVERSE_ID_TREE
 }
 
@@ -227,7 +228,7 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
     if (d->root == NULL) {
         d->root = new IdTreeNode<T>();
         if (d->root == NULL)
-            Error::err("Could not allocate memory for IdTree::root");
+            Error::err("Could not allocate memory for IdTree<%s>::root", typeid(T).name());
     }
 
     IdTreeNode<T> *cur = d->root;
@@ -236,7 +237,7 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
         if (cur->children == NULL) {
             cur->children = (IdTreeNode<T> **)calloc(IdTree::Private::num_children, sizeof(IdTreeNode<T> *));
             if (cur->children == NULL)
-                Error::err("Could not allocate memory for cur->children");
+                Error::err("IdTree<%s>: Could not allocate memory for cur->children", typeid(T).name());
         }
 
 #ifdef REVERSE_ID_TREE
@@ -251,11 +252,11 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
         if (cur->children[lowerBits] == NULL) {
             cur->children[lowerBits] = new IdTreeNode<T>();
             if (cur->children[lowerBits] == NULL)
-                Error::err("Could not allocate memory for cur->children[lowerBits]");
+                Error::err("IdTree<%s>: Could not allocate memory for cur->children[lowerBits]", typeid(T).name());
         }
 #ifdef DEBUG
         else if (s == 0)
-            Error::err("Leaf already in use: %llu != %llu", id, cur->children[lowerBits]->id);
+            Error::err("IdTree<%s>: Leaf already in use: %llu != %llu", typeid(T).name(), id, cur->children[lowerBits]->id);
 #endif // DEBUG
 
         cur = cur->children[lowerBits];
