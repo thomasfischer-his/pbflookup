@@ -32,9 +32,9 @@ struct WayNodes {
         nodes = NULL;
     }
 
-    WayNodes(uint32_t num) {
-        num_nodes = num;
-        nodes = (uint64_t *)calloc(num, sizeof(uint64_t));
+    WayNodes(uint32_t _num_nodes) {
+        num_nodes = _num_nodes;
+        nodes = (uint64_t *)calloc(_num_nodes, sizeof(uint64_t));
         if (nodes == NULL)
             Error::err("Could not allocate memory for WayNodes::nodes");
     }
