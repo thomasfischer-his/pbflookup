@@ -93,26 +93,27 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
     RelationMem rm;
     const bool found = relMembers->retrieve(id, rm);
     if (found) {
+        bool result = true;
         const double weightPerMember = weight / rm.num_members;
         for (uint32_t i = 0; i < rm.num_members; ++i) {
             switch (rm.members[i].type) {
             case OSMElement::Node:
-                appendNode(rm.members[i].id, weightPerMember);
+                result &= appendNode(rm.members[i].id, weightPerMember);
                 break;
             case OSMElement::Way:
                 if (!(rm.member_flags[i] & RelationFlags::RoleInner)) {
                     /// skip ways that are 'inner' such as a building's inner courtyard
-                    appendWay(rm.members[i].id, weightPerMember);
+                    result &= appendWay(rm.members[i].id, weightPerMember);
                 }
                 break;
             case OSMElement::Relation:
-                appendRelation(rm.members[i].id, weightPerMember);
+                result &= appendRelation(rm.members[i].id, weightPerMember);
                 break;
             default:
                 Error::debug("Can only append nodes or ways to relations (relation %llu, member %llu of type %d)", id, rm.members[i].id, rm.members[i].type);
             }
         }
-        return true;
+        return result;
     } else {
         Error::err("Could not retrieve members for relation %llu", id);
         return false;
