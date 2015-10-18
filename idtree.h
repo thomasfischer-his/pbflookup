@@ -218,19 +218,22 @@ public:
 };
 
 struct Coord {
+    /**
+     * Create a new coordinate, initialized with x=y=0.
+     */
     Coord() {
         x = y = 0;
     }
 
-    Coord(int _x, int _y) {
-        x = _x;
-        y = _y;
-    }
-
-    Coord &operator=(const Coord &other) {
-        x = other.x;
-        y = other.y;
-        return *this;
+    /**
+     * Create a new coordinate, initialized with given values
+     * for x and y on the decimeter grid.
+     * @param x Initial x-coordinate
+     * @param y Initial y-coordinate
+     */
+    Coord(int x, int y) {
+        this->x = x;
+        this->y = y;
     }
 
     Coord(std::istream &input) {
@@ -252,7 +255,13 @@ struct Coord {
         return output;
     }
 
-    static Coord fromLatLon(double longitude, double latitude) {
+    Coord &operator=(const Coord &other) {
+        x = other.x;
+        y = other.y;
+        return *this;
+    }
+
+    static Coord fromLonLat(double longitude, double latitude) {
         return Coord(fromLongitude(longitude), fromLatitude(latitude));
     }
 
