@@ -18,6 +18,9 @@
 
 #include <cmath>
 
+#include <unordered_set>
+#include <algorithm>
+
 #include "sweden.h"
 #include "swedishtexttree.h"
 #include "globalobjects.h"
@@ -88,6 +91,73 @@ public:
 
     static inline double initialWeight(int s, size_t wordlen) {
         return 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
+    }
+
+    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
+        std::unordered_set<uint64_t> node_ids;
+        for (auto it = id_list.cbegin(); it != id_list.cend(); ++it) {
+            const uint64_t id = (*it).id;
+            const OSMElement::ElementType type = (*it).type;
+            if (type == OSMElement::Node)
+                node_ids.insert(id);
+            else if (type == OSMElement::Way) {
+                WayNodes wn;
+                const bool found = wayNodes->retrieve(id, wn);
+                if (found)
+                    for (size_t i = 0; i < wn.num_nodes; ++i)
+                        node_ids.insert(wn.nodes[i]);
+            } else if (type == OSMElement::Relation) {
+                RelationMem rm;
+                const bool found = relMembers->retrieve(id, rm);
+                if (found)
+                    for (size_t i = 0; i < rm.num_members; ++i)
+                        if (rm.members[i].type == OSMElement::Node)
+                            node_ids.insert(rm.members[i].id);
+                        else if (rm.members[i].type == OSMElement::Way) {
+                            WayNodes wn;
+                            const bool found = wayNodes->retrieve(rm.members[i].id, wn);
+                            if (found)
+                                for (size_t i = 0; i < wn.num_nodes; ++i)
+                                    node_ids.insert(wn.nodes[i]);
+                        }
+            }
+        }
+
+        if (node_ids.size() < 5) return 0; ///< too few nodes to be considered
+
+        std::vector<int> distances;
+        auto itA = node_ids.cbegin();
+        auto itB = node_ids.cbegin();
+        auto itC = ++(++node_ids.cbegin());
+        while (itA != node_ids.cend()) {
+            ++itB;
+            if (itB == node_ids.cend()) itB = node_ids.cbegin();
+            ++itC;
+            if (itC == node_ids.cend()) itC = node_ids.cbegin();
+
+            Coord cA, cB, cC;
+            if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB) && node2Coord->retrieve(*itC, cC)) {
+                if (*itA > *itB) {
+                    const int d = Coord::distanceLatLon(cA, cB);
+                    if (d > 1000000)
+                        Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
+                    distances.push_back(d);
+                }
+                if (*itA > *itC) {
+                    const int d = Coord::distanceLatLon(cA, cC);
+                    if (d > 1000000)
+                        Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itC, d);
+                    distances.push_back(d);
+                }
+            }
+
+            ++itA;
+        }
+        std::sort(distances.begin(), distances.end(), std::less<int>());
+
+        Error::debug(" distances %i %i %i", distances[0], distances[distances.size() / 4], distances[distances.size() - 1]);
+
+        return distances[distances.size() / 4]; ///< take first quartile
     }
 };
 
