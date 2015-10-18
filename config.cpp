@@ -110,7 +110,8 @@ bool init_configuration(const char *configfilename) {
         if (config.lookupValue("inputextfilename", buffer))
             strncpy(inputextfilename, buffer, MAX_STRING_LEN - 1);
         else
-            snprintf(inputextfilename, MAX_STRING_LEN - 1, "~/git/pbflookup/input-${mapname}.txt");
+            /// If no 'inputextfilename' was defined, do not provide any default
+            inputextfilename[0] = '\0';
         replacetildehome(inputextfilename);
         replacevariablenames(inputextfilename);
 #ifdef DEBUG
