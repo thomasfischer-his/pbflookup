@@ -221,7 +221,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
         if (cur->children == NULL) {
 #ifdef DEBUG
             if (warnings & WarningWordNotInTree)
-                Error::debug("SwedishText::Tree node has no children to follow for word %s at position %d", word, pos);
+                Error::debug("SwedishTextTree node has no children to follow for word %s at position %d", word, pos);
 #endif // DEBUG
             return result; ///< empty
         }
@@ -229,7 +229,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
         if (next == NULL) {
 #ifdef DEBUG
             if (warnings & WarningWordNotInTree)
-                Error::debug("SwedishText::Tree node has no children to follow for word %s at position %d for code %d", word, pos, code[pos]);
+                Error::debug("SwedishTextTree node has no children to follow for word %s at position %d for code %d", word, pos, code[pos]);
 #endif // DEBUG
             return result; ///< empty
         }
@@ -242,7 +242,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
     if (cur->elements_size == 0 || cur->elements == NULL) {
 #ifdef DEBUG
         if (warnings & WarningWordNotInTree)
-            Error::debug("SwedishText::Tree did not find valid leaf for word %s", word);
+            Error::debug("SwedishTextTree did not find valid leaf for word %s", word);
 #endif // DEBUG
         return result; ///< empty
     }
