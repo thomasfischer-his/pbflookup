@@ -299,8 +299,8 @@ void WeightedNodeSet::powerCluster(double alpha, double p) {
         change[i] = 0;
 
     Error::info("alpha=%.7f  p=%.7f", alpha, p);
-    static const int delta_ybound = (71.2 - 53.8) * decimeterDegreeLatitude + 0.5; ///< latitude
-    static const int delta_xbound = (31.2 - 4.4) * decimeterDegreeLongitude + 0.5; ///< longitude
+    static const int delta_ybound = Coord::fromLatitude(71.2) - Coord::fromLatitude(53.8); ///< latitude
+    static const int delta_xbound = Coord::fromLatitude(31.2) - Coord::fromLatitude(4.4); ///< longitude
     static const int64_t max_distsq = (int64_t)delta_ybound * delta_ybound + (int64_t)delta_xbound * delta_xbound;
     static const double max_dist = sqrt(max_distsq);
     for (int i = size() - 2; i >= 0; --i) {
