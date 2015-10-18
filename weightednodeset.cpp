@@ -73,9 +73,6 @@ bool WeightedNodeSet::appendWay(uint64_t id, double weight) {
             sumX /= (wn.num_nodes - 1);
             /// Store shape's center with way's first node id
             if (!appendNode(wn.nodes[0], weight, sumX, sumY)) return false;
-#ifdef DEBUG
-            Error::debug("     Way %llu is closed, center is at http://www.openstreetmap.org/#map=17/%.4f/%.4f", id, Coord::toLatitude(sumY), Coord::toLongitude(sumX));
-#endif
         } else {
             /// Way is open
             const double weightPerNode = weight / wn.num_nodes;
@@ -115,7 +112,7 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
         }
         return result;
     } else {
-        Error::err("Could not retrieve members for relation %llu", id);
+        Error::warn("Could not retrieve members for relation %llu", id);
         return false;
     }
 }
