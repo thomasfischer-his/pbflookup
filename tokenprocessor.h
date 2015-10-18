@@ -20,10 +20,6 @@
 #include "weightednodeset.h"
 #include "sweden.h"
 
-namespace SwedishText {
-class Tree;
-}
-
 class TokenProcessor
 {
 public:
