@@ -58,6 +58,12 @@ void replacevariablenames(char *text) {
 }
 
 bool init_configuration(const char *configfilename) {
+    memset(tempdir, 0, MAX_STRING_LEN);
+    memset(mapname, 0, MAX_STRING_LEN);
+    memset(osmpbffilename, 0, MAX_STRING_LEN);
+    memset(inputextfilename, 0, MAX_STRING_LEN);
+    memset(stopwordfilename, 0, MAX_STRING_LEN);
+
 #ifdef DEBUG
     Error::info("Loading configuration file '%s'", configfilename);
 #endif // DEBUG
@@ -67,7 +73,9 @@ bool init_configuration(const char *configfilename) {
     const char *lastslash = rindex(configfilename, '/');
     if (lastslash != NULL) {
         char temp[MAX_STRING_LEN];
-        strncpy(temp, configfilename, lastslash - configfilename + 1);
+        const size_t count = lastslash - configfilename + 1;
+        strncpy(temp, configfilename, count);
+        temp[count] = '\0';
         config.setIncludeDir(temp);
     }
 
