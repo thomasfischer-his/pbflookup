@@ -139,13 +139,13 @@ public:
             if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB) && node2Coord->retrieve(*itC, cC)) {
                 if (*itA > *itB) {
                     const int d = Coord::distanceLatLon(cA, cB);
-                    if (d > 1000000)
+                    if (d > 2500000) ///< 2500 km
                         Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
                     distances.push_back(d);
                 }
                 if (*itA > *itC) {
                     const int d = Coord::distanceLatLon(cA, cC);
-                    if (d > 1000000)
+                    if (d > 2500000) ///< 2500 km
                         Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itC, d);
                     distances.push_back(d);
                 }
@@ -154,8 +154,6 @@ public:
             ++itA;
         }
         std::sort(distances.begin(), distances.end(), std::less<int>());
-
-        Error::debug(" distances %i %i %i", distances[0], distances[distances.size() / 4], distances[distances.size() - 1]);
 
         return distances[distances.size() / 4]; ///< take first quartile
     }
