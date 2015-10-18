@@ -117,8 +117,25 @@ bool WeightedNodeSet::appendRelation(uint64_t id, double weight) {
     }
 }
 
+Coord WeightedNodeSet::weightedCenter() const {
+    Coord result;
+    double sumY = 0.0, sumX = 0.0, sumWeight = 0.0;
+    for (WeightedNodeSet::const_iterator it = cbegin(); it != cend(); ++it) {
+        const WeightedNode &wn = *it;
+        if (wn.weight > 0.001) {
+            sumY += wn.y * wn.weight;
+            sumX += wn.x * wn.weight;
+            sumWeight += wn.weight;
+        }
+    }
+    if (sumWeight > 0.0) {
+        result.y = sumY / sumWeight;
+        result.x = sumX / sumWeight;
+    }
+    return result;
+}
+
 void WeightedNodeSet::dump() const {
-    double lat = 0.0, lon = 0.0, sumweight = 0.0;
     int i = 0;
     for (WeightedNodeSet::const_iterator it = cbegin(); it != cend() && i < 20; ++it, ++i) {
         const WeightedNode &wn = *it;
@@ -130,15 +147,13 @@ void WeightedNodeSet::dump() const {
                 /// A different coordinate has been set of the weighted node
                 /// than the node id may imply
                 Error::debug("   http://www.openstreetmap.org/#map=17/%.5f/%.5f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
-
-            lat += Coord::toLatitude(wn.y) * wn.weight;
-            lon += Coord::toLongitude(wn.x) * wn.weight;
-            sumweight += wn.weight;
         }
     }
-    if (sumweight > 0.0) {
-        lat /= sumweight;
-        lon /= sumweight;
+
+    const Coord center = weightedCenter();
+    if (center.x != 0 && center.y != 0) {
+        double lat = Coord::toLatitude(center.y);
+        double lon = Coord::toLongitude(center.x);
         Error::info("Center location: lat= %.5f  lon= %.5f", lat, lon);
         Error::debug("  http://www.openstreetmap.org/#map=15/%.5f/%.5f", lat, lon);
     }

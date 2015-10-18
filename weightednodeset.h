@@ -83,6 +83,7 @@ public:
     bool appendWay(uint64_t id, double weight);
     bool appendRelation(uint64_t id, double weight);
 
+    Coord weightedCenter() const;
     void dump() const;
     void dumpGpx() const;
     void normalize();
