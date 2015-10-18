@@ -249,6 +249,8 @@ int main(int argc, char *argv[])
         if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
             for (auto it = testsets.cbegin(); it != testsets.cend(); ++it) {
                 Error::info("Test set: %s", it->name.c_str());
+                const Coord expected = Coord::fromLonLat(it->lon, it->lat);
+
                 std::stringstream ss(it->text);
                 std::vector<std::string> words;
                 Timer timer;
@@ -258,64 +260,87 @@ int main(int argc, char *argv[])
                 TokenProcessor tokenProcessor;
                 tokenProcessor.evaluteWordCombinations(words, wns);
                 tokenProcessor.evaluteRoads(words, wns);
-                wns.normalize();
                 timer.elapsed(&cputime, &walltime);
-                wns.dump();
-                Error::info("Spent CPU time to run testset '%s': %lius == %.1fs  (wall time: %lius == %.1fs)", it->name.c_str(), cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+                Error::info("Spent CPU time to evaluate data in testset '%s': %lius == %.1fs  (wall time: %lius == %.1fs)", it->name.c_str(), cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+
+                std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
+
+                Coord center = wns.weightedCenter();
+                Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
+                Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
+                Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
+                int maxwns = 10;
+                for (auto wnsit = wns.cbegin(); maxwns > 0 && wnsit != wns.cend(); ++wnsit, --maxwns) {
+                    const WeightedNode &wn = *wnsit;
+                    Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
+                    Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
+                }
+
+                timer.start();
+                Error::debug("Running 'powerCluster'");
+                wns.powerCluster(2.0, 2.0 / wns.size());
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to run powerCluster on testset '%s': %lius == %.1fs  (wall time: %lius == %.1fs)", it->name.c_str(), cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+
+                std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
+
+                center = wns.weightedCenter();
+                Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
+                Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
+                Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
+                maxwns = 10;
+                for (auto wnsit = wns.cbegin(); maxwns > 0 && wnsit != wns.cend(); ++wnsit, --maxwns) {
+                    const WeightedNode &wn = *wnsit;
+                    Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
+                    Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
+                }
+
                 Error::info("======================================================");
             }
 
+            if (inputextfilename != NULL && inputextfilename[0] != '\0') {
+                std::ifstream textfile(inputextfilename);
+                if (textfile.is_open()) {
+                    Error::info("Reading token from '%s'", inputextfilename);
+                    timer.start();
 
-            std::ifstream textfile(inputextfilename);
-            if (textfile.is_open()) {
-                Error::info("Reading token from '%s'", inputextfilename);
-                timer.start();
+                    std::vector<std::string> words;
+                    Tokenizer tokenizer;
+                    tokenizer.read_words(textfile, words, Tokenizer::Unique);
+                    textfile.close();
 
-                std::vector<std::string> words;
-                Tokenizer tokenizer;
-                tokenizer.read_words(textfile, words, Tokenizer::Unique);
-                textfile.close();
+                    WeightedNodeSet wns;
+                    TokenProcessor tokenProcessor;
+                    tokenProcessor.evaluteWordCombinations(words, wns);
+                    tokenProcessor.evaluteRoads(words, wns);
 
-                WeightedNodeSet wns;
-                TokenProcessor tokenProcessor;
-                tokenProcessor.evaluteWordCombinations(words, wns);
-                tokenProcessor.evaluteRoads(words, wns);
+                    Error::debug("Running 'powerCluster'");
+                    wns.powerCluster(2.0, 2.0 / wns.size());
+                    Error::debug("Running 'buildRingCluster'");
+                    wns.buildRingCluster();
+                    wns.dumpRingCluster();
 
-                /*
-                Error::debug("Running 'powerCluster'");
-                wns.powerCluster(2.0, 2.0 / wns.size());
-                Error::debug("Running 'powerMunicipalityCluster'");
-                wns.powerMunicipalityCluster(5.0 / wns.size());
-                Error::debug("Running 'normalize'");
-                wns.normalize();
-                wns.dumpGpx();
-                */
+                    if (!wns.ringClusters.empty()) {
+                        if (tokenProcessor.knownRoads().empty())
+                            Error::warn("No roads known");
+                        else
+                            for (auto it = tokenProcessor.knownRoads().cbegin(); it != tokenProcessor.knownRoads().cend(); ++it) {
+                                const Sweden::Road &road = *it;
+                                int64_t minSqDistance = INT64_MAX;
+                                uint64_t bestNode = 0;
+                                sweden->closestPointToRoad(wns.ringClusters.front().weightedCenterX, wns.ringClusters.front().weightedCenterY, road, bestNode, minSqDistance);
+                            }
+                    } else
+                        Error::warn("wns.ringClusters is empty");
 
-                Error::debug("Running 'powerCluster'");
-                wns.powerCluster(2.0, 2.0 / wns.size());
-                Error::debug("Running 'buildRingCluster'");
-                wns.buildRingCluster();
-                wns.dumpRingCluster();
+                    timer.elapsed(&cputime, &walltime);
+                    Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
-                if (!wns.ringClusters.empty()) {
-                    if (tokenProcessor.knownRoads().empty())
-                        Error::warn("No roads known");
-                    else
-                        for (auto it = tokenProcessor.knownRoads().cbegin(); it != tokenProcessor.knownRoads().cend(); ++it) {
-                            const Sweden::Road &road = *it;
-                            int64_t minSqDistance = INT64_MAX;
-                            uint64_t bestNode = 0;
-                            sweden->closestPointToRoad(wns.ringClusters.front().weightedCenterX, wns.ringClusters.front().weightedCenterY, road, bestNode, minSqDistance);
-                        }
-                } else
-                    Error::warn("wns.ringClusters is empty");
-
-                timer.elapsed(&cputime, &walltime);
-                Error::info("Spent CPU time to tokenize and to search in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
-
-                HtmlOutput htmlOutput(tokenizer, wns);
-                htmlOutput.write(words, std::string("/tmp/html"));
-            }
+                    HtmlOutput htmlOutput(tokenizer, wns);
+                    htmlOutput.write(words, std::string("/tmp/html"));
+                }
+            } else
+                Error::info("No valid input text filename provided");
 
             /*
             timer.start();
