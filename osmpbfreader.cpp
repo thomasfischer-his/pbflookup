@@ -248,7 +248,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                     for (int j = 0; j < maxnodes; ++j) {
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        node2Coord->insert(pg.nodes(j).id(), Coord::fromLatLon(lon, lat));
+                        node2Coord->insert(pg.nodes(j).id(), Coord::fromLonLat(lon, lat));
 
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
@@ -276,7 +276,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        node2Coord->insert(last_id, Coord::fromLatLon(last_lon, last_lat));
+                        node2Coord->insert(last_id, Coord::fromLonLat(last_lon, last_lat));
 
                         bool isKey = true;
                         int key = 0, value = 0;

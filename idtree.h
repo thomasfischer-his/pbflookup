@@ -17,6 +17,8 @@
 #ifndef IDTREE_H
 #define IDTREE_H
 
+#include <cmath>
+
 #include <istream>
 #include <ostream>
 
@@ -217,6 +219,22 @@ public:
     }
 };
 
+/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+/*::  This function converts decimal degrees to radians             :*/
+/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+inline double deg2rad(double deg) {
+    static const double pi = 3.14159265358979323846;
+    return (deg * pi / 180);
+}
+
+/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+/*::  This function converts radians to decimal degrees             :*/
+/*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
+inline double rad2deg(double rad) {
+    static const double pi = 3.14159265358979323846;
+    return (rad * 180 / pi);
+}
+
 struct Coord {
     /**
      * Create a new coordinate, initialized with x=y=0.
@@ -259,6 +277,63 @@ struct Coord {
         x = other.x;
         y = other.y;
         return *this;
+    }
+
+    /**
+     * Compute the distance between to coordinates based on their
+     * x/y values on the decimeter grid. About twice as fast as
+     * distanceLatLon, but most likely off by a few percent (e.g.
+     * about 3% in Southern Sweden, up to 20% in Northern Sweden).
+     * A corresponding object-variant (non-static) exists as
+     * distanceXY(const Coord &).
+     * @param a One coordinate
+     * @param b Another coordinate
+     * @return Distance between two coordinates in meter
+     */
+    static int distanceXY(const Coord &a, const Coord &b) {
+        const int64_t deltaX = ((a.x > b.x ? (a.x - b.x) : (b.x - a.x)) + 5) / 10;
+        const int64_t deltaY = ((a.y > b.y ? (a.y - b.y) : (b.y - a.y)) + 5) / 10;
+        return (int)sqrt(deltaX * deltaX + deltaY * deltaY + 0.5);
+    }
+
+    /**
+     * Compute the distance between to coordinates based on their
+     * latitudes and longitudes. About half the speed of distanceXY
+     * which is based on a decimeter grid, but exact.
+     * A corresponding object-variant (non-static) exists as
+     * distanceLatLon(const Coord &).
+     * @param a One coordinate
+     * @param b Another coordinate
+     * @return Distance between two coordinates in meter
+     */
+    static int distanceLatLon(const Coord &a, const Coord &b) {
+        const double latA = toLatitude(a.y);
+        const double lonA = toLongitude(a.x);
+        const double latB = toLatitude(b.y);
+        const double lonB = toLongitude(b.x);
+
+        const double theta = lonA - lonB;
+        double dist = sin(deg2rad(latA)) * sin(deg2rad(latB)) + cos(deg2rad(latA)) * cos(deg2rad(latB)) * cos(deg2rad(theta));
+        dist = acos(dist);
+        dist = rad2deg(dist);
+        dist = dist * 60 * 1853.1596;
+        return (int)(dist + 0.5);
+    }
+
+    /**
+     * An object-variant (non-static) of distanceXY(const Coord &,const Coord &).
+     * @return
+     */
+    inline int distanceXY(const Coord &other) const {
+        return Coord::distanceXY(*this, other);
+    }
+
+    /**
+     * An object-variant (non-static) of distanceLatLon(const Coord &,const Coord &).
+     * @return
+     */
+    inline int distanceLatLon(const Coord &other) const {
+        return Coord::distanceLatLon(*this, other);
     }
 
     static Coord fromLonLat(double longitude, double latitude) {
