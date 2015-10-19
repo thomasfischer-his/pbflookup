@@ -125,8 +125,6 @@ public:
             }
         }
 
-        Error::debug("  node_ids.size()=%i", node_ids.size());
-
         if (node_ids.size() <= 1)
             return 0; ///< too few nodes found
 
@@ -136,7 +134,6 @@ public:
             auto itA = node_ids.cbegin();
             auto itB = node_ids.cbegin();
             ++itB;
-            if (itB == node_ids.cend()) itB = node_ids.cbegin();
             while (itA != node_ids.cend()) {
                 ++itB;
                 if (itB == node_ids.cend()) itB = node_ids.cbegin();
