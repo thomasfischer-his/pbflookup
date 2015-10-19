@@ -216,12 +216,12 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
             if (id_list.empty())
                 Error::info("Got no hits for word '%s' (s=%i), skipping", combined, s);
             else {
+                Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
                 const int estDist = d->interIdEstimatedDistance(id_list);
-                Error::debug("Estimated distance is %i m", estDist);
-                if (estDist > 10000)
-                    Error::info("Estimated distance (%i m) too large for word '%s' (s=%i, hits=%i), skipping", estDist, combined, s, id_list.size());
+                if (estDist > 10000) ///< 10 km
+                    Error::info("Estimated distance (%i km) too large for word '%s' (s=%i, hits=%i), skipping", (estDist + 500) / 1000, combined, s, id_list.size());
                 else {
-                    Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
+                    Error::debug("Estimated distance is %i m", estDist);
                     for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
