@@ -73,9 +73,8 @@ bool init_configuration(const char *configfilename) {
     const char *lastslash = rindex(configfilename, '/');
     if (lastslash != NULL) {
         char temp[MAX_STRING_LEN];
-        const size_t count = lastslash - configfilename + 1;
-        strncpy(temp, configfilename, count);
-        temp[count] = '\0';
+        memset(temp, 0, MAX_STRING_LEN);
+        strncpy(temp, configfilename, lastslash - configfilename + 1);
         config.setIncludeDir(temp);
     }
 
