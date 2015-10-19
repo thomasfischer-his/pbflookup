@@ -94,6 +94,8 @@ public:
     }
 
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
+        if (id_list.empty()) return 0; ///< too few elements as input
+
         std::unordered_set<uint64_t> node_ids;
         for (auto it = id_list.cbegin(); it != id_list.cend(); ++it) {
             const uint64_t id = (*it).id;
@@ -123,38 +125,65 @@ public:
             }
         }
 
-        if (node_ids.size() < 5) return 0; ///< too few nodes to be considered
+        Error::debug("  node_ids.size()=%i", node_ids.size());
+
+        if (node_ids.size() <= 1)
+            return 0; ///< too few nodes found
 
         std::vector<int> distances;
-        auto itA = node_ids.cbegin();
-        auto itB = node_ids.cbegin();
-        auto itC = ++(++node_ids.cbegin());
-        while (itA != node_ids.cend()) {
+
+        if (node_ids.size() < 5) {
+            auto itA = node_ids.cbegin();
+            auto itB = node_ids.cbegin();
             ++itB;
             if (itB == node_ids.cend()) itB = node_ids.cbegin();
-            ++itC;
-            if (itC == node_ids.cend()) itC = node_ids.cbegin();
+            while (itA != node_ids.cend()) {
+                ++itB;
+                if (itB == node_ids.cend()) itB = node_ids.cbegin();
 
-            Coord cA, cB, cC;
-            if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB) && node2Coord->retrieve(*itC, cC)) {
-                if (*itA > *itB) {
-                    const int d = Coord::distanceLatLon(cA, cB);
-                    if (d > 2500000) ///< 2500 km
-                        Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
-                    distances.push_back(d);
+                Coord cA, cB;
+                if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB)) {
+                    if (*itA > *itB) {
+                        const int d = Coord::distanceLatLon(cA, cB);
+                        if (d > 2500000) ///< 2500 km
+                            Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
+                        distances.push_back(d);
+                    }
                 }
-                if (*itA > *itC) {
-                    const int d = Coord::distanceLatLon(cA, cC);
-                    if (d > 2500000) ///< 2500 km
-                        Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itC, d);
-                    distances.push_back(d);
-                }
+                ++itA;
             }
+        } else {
+            auto itA = node_ids.cbegin();
+            auto itB = node_ids.cbegin();
+            auto itC = ++(++node_ids.cbegin());
+            while (itA != node_ids.cend()) {
+                ++itB;
+                if (itB == node_ids.cend()) itB = node_ids.cbegin();
+                ++itC;
+                if (itC == node_ids.cend()) itC = node_ids.cbegin();
 
-            ++itA;
+                Coord cA, cB, cC;
+                if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB) && node2Coord->retrieve(*itC, cC)) {
+                    if (*itA > *itB) {
+                        const int d = Coord::distanceLatLon(cA, cB);
+                        if (d > 2500000) ///< 2500 km
+                            Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
+                        distances.push_back(d);
+                    }
+                    if (*itA > *itC) {
+                        const int d = Coord::distanceLatLon(cA, cC);
+                        if (d > 2500000) ///< 2500 km
+                            Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itC, d);
+                        distances.push_back(d);
+                    }
+                }
+
+                ++itA;
+            }
         }
-        std::sort(distances.begin(), distances.end(), std::less<int>());
 
+        std::sort(distances.begin(), distances.end(), std::less<int>());
+        if (distances.size() < 2) return 0; ///< too few distances computed
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
