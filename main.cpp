@@ -276,6 +276,15 @@ int main(int argc, char *argv[])
                     Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
                 }
 
+                Error::info(" --- sortByEstimatedInternodeDistance ---");
+                wns.sortByEstimatedDistanceToNeigbors();
+                maxwns = 5;
+                for (auto wnsit = wns.cbegin(); maxwns > 0 && wnsit != wns.cend(); ++wnsit, --maxwns) {
+                    const WeightedNode &wn = *wnsit;
+                    Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
+                    Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
+                }
+
                 timer.start();
                 Error::debug("Running 'powerCluster'");
                 wns.powerCluster(2.0, 2.0 / wns.size());
@@ -289,6 +298,15 @@ int main(int argc, char *argv[])
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
                 maxwns = 10;
+                for (auto wnsit = wns.cbegin(); maxwns > 0 && wnsit != wns.cend(); ++wnsit, --maxwns) {
+                    const WeightedNode &wn = *wnsit;
+                    Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
+                    Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
+                }
+
+                Error::info(" --- sortByEstimatedInternodeDistance ---");
+                wns.sortByEstimatedDistanceToNeigbors();
+                maxwns = 5;
                 for (auto wnsit = wns.cbegin(); maxwns > 0 && wnsit != wns.cend(); ++wnsit, --maxwns) {
                     const WeightedNode &wn = *wnsit;
                     Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
