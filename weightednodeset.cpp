@@ -135,6 +135,36 @@ Coord WeightedNodeSet::weightedCenter() const {
     return result;
 }
 
+void WeightedNodeSet::sortByEstimatedDistanceToNeigbors() {
+    sortingPivot.clear();
+    const int step = 1 + size() / 7;
+    for (size_t i = 0; i < size(); i += step) {
+        Coord c;
+        if (node2Coord->retrieve(operator[](i).id, c))
+            sortingPivot.insert(c);
+    }
+    std::sort(begin(), end(), compareByEstimatedDistanceToNeighbors);
+}
+
+std::unordered_set<Coord> WeightedNodeSet::sortingPivot;
+
+bool WeightedNodeSet::compareByEstimatedDistanceToNeighbors(const WeightedNode &a, const WeightedNode &b) {
+    Coord cA, cB;
+    if (node2Coord->retrieve(a.id, cA) && node2Coord->retrieve(b.id, cB)) {
+        int da = 0, db = 0;
+        for (auto it = sortingPivot.cbegin(); it != sortingPivot.cend(); ++it)
+            if (cA.x != it->x && cB.x != it->x && cA.y != it->y && cB.y != it->y) {
+                da += Coord::distanceLatLon(*it, cA);
+                db += Coord::distanceLatLon(*it, cB);
+            }
+        if (da == 0 || db == 0)
+            return a.id < b.id; ///< stable sorting even if no sufficient pivot coords were available
+        else
+            return da < db;
+    } else
+        return a.id < b.id; ///< stable sorting even if coords not retrieved
+}
+
 void WeightedNodeSet::dump() const {
     int i = 0;
     for (WeightedNodeSet::const_iterator it = cbegin(); it != cend() && i < 20; ++it, ++i) {

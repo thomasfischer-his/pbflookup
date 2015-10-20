@@ -18,6 +18,7 @@
 #define WEIGHTED_NODE_SET_H
 
 #include <climits>
+#include <unordered_set>
 
 #include "idtree.h"
 
@@ -84,6 +85,7 @@ public:
     bool appendRelation(uint64_t id, double weight);
 
     Coord weightedCenter() const;
+    void sortByEstimatedDistanceToNeigbors();
     void dump() const;
     void dumpGpx() const;
     void normalize();
@@ -105,6 +107,9 @@ public:
 
 private:
     int squareDistanceToRing(int64_t sqDist) const;
+
+    static std::unordered_set<Coord> sortingPivot;
+    static bool compareByEstimatedDistanceToNeighbors(const WeightedNode &a, const WeightedNode &b);
 };
 
 #endif // WEIGHTED_NODE_SET_H
