@@ -128,59 +128,38 @@ public:
         if (node_ids.size() <= 1)
             return 0; ///< too few nodes found
 
+        /// Whereas std::unordered_set node_ids is good for
+        /// collecting unique instances of node ids, it does
+        /// not provide a way for fast random access. Therefore,
+        /// an array is built based on data collected in the set.
+        uint64_t *node_id_array = (uint64_t *)malloc(node_ids.size() * sizeof(uint64_t));
+        int i = 0;
+        for (auto it = node_ids.cbegin(); it != node_ids.cend(); ++it, ++i)
+            node_id_array[i] = *it;
+
         std::vector<int> distances;
-
-        if (node_ids.size() < 5) {
-            auto itA = node_ids.cbegin();
-            auto itB = node_ids.cbegin();
-            ++itB;
-            while (itA != node_ids.cend()) {
-                ++itB;
-                if (itB == node_ids.cend()) itB = node_ids.cbegin();
-
-                Coord cA, cB;
-                if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB)) {
-                    if (*itA > *itB) {
+        const int stepcount = 4;
+        const size_t step = node_ids.size() / stepcount + 1;
+        for (size_t a = 0; a < node_ids.size(); ++a) {
+            size_t b = a;
+            Coord cA;
+            if (node2Coord->retrieve(node_id_array[a], cA))
+                for (int s = 0; s < stepcount; ++s) {
+                    b = (b + step) % node_ids.size();
+                    Coord cB;
+                    if (node_id_array[a] < node_id_array[b] && node2Coord->retrieve(node_id_array[b], cB)) {
                         const int d = Coord::distanceLatLon(cA, cB);
                         if (d > 2500000) ///< 2500 km
-                            Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
+                            Error::warn("Distance btwn node %llu and %llu very large: %d", node_id_array[a], node_id_array[b], d);
                         distances.push_back(d);
                     }
                 }
-                ++itA;
-            }
-        } else {
-            auto itA = node_ids.cbegin();
-            auto itB = node_ids.cbegin();
-            auto itC = ++(++node_ids.cbegin());
-            while (itA != node_ids.cend()) {
-                ++itB;
-                if (itB == node_ids.cend()) itB = node_ids.cbegin();
-                ++itC;
-                if (itC == node_ids.cend()) itC = node_ids.cbegin();
-
-                Coord cA, cB, cC;
-                if (node2Coord->retrieve(*itA, cA) && node2Coord->retrieve(*itB, cB) && node2Coord->retrieve(*itC, cC)) {
-                    if (*itA > *itB) {
-                        const int d = Coord::distanceLatLon(cA, cB);
-                        if (d > 2500000) ///< 2500 km
-                            Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itB, d);
-                        distances.push_back(d);
-                    }
-                    if (*itA > *itC) {
-                        const int d = Coord::distanceLatLon(cA, cC);
-                        if (d > 2500000) ///< 2500 km
-                            Error::warn("Distance btwn node %llu and %llu very large: %d", *itA, *itC, d);
-                        distances.push_back(d);
-                    }
-                }
-
-                ++itA;
-            }
         }
+        free(node_id_array);
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
+        Error::debug("1.quartile= %i  median= %i", distances[distances.size() / 4],distances[distances.size() / 2]);
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
