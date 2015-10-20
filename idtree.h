@@ -279,6 +279,11 @@ struct Coord {
         return *this;
     }
 
+    inline bool operator==(const Coord &other) const {
+        return other.x == x && other.y == y;
+    }
+
+
     /**
      * Compute the distance between to coordinates based on their
      * x/y values on the decimeter grid. About twice as fast as
@@ -366,6 +371,24 @@ struct Coord {
 
     int x, y;
 };
+
+
+namespace std
+{
+template <>
+struct hash<Coord>
+{
+    inline size_t operator()(const Coord &element) const {
+        size_t x = (size_t)(element.x % numeric_limits<size_t>::max());
+        size_t y = (size_t)(element.y % numeric_limits<size_t>::max());
+        static const int shiftbits = (sizeof(size_t) - sizeof(element.y)) * 8;
+        if (shiftbits > 0)
+            y <<= shiftbits;
+        return x ^ y;
+    }
+};
+}
+
 
 template <typename T>
 struct IdTreeNode;
