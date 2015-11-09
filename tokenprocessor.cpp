@@ -159,7 +159,7 @@ public:
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
-        Error::debug("1.quartile= %i  median= %i", distances[distances.size() / 4],distances[distances.size() / 2]);
+        Error::debug("1.quartile= %i  median= %i", distances[distances.size() / 4], distances[distances.size() / 2]);
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
