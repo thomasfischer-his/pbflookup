@@ -242,6 +242,8 @@ int main(int argc, char *argv[])
             sweden = new Sweden(in);
         }
 
+        sweden->drawSCBarea("/tmp/sweden.svg");
+
         int64_t cputime, walltime;
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
