@@ -24,6 +24,7 @@
 
 #include "error.h"
 #include "globalobjects.h"
+#include "svgwriter.h"
 
 const double minlon = 4.4; ///< declared in 'global.h'
 const double minlat = 53.8; ///< declared in 'global.h'
@@ -364,6 +365,36 @@ public:
 
         return result;
     }
+
+    void drawArea(const std::string &filename, const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
+        SvgWriter writer(filename);
+
+        if (code_to_polygons.empty())
+            rebuildCodeToPolygons(code_to_relationid, code_to_polygons);
+
+        for (std::map<int, Sweden::Private::Region>::const_iterator it = code_to_polygons.cbegin(); it != code_to_polygons.cend(); ++it) {
+            const int &code = it->first;
+            const Sweden::Private::Region &region = it->second;
+            char buffer[1024];
+            snprintf(buffer, 1024, "area code: %i", code);
+            for (std::vector<std::deque<Coord> >::const_iterator itR = region.polygons.cbegin(); itR != region.polygons.cend(); ++itR) {
+                const std::deque<Coord> &dequeCoord = *itR;
+                int prevx = dequeCoord[0].x, prevy = dequeCoord[0].y;
+                static const int step = 3;
+                static const int last = dequeCoord.size() - step / 2;
+                for (int i = step; i < last; i += step) {
+                    const int newx = dequeCoord[i].x;
+                    const int newy = dequeCoord[i].y;
+                    writer.drawLine(prevx, prevy, newx, newy, std::string(buffer));
+                    prevx = newx;
+                    prevy = prevy;
+                }
+                const int lastx = dequeCoord[dequeCoord.size() - 1].x, lasty = dequeCoord[dequeCoord.size() - 1].y;
+                writer.drawLine(prevx, prevy, lastx, lasty, std::string(buffer));
+            }
+        }
+    }
+
 
     void loadSCBcodeNames() {
         char filenamebuffer[1024];
@@ -762,6 +793,10 @@ void Sweden::insertNUTS3area(const int code, uint64_t relid) {
 
 std::vector<int> Sweden::insideNUTS3area(uint64_t nodeid) {
     return d->nodeIdToAreaCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygons);
+}
+
+void Sweden::drawSCBarea(const std::string &filename) {
+    d->drawArea(filename, d->scbcode_to_relationid, d->scbcode_to_polygons);
 }
 
 void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {

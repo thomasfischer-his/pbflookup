@@ -51,6 +51,8 @@ public:
     void insertNUTS3area(const int code, uint64_t relid);
     std::vector<int> insideNUTS3area(uint64_t nodeid);
 
+    void drawSCBarea(const std::string &filename);
+
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
     std::vector<uint64_t> waysForRoad(RoadType roadType, uint16_t roadNumber);
