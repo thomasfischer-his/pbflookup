@@ -19,6 +19,7 @@
 
 /// Minimum latitude and longitude for Sweden
 extern const double minlon, minlat; ///< defined in 'sweden.cpp'
+extern const double maxlon, maxlat; ///< defined in 'sweden.cpp'
 
 /// Decimeter per degree longitude and latitude at N 60 (north of Uppsala)
 extern const double decimeterDegreeLongitude, decimeterDegreeLatitude; ///< defined in 'sweden.cpp'
