@@ -173,158 +173,161 @@ public:
         return false;
     }
 
-    std::vector<int> nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
-        if (code_to_polygons.empty()) {
-            /// code_to_polygons in maps a code as given code (SCB, NUTS) to a vector (list) of polygons (list of coordinates)
-            /// This data structure may be empty when this function is called for the first time, so it has to be assembled first
+    void rebuildCodeToPolygons(const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
+        /// code_to_polygons in maps a code as given code (SCB, NUTS) to a vector (list) of polygons (list of coordinates)
+        /// This data structure may be empty when this function is called for the first time, so it has to be assembled first
 
-            for (std::map<int, uint64_t>::const_iterator it = code_to_relationid.cbegin(); it != code_to_relationid.cend(); ++it) {
-                /// Go through all code-relation pairs ...
-                const int code = (*it).first;
-                const uint64_t relid = (*it).second;
-                int minx = INT_RANGE, miny = INT_RANGE, maxx = -1, maxy = -1;
-                RelationMem rel;
-                if (relMembers->retrieve(relid, rel) && rel.num_members > 0) {
-                    std::vector<std::deque<Coord> > polygonlist;
+        for (std::map<int, uint64_t>::const_iterator it = code_to_relationid.cbegin(); it != code_to_relationid.cend(); ++it) {
+            /// Go through all code-relation pairs ...
+            const int code = (*it).first;
+            const uint64_t relid = (*it).second;
+            int minx = INT_RANGE, miny = INT_RANGE, maxx = -1, maxy = -1;
+            RelationMem rel;
+            if (relMembers->retrieve(relid, rel) && rel.num_members > 0) {
+                std::vector<std::deque<Coord> > polygonlist;
 
-                    /// Keep track of which ways of a relation have already been added to one of the polygons
-                    bool *wayattached = new bool[rel.num_members];
-                    uint32_t expected_outer_members = 0;
-                    for (int i = rel.num_members - 1; i >= 0; --i) {
-                        wayattached[i] = false; ///< initially, no way is added to any polygon
-                        /// Compute how many ways are expected to describe the outer boundary of a polygon
-                        if (rel.members[i].type == OSMElement::Way && (rel.member_flags[i] & RelationFlags::RoleInnerOuter) > 0) ++expected_outer_members;
-                    }
-
-                    uint32_t successful_additions = 0;
-                    /// 'wrap around' is neccessary, as multiple iterations over the set of ways
-                    /// may be required to identify all ways in the correct order for insertion
-                    for (uint32_t wrap_around = 0; successful_additions < expected_outer_members && wrap_around < rel.num_members + 5; ++wrap_around)
-                        for (uint32_t i = 0; i < rel.num_members && successful_additions < expected_outer_members; ++i) {
-                            if (wayattached[i]) continue; ///< skip ways that got added in previous wrap_around iterations
-                            if (rel.members[i].type != OSMElement::Way) continue; ///< consider only ways as polygon boundaries
-                            if ((rel.member_flags[i] & RelationFlags::RoleInnerOuter) == 0) continue; ///< consider only members of role 'outer' or 'inner'
-
-                            WayNodes wn;
-                            const uint64_t memid = rel.members[i].id;
-                            if (wayNodes->retrieve(memid, wn)) {
-                                bool successfullyAdded = false;
-                                for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); !successfullyAdded && it != polygonlist.end(); ++it) {
-                                    /// Test existing polygons if current way can be attached
-                                    if (addWayToPolygon(wn, *it)) {
-                                        successfullyAdded = true;
-                                    }
-                                }
-                                if (!successfullyAdded) {
-                                    /// No existing polygon was feasible to attach the way to,
-                                    /// so create a new polygon, add way, and add polygon to list of polygons
-                                    std::deque<Coord> polygon;
-                                    if (addWayToPolygon(wn, polygon)) {
-                                        successfullyAdded = true;
-                                        polygonlist.push_back(polygon);
-                                    }
-                                }
-
-                                if (successfullyAdded) {
-                                    ++successful_additions;
-                                    wayattached[i] = true;
-
-                                    /// Go through all nodes inside the just added way,
-                                    /// retrieve coordinates and record min/max coordinates
-                                    /// later used to determine bounding rectangle around polygons
-                                    Coord c;
-                                    for (int i = wn.num_nodes - 1; i >= 0; --i)
-                                        if (node2Coord->retrieve(wn.nodes[i], c)) {
-                                            if (c.x < minx) minx = c.x;
-                                            if (c.x > maxx) maxx = c.x;
-                                            if (c.y < miny) miny = c.y;
-                                            if (c.y > maxy) maxy = c.y;
-                                        }
-                                }
-                            } else {
-                                /// Warn about member ids that are not ways (and not nodes)
-                                Error::warn("Id %llu is way in relation %llu, but no nodes could be retrieved for this way", memid, relid);
-                            }
-                        }
-
-                    if (successful_additions < expected_outer_members) {
-                        Error::warn("Only %i out of %i elements could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
-                    }
-
-                    delete[] wayattached;
-
-                    bool stillMatchingPolygons = true;
-                    while (stillMatchingPolygons && polygonlist.size() > 1) {
-                        stillMatchingPolygons = false;
-
-                        for (std::vector<std::deque<Coord> >::iterator itA = polygonlist.begin(); itA != polygonlist.end(); ++itA) {
-                            /// Look for 'open' polygons
-                            std::deque<Coord> &polygonA = *itA;
-                            const Coord &firstA = polygonA.front();
-                            const Coord &lastA = polygonA.back();
-                            if (firstA.x != lastA.x || firstA.y != lastA.y) {
-                                /// Look for a matching second polygon
-                                for (std::vector<std::deque<Coord> >::iterator itB = itA + 1; itB != polygonlist.end();) {
-                                    std::deque<Coord> &polygonB = *itB;
-                                    const Coord &firstB = polygonB.front();
-                                    const Coord &lastB = polygonB.back();
-                                    if (firstA.x == firstB.x && firstA.y == firstB.y) {
-                                        for (std::deque<Coord>::const_iterator itP = polygonB.cbegin() + 1; itP != polygonB.cend(); ++itP)
-                                            polygonA.push_front(*itP);
-                                        itB = polygonlist.erase(itB);
-                                        stillMatchingPolygons = true;
-                                    } else if (firstA.x == lastB.x && firstA.y == lastB.y) {
-                                        for (std::deque<Coord>::const_reverse_iterator itP = polygonB.crbegin() + 1; itP != polygonB.crend(); ++itP)
-                                            polygonA.push_front(*itP);
-                                        itB = polygonlist.erase(itB);
-                                        stillMatchingPolygons = true;
-                                    } else if (lastA.x == firstB.x && lastA.y == firstB.y) {
-                                        for (std::deque<Coord>::const_iterator itP = polygonB.cbegin() + 1; itP != polygonB.cend(); ++itP)
-                                            polygonA.push_back(*itP);
-                                        itB = polygonlist.erase(itB);
-                                        stillMatchingPolygons = true;
-                                    } else if (lastA.x == lastB.x && lastA.y == lastB.y) {
-                                        for (std::deque<Coord>::const_reverse_iterator itP = polygonB.crbegin() + 1; itP != polygonB.crend(); ++itP)
-                                            polygonA.push_back(*itP);
-                                        itB = polygonlist.erase(itB);
-                                        stillMatchingPolygons = true;
-                                    } else
-                                        ++itB;
-                                }
-                            }
-                        }
-                    }
-
-                    if (successful_additions == expected_outer_members) {
-                        /// If all members of the relation could be attached
-                        /// to the polygon, the relation is contained completely
-                        /// in the geographic database and as such may be considered
-                        /// in the following analysis
-
-                        int i = 0;
-                        for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); it != polygonlist.end(); ++it, ++i) {
-                            std::deque<Coord> &polygon = *it;
-                            const Coord &first = polygon.front();
-                            const Coord &last = polygon.back();
-                            if (first.x == last.x && first.y == last.y) {
-                                /// First and last element in polygon are identical,
-                                /// but as that is redundant for the polygon, remove last element
-                                polygon.pop_back();
-                            } else
-                                Error::warn("Unexpectedly, the first and last element in polygon %d for code %d and relation %llu do not match", i, code, relid);
-                        }
-                        Region region;
-                        region.polygons = polygonlist;
-                        region.minx = minx;
-                        region.miny = miny;
-                        region.maxx = maxx;
-                        region.maxy = maxy;
-                        code_to_polygons.insert(std::pair<int, Region>(code, region));
-                    } else
-                        Error::info("Could not insert relation %llu, not all ways found/known?", relid);
+                /// Keep track of which ways of a relation have already been added to one of the polygons
+                bool *wayattached = new bool[rel.num_members];
+                uint32_t expected_outer_members = 0;
+                for (int i = rel.num_members - 1; i >= 0; --i) {
+                    wayattached[i] = false; ///< initially, no way is added to any polygon
+                    /// Compute how many ways are expected to describe the outer boundary of a polygon
+                    if (rel.members[i].type == OSMElement::Way && (rel.member_flags[i] & RelationFlags::RoleInnerOuter) > 0) ++expected_outer_members;
                 }
+
+                uint32_t successful_additions = 0;
+                /// 'wrap around' is neccessary, as multiple iterations over the set of ways
+                /// may be required to identify all ways in the correct order for insertion
+                for (uint32_t wrap_around = 0; successful_additions < expected_outer_members && wrap_around < rel.num_members + 5; ++wrap_around)
+                    for (uint32_t i = 0; i < rel.num_members && successful_additions < expected_outer_members; ++i) {
+                        if (wayattached[i]) continue; ///< skip ways that got added in previous wrap_around iterations
+                        if (rel.members[i].type != OSMElement::Way) continue; ///< consider only ways as polygon boundaries
+                        if ((rel.member_flags[i] & RelationFlags::RoleInnerOuter) == 0) continue; ///< consider only members of role 'outer' or 'inner'
+
+                        WayNodes wn;
+                        const uint64_t memid = rel.members[i].id;
+                        if (wayNodes->retrieve(memid, wn)) {
+                            bool successfullyAdded = false;
+                            for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); !successfullyAdded && it != polygonlist.end(); ++it) {
+                                /// Test existing polygons if current way can be attached
+                                if (addWayToPolygon(wn, *it)) {
+                                    successfullyAdded = true;
+                                }
+                            }
+                            if (!successfullyAdded) {
+                                /// No existing polygon was feasible to attach the way to,
+                                /// so create a new polygon, add way, and add polygon to list of polygons
+                                std::deque<Coord> polygon;
+                                if (addWayToPolygon(wn, polygon)) {
+                                    successfullyAdded = true;
+                                    polygonlist.push_back(polygon);
+                                }
+                            }
+
+                            if (successfullyAdded) {
+                                ++successful_additions;
+                                wayattached[i] = true;
+
+                                /// Go through all nodes inside the just added way,
+                                /// retrieve coordinates and record min/max coordinates
+                                /// later used to determine bounding rectangle around polygons
+                                Coord c;
+                                for (int i = wn.num_nodes - 1; i >= 0; --i)
+                                    if (node2Coord->retrieve(wn.nodes[i], c)) {
+                                        if (c.x < minx) minx = c.x;
+                                        if (c.x > maxx) maxx = c.x;
+                                        if (c.y < miny) miny = c.y;
+                                        if (c.y > maxy) maxy = c.y;
+                                    }
+                            }
+                        } else {
+                            /// Warn about member ids that are not ways (and not nodes)
+                            Error::warn("Id %llu is way in relation %llu, but no nodes could be retrieved for this way", memid, relid);
+                        }
+                    }
+
+                if (successful_additions < expected_outer_members) {
+                    Error::warn("Only %i out of %i elements could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
+                }
+
+                delete[] wayattached;
+
+                bool stillMatchingPolygons = true;
+                while (stillMatchingPolygons && polygonlist.size() > 1) {
+                    stillMatchingPolygons = false;
+
+                    for (std::vector<std::deque<Coord> >::iterator itA = polygonlist.begin(); itA != polygonlist.end(); ++itA) {
+                        /// Look for 'open' polygons
+                        std::deque<Coord> &polygonA = *itA;
+                        const Coord &firstA = polygonA.front();
+                        const Coord &lastA = polygonA.back();
+                        if (firstA.x != lastA.x || firstA.y != lastA.y) {
+                            /// Look for a matching second polygon
+                            for (std::vector<std::deque<Coord> >::iterator itB = itA + 1; itB != polygonlist.end();) {
+                                std::deque<Coord> &polygonB = *itB;
+                                const Coord &firstB = polygonB.front();
+                                const Coord &lastB = polygonB.back();
+                                if (firstA.x == firstB.x && firstA.y == firstB.y) {
+                                    for (std::deque<Coord>::const_iterator itP = polygonB.cbegin() + 1; itP != polygonB.cend(); ++itP)
+                                        polygonA.push_front(*itP);
+                                    itB = polygonlist.erase(itB);
+                                    stillMatchingPolygons = true;
+                                } else if (firstA.x == lastB.x && firstA.y == lastB.y) {
+                                    for (std::deque<Coord>::const_reverse_iterator itP = polygonB.crbegin() + 1; itP != polygonB.crend(); ++itP)
+                                        polygonA.push_front(*itP);
+                                    itB = polygonlist.erase(itB);
+                                    stillMatchingPolygons = true;
+                                } else if (lastA.x == firstB.x && lastA.y == firstB.y) {
+                                    for (std::deque<Coord>::const_iterator itP = polygonB.cbegin() + 1; itP != polygonB.cend(); ++itP)
+                                        polygonA.push_back(*itP);
+                                    itB = polygonlist.erase(itB);
+                                    stillMatchingPolygons = true;
+                                } else if (lastA.x == lastB.x && lastA.y == lastB.y) {
+                                    for (std::deque<Coord>::const_reverse_iterator itP = polygonB.crbegin() + 1; itP != polygonB.crend(); ++itP)
+                                        polygonA.push_back(*itP);
+                                    itB = polygonlist.erase(itB);
+                                    stillMatchingPolygons = true;
+                                } else
+                                    ++itB;
+                            }
+                        }
+                    }
+                }
+
+                if (successful_additions == expected_outer_members) {
+                    /// If all members of the relation could be attached
+                    /// to the polygon, the relation is contained completely
+                    /// in the geographic database and as such may be considered
+                    /// in the following analysis
+
+                    int i = 0;
+                    for (std::vector<std::deque<Coord> >::iterator it = polygonlist.begin(); it != polygonlist.end(); ++it, ++i) {
+                        std::deque<Coord> &polygon = *it;
+                        const Coord &first = polygon.front();
+                        const Coord &last = polygon.back();
+                        if (first.x == last.x && first.y == last.y) {
+                            /// First and last element in polygon are identical,
+                            /// but as that is redundant for the polygon, remove last element
+                            polygon.pop_back();
+                        } else
+                            Error::warn("Unexpectedly, the first and last element in polygon %d for code %d and relation %llu do not match", i, code, relid);
+                    }
+                    Region region;
+                    region.polygons = polygonlist;
+                    region.minx = minx;
+                    region.miny = miny;
+                    region.maxx = maxx;
+                    region.maxy = maxy;
+                    code_to_polygons.insert(std::pair<int, Region>(code, region));
+                } else
+                    Error::info("Could not insert relation %llu, not all ways found/known?", relid);
             }
         }
+    }
+
+    std::vector<int> nodeIdToAreaCode(uint64_t nodeid, const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
+        if (code_to_polygons.empty())
+            rebuildCodeToPolygons(code_to_relationid, code_to_polygons);
 
         std::vector<int> result;
         Coord coord;
