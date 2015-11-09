@@ -38,10 +38,12 @@ public:
             /// Program will fail here
         }
 
-        output << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">" << std::endl;
+        output << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"" << 10000 << "\" height=\"" << 10000 << "\">" << std::endl;
+        output << " <g fill=\"none\" stroke=\"black\" stroke-width=\"1\" >" << std::endl;
     }
 
     ~Private() {
+        output << " </g>" << std::endl << std::endl;
         output << "</svg>" << std::endl << std::endl;
 
         output.close();
@@ -73,7 +75,7 @@ SvgWriter::~SvgWriter() {
 }
 
 void SvgWriter::drawLine(int x1, int y1, int x2, int y2, const std::string &comment) {
-    d->output << "  <line x1=\"" << d->normalize(x1, 0, 20000000, 100000.0) << "\" x2=\"" << d->normalize(x2, 0, 20000000, 1000.0) << "\" y1=\"" << d->normalize(y1, 0, 30000000, 100000.0) << "\" y2=\"" <<  d->normalize(y2, 0, 30000000, 1000.0) << "\" stroke=\"blue\" stroke-width=\"1\" />";
+    d->output << "  <line x1=\"" << d->normalize(x1, 0, 25000000, 10000.0) << "\" y1=\"" << d->normalize(y1, 0, 25000000, 10000.0) << "\" x2=\"" << d->normalize(x2, 0, 25000000, 10000.0) << "\" y2=\"" <<  d->normalize(y2, 0, 25000000, 10000.0) << "\" />";
     if (!comment.empty())
         d->output << "<!-- " << comment << " -->";
     d->output << std::endl;
