@@ -21,6 +21,7 @@
 
 #include <istream>
 #include <ostream>
+#include <limits>
 
 #include <osmpbf/osmpbf.h>
 
