@@ -28,8 +28,8 @@
 
 const double minlon = 4.4; ///< declared in 'global.h'
 const double minlat = 53.8; ///< declared in 'global.h'
-const double maxlon = 24.5; ///< declared in 'global.h'
-const double maxlat = 69.1; ///< declared in 'global.h'
+const double maxlon = 35.0; ///< declared in 'global.h'
+const double maxlat = 71.5; ///< declared in 'global.h'
 
 /// Values come from  http://www.csgnetwork.com/degreelenllavcalc.html
 const double decimeterDegreeLongitude = 557999.790; ///< declared in 'global.h'
