@@ -61,8 +61,26 @@ SvgWriter::~SvgWriter() {
     delete d;
 }
 
-void SvgWriter::drawLine(int x1, int y1, int x2, int y2, const std::string &comment) {
+void SvgWriter::drawLine(int x1, int y1, int x2, int y2, const std::string &comment) const {
     d->output << "    <line x1=\"" << scale(x1) << "\" y1=\"-" << scale(y1) << "\" x2=\"" << scale(x2) << "\" y2=\"-" << scale(y2) << "\" />";
+    if (!comment.empty())
+        d->output << "<!-- " << comment << " -->";
+    d->output << std::endl;
+}
+
+void SvgWriter::drawPolygon(const std::vector<int> &x, const std::vector<int> &y, const std::string &comment) const {
+    if (x.empty() || y.empty()) return;
+
+    d->output << "    <polygon points=\"";
+    bool first = true;
+    for (auto itx = x.cbegin(), ity = y.cbegin(); itx != x.cend() && ity != y.cend(); ++itx, ++ity) {
+        if (!first) {
+            d->output << " ";
+        }
+        first = false;
+        d->output << scale(*itx) << ",-" << scale(*ity);
+    }
+    d->output << "\" />";
     if (!comment.empty())
         d->output << "<!-- " << comment << " -->";
     d->output << std::endl;

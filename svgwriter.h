@@ -18,6 +18,7 @@
 #define SVGWRITER_H
 
 #include <string>
+#include <vector>
 
 #include "global.h"
 
@@ -27,7 +28,8 @@ public:
     explicit SvgWriter(const std::string &filename);
     ~SvgWriter();
 
-    void drawLine(int x1, int y1, int x2, int y2, const std::string &comment = std::string());
+    void drawLine(int x1, int y1, int x2, int y2, const std::string &comment = std::string()) const;
+    void drawPolygon(const std::vector<int> &x, const std::vector<int> &y, const std::string &comment = std::string()) const;
 
 private:
     class Private;
