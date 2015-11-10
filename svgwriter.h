@@ -24,8 +24,7 @@
 class SvgWriter
 {
 public:
-    explicit SvgWriter(const std::string &filename, const double minlatitude = minlat, const double maxlatitude = maxlat, const double minlongitude = minlon, const double maxlongitude = maxlon);
-    explicit SvgWriter(const std::string &filename, const int minX, const int maxX, const int minY, const int maxY);
+    explicit SvgWriter(const std::string &filename);
     ~SvgWriter();
 
     void drawLine(int x1, int y1, int x2, int y2, const std::string &comment = std::string());

@@ -21,51 +21,38 @@
 #include "error.h"
 #include "idtree.h"
 
+#define scale(a) ((a)/10000.0f)
+
 class SvgWriter::Private {
 private:
     SvgWriter *p;
 
-    const int minX, minY, maxX, maxY;
-
 public:
     std::ofstream output;
 
-    Private(const std::string &filename, const int _minX, const int _maxX, const int _minY, const int _maxY, SvgWriter *parent)
-        : p(parent), minX(_minX), minY(_minY), maxX(_maxX), maxY(_maxY) {
+    Private(const std::string &filename, SvgWriter *parent)
+        : p(parent) {
         output.open(filename, std::ofstream::out | std::ofstream::trunc);
         if (!output.is_open() || !output.good()) {
             Error::err("Failed to open SVG file '%s'");
             /// Program will fail here
         }
 
-        output << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\" width=\"" << 10000 << "\" height=\"" << 10000 << "\">" << std::endl;
-        output << " <g fill=\"none\" stroke=\"black\" stroke-width=\"1\" >" << std::endl;
+        output << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">" << std::endl;
+        output << "  <g fill=\"none\" stroke=\"black\" stroke-width=\"1\" >" << std::endl;
     }
 
     ~Private() {
-        output << " </g>" << std::endl << std::endl;
+        output << "  </g>" << std::endl;
         output << "</svg>" << std::endl << std::endl;
 
         output.close();
     }
-
-    inline double normalize(int value, int min_in, int max_in, double max_out) const {
-        double result = value;
-        result -= min_in;
-        result /= max_in - min_in;
-        result *= max_out;
-        return result;
-    }
 };
 
-SvgWriter::SvgWriter(const std::string &filename, const double minlatitude, const double maxlatitude, const double minlongitude, const double maxlongitude)
-    : d(new Private(filename, Coord::fromLatitude(minlatitude), Coord::fromLatitude(maxlatitude), Coord::fromLongitude(minlongitude), Coord::fromLongitude(maxlongitude), this))
-{
-    /// nothing
-}
 
-SvgWriter::SvgWriter(const std::string &filename, const int minX, const int maxX, const int minY, const int maxY)
-    : d(new Private(filename, minX, maxX, minY, maxY, this))
+SvgWriter::SvgWriter(const std::string &filename)
+    : d(new Private(filename, this))
 {
     /// nothing
 }
@@ -75,7 +62,7 @@ SvgWriter::~SvgWriter() {
 }
 
 void SvgWriter::drawLine(int x1, int y1, int x2, int y2, const std::string &comment) {
-    d->output << "  <line x1=\"" << d->normalize(x1, 0, 25000000, 10000.0) << "\" y1=\"" << d->normalize(y1, 0, 25000000, 10000.0) << "\" x2=\"" << d->normalize(x2, 0, 25000000, 10000.0) << "\" y2=\"" <<  d->normalize(y2, 0, 25000000, 10000.0) << "\" />";
+    d->output << "    <line x1=\"" << scale(x1) << "\" y1=\"-" << scale(y1) << "\" x2=\"" << scale(x2) << "\" y2=\"-" << scale(y2) << "\" />";
     if (!comment.empty())
         d->output << "<!-- " << comment << " -->";
     d->output << std::endl;
