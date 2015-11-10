@@ -372,25 +372,19 @@ public:
         if (code_to_polygons.empty())
             rebuildCodeToPolygons(code_to_relationid, code_to_polygons);
 
-        for (std::map<int, Sweden::Private::Region>::const_iterator it = code_to_polygons.cbegin(); it != code_to_polygons.cend(); ++it) {
-            const int &code = it->first;
-            const Sweden::Private::Region &region = it->second;
+        for (auto itMR = code_to_polygons.cbegin(); itMR != code_to_polygons.cend(); ++itMR) {
+            const int &code = itMR->first;
+            const Sweden::Private::Region &region = itMR->second;
             char buffer[1024];
             snprintf(buffer, 1024, "area code: %i", code);
-            for (std::vector<std::deque<Coord> >::const_iterator itR = region.polygons.cbegin(); itR != region.polygons.cend(); ++itR) {
-                const std::deque<Coord> &dequeCoord = *itR;
-                int prevx = dequeCoord[0].x, prevy = dequeCoord[0].y;
-                static const int step = 3;
-                static const int last = dequeCoord.size() - step / 2;
-                for (int i = step; i < last; i += step) {
-                    const int newx = dequeCoord[i].x;
-                    const int newy = dequeCoord[i].y;
-                    writer.drawLine(prevx, prevy, newx, newy, std::string(buffer));
-                    prevx = newx;
-                    prevy = prevy;
+            for (auto itVDC = region.polygons.cbegin(); itVDC != region.polygons.cend(); ++itVDC) {
+                const std::deque<Coord> dequeCoord = *itVDC;
+                std::vector<int> x, y;
+                for (auto itC = dequeCoord.cbegin(); itC != dequeCoord.cend(); ++itC) {
+                    x.push_back(itC->x);
+                    y.push_back(itC->y);
                 }
-                const int lastx = dequeCoord[dequeCoord.size() - 1].x, lasty = dequeCoord[dequeCoord.size() - 1].y;
-                writer.drawLine(prevx, prevy, lastx, lasty, std::string(buffer));
+                writer.drawPolygon(x, y, std::string(buffer));
             }
         }
     }
