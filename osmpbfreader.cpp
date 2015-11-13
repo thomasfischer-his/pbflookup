@@ -331,7 +331,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
 
                         /// If 'ref' string is not empty and 'highway' string is 'primary', 'secondary', or 'tertiary' ...
-                        if (buffer_ref[0] != '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0))
+                        if (buffer_ref[0] != '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
                             /// ... assume that this way is part of a national or primary regional road
                             sweden->insertWayAsRoad(wayId, buffer_ref);
 
