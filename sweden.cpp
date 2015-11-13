@@ -719,7 +719,7 @@ std::ostream &Sweden::write(std::ostream &output) {
         const size_t count = d->roads.european[d->EuropeanRoadNumbers[i]].size();
         output.write((char *) &count, sizeof(count));
         for (size_t r = 0; r < count; ++r) {
-            uint64_t wayid = d->roads.european[d->EuropeanRoadNumbers[i]][r];
+            const uint64_t wayid = d->roads.european[d->EuropeanRoadNumbers[i]][r];
             output.write((char *) &wayid, sizeof(uint64_t));
         }
     }
