@@ -32,6 +32,8 @@
 #include "error.h"
 #include "globalobjects.h"
 
+#define SHORT_STRING_BUFFER_SIZE     64
+
 OsmPbfReader::OsmPbfReader()
 {
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
@@ -308,10 +310,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                 if (pg.ways_size() > 0) {
                     found_items = true;
 
-
+                    char buffer_ref[SHORT_STRING_BUFFER_SIZE], buffer_highway[SHORT_STRING_BUFFER_SIZE];
                     const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
                         const uint64_t wayId = pg.ways(w).id();
+                        buffer_ref[0] = buffer_highway[0] = '\0'; /// clear buffers
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
@@ -319,10 +322,18 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.ways(w).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
-                            } else if (strcmp("ref", ckey) == 0) {
-                                sweden->insertWayAsRoad(wayId, primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
-                            }
+                            } else if (strcmp("ref", ckey) == 0)
+                                /// Store 'ref' string for later use
+                                strncpy(buffer_ref, primblock.stringtable().s(pg.ways(w).vals(k)).c_str(), SHORT_STRING_BUFFER_SIZE);
+                            else if (strcmp("highway", ckey) == 0)
+                                /// Store 'highway' string for later use
+                                strncpy(buffer_highway, primblock.stringtable().s(pg.ways(w).vals(k)).c_str(), SHORT_STRING_BUFFER_SIZE);
                         }
+
+                        /// If 'ref' string is not empty and 'highway' string is 'primary', 'secondary', or 'tertiary' ...
+                        if (buffer_ref[0] != '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0))
+                            /// ... assume that this way is part of a national or primary regional road
+                            sweden->insertWayAsRoad(wayId, buffer_ref);
 
                         if (pg.ways(w).refs_size() + 2 > simplifiedWayAllocationSize) {
                             simplifiedWayAllocationSize = ((pg.ways(w).refs_size() >> 8) + 1) << 8;
