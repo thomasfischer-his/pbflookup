@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
                 char svgfilename[1024];
                 snprintf(svgfilename, 1024, "/tmp/sweden-%02d.svg", setNr);
-                SvgWriter svgwriter(svgfilename);
+                SvgWriter svgwriter(svgfilename, 3);
                 sweden->drawSCBareas(svgwriter);
                 sweden->drawRoads(svgwriter);
 

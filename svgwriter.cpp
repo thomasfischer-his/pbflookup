@@ -21,9 +21,6 @@
 #include "error.h"
 #include "idtree.h"
 
-#define normalizeX(a) (((a)-3455178)/7580.764)
-#define normalizeY(b) ((17001474-(b))/7580.764)
-
 class SvgWriter::Private {
 private:
     SvgWriter *p;
@@ -51,6 +48,14 @@ public:
         output << "</svg>" << std::endl << std::endl;
 
         output.close();
+    }
+
+    static inline double normalizeX(const int &x) {
+        return (x - 3455178) / 7580.764;
+    }
+
+    static inline double normalizeY(const int &y) {
+        return (17001474 - y) / 7580.764;
     }
 
     void switchGroup(SvgWriter::Group group) {
