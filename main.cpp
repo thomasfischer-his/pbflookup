@@ -32,6 +32,7 @@
 #include "sweden.h"
 #include "tokenprocessor.h"
 #include "htmloutput.h"
+#include "svgwriter.h"
 #include "global.h"
 #include "globalobjects.h"
 #include "config.h"
@@ -242,16 +243,22 @@ int main(int argc, char *argv[])
             sweden = new Sweden(in);
         }
 
-        sweden->drawSCBarea("/tmp/sweden.svg");
-
         int64_t cputime, walltime;
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to read/write own files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
         if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
-            for (auto it = testsets.cbegin(); it != testsets.cend(); ++it) {
+            int setNr = 0;
+            for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
                 Error::info("Test set: %s", it->name.c_str());
                 const Coord expected = Coord::fromLonLat(it->lon, it->lat);
+
+                char svgfilename[1024];
+                snprintf(svgfilename, 1024, "/tmp/sweden-%02d.svg", setNr);
+                SvgWriter svgwriter(svgfilename);
+                sweden->drawSCBareas(svgwriter);
+                sweden->drawRoads(svgwriter);
+                svgwriter.drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "purple", "expected");
 
                 std::stringstream ss(it->text);
                 std::vector<std::string> words;
@@ -265,9 +272,15 @@ int main(int argc, char *argv[])
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to evaluate data in testset '%s': %lius == %.1fs  (wall time: %lius == %.1fs)", it->name.c_str(), cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
 
+                for (auto itWns = wns.cbegin(); itWns != wns.cend(); ++itWns) {
+                    const WeightedNode &wn = *itWns;
+                    svgwriter.drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, std::to_string(wn.weight));
+                }
+
                 std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
 
                 Coord center = wns.weightedCenter();
+                svgwriter.drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "green", "weightedCenter");
                 Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
@@ -296,6 +309,7 @@ int main(int argc, char *argv[])
                 std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
 
                 center = wns.weightedCenter();
+                svgwriter.drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "blue", "powerCluster weightedCenter");
                 Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
@@ -314,6 +328,9 @@ int main(int argc, char *argv[])
                     Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(wn.y), Coord::toLongitude(wn.x));
                     Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
                 }
+
+                svgwriter.drawCaption(it->name);
+                svgwriter.drawDescription(it->text);
 
                 Error::info("======================================================");
             }
