@@ -258,7 +258,6 @@ int main(int argc, char *argv[])
                 SvgWriter svgwriter(svgfilename);
                 sweden->drawSCBareas(svgwriter);
                 sweden->drawRoads(svgwriter);
-                svgwriter.drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "purple", "expected");
 
                 std::stringstream ss(it->text);
                 std::vector<std::string> words;
@@ -329,6 +328,7 @@ int main(int argc, char *argv[])
                     Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
                 }
 
+                svgwriter.drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "#f0c", "expected");
                 svgwriter.drawCaption(it->name);
                 svgwriter.drawDescription(it->text);
 
