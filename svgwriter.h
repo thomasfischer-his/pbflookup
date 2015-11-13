@@ -28,7 +28,7 @@ public:
     enum Group {InvalidGroup = 0, BaseGroup, PoiGroup, ImportantPoiGroup, TextGroup, RoadGroup};
     enum RoadImportance {RoadNoImportance = 0, RoadMinorImportance = 1, RoadAvgImportance = 2, RoadMajorImportance = 3};
 
-    explicit SvgWriter(const std::string &filename);
+    explicit SvgWriter(const std::string &filename, double zoom = 1.0);
     ~SvgWriter();
 
     void drawCaption(const std::string &caption) const;

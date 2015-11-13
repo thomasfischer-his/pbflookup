@@ -27,10 +27,11 @@ private:
 
 public:
     std::ofstream output;
+    const double zoom;
     SvgWriter::Group previousGroup;
 
-    Private(const std::string &filename, SvgWriter *parent)
-        : p(parent), previousGroup(SvgWriter::InvalidGroup) {
+    Private(const std::string &filename, double _zoom, SvgWriter *parent)
+        : p(parent), zoom(_zoom), previousGroup(SvgWriter::InvalidGroup) {
         output.open(filename, std::ofstream::out | std::ofstream::trunc);
         if (!output.is_open() || !output.good()) {
             Error::err("Failed to open SVG file '%s'");
@@ -39,7 +40,7 @@ public:
 
         output << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl;
         //output << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << std::endl << std::endl;
-        output << "<svg width=\"1000\" height=\"2047\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\" version=\"1.1\">" << std::endl;
+        output << "<svg width=\"" << (1000 * zoom) << "\" height=\"" << (2047 * zoom) << "\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:svg=\"http://www.w3.org/2000/svg\" version=\"1.1\">" << std::endl;
     }
 
     ~Private() {
@@ -136,8 +137,8 @@ public:
 };
 
 
-SvgWriter::SvgWriter(const std::string &filename)
-    : d(new Private(filename, this))
+SvgWriter::SvgWriter(const std::string &filename, double zoom)
+    : d(new Private(filename, zoom, this))
 {
     /// nothing
 }
@@ -149,7 +150,7 @@ SvgWriter::~SvgWriter() {
 void SvgWriter::drawCaption(const std::string &caption) const {
     d->switchGroup(SvgWriter::TextGroup);
 
-    d->output << "    <text style=\"font-family:sans-serif;font-size:36;\" x=\"0\" y=\"36\">" << d->toHtml(caption) << "</text>" << std::endl;
+    d->output << "    <text style=\"font-family:sans-serif;font-size:" << (36 * d->zoom) << ";\" x=\"0\" y=\"" << (36 * d->zoom) << "\">" << d->toHtml(caption) << "</text>" << std::endl;
 }
 
 void SvgWriter::drawDescription(const std::string &description) const {
@@ -158,13 +159,13 @@ void SvgWriter::drawDescription(const std::string &description) const {
     const std::vector<std::string> lines = d->splitIntoLines(description);
     int y = 60;
     for (auto it = lines.cbegin(); it != lines.cend(); ++it, y += 20)
-        d->output << "    <text style=\"font-family:sans-serif;font-size:16;\" x=\"0\" y=\"" << y << "\">" << d->toHtml(*it) << "</text>" << std::endl;
+        d->output << "    <text style=\"font-family:sans-serif;font-size:" << (16 * d->zoom) << ";\" x=\"0\" y=\"" << (y * d->zoom) << "\">" << d->toHtml(*it) << "</text>" << std::endl;
 }
 
 void SvgWriter::drawLine(int x1, int y1, int x2, int y2, Group group, const std::string &comment) const {
     d->switchGroup(group);
 
-    d->output << "    <line x1=\"" << normalizeX(x1) << "\" y1=\"" << normalizeY(y1) << "\" x2=\"" << normalizeX(x2) << "\" y2=\"" << normalizeY(y2) << "\" />";
+    d->output << "    <line x1=\"" << (Private::normalizeX(x1) * d->zoom) << "\" y1=\"" << (Private::normalizeY(y1) * d->zoom) << "\" x2=\"" << (Private::normalizeX(x2) * d->zoom) << "\" y2=\"" << (Private::normalizeY(y2) * d->zoom) << "\" />";
     if (!comment.empty())
         d->output << "<!-- " << comment << " -->";
     d->output << std::endl;
@@ -182,7 +183,7 @@ void SvgWriter::drawPolygon(const std::vector<int> &x, const std::vector<int> &y
             d->output << " ";
         }
         first = false;
-        d->output << normalizeX(*itx) << "," << normalizeY(*ity);
+        d->output << (Private::normalizeX(*itx) * d->zoom) << "," << (Private::normalizeY(*ity) * d->zoom);
     }
     d->output << "\" />";
     if (!comment.empty())
@@ -195,7 +196,7 @@ void SvgWriter::drawPoint(int x, int y, Group group, const std::string &color, c
 
     const int radius = (group == ImportantPoiGroup) ? 8 : 4;
     const int sw = (group == ImportantPoiGroup) ? 3 : 2;
-    d->output << "    <circle cx=\"" << normalizeX(x) << "\" cy=\"" << normalizeY(y) << "\" stroke-width=\"" << sw << "\" r=\"" << radius << "\"";
+    d->output << "    <circle cx=\"" << (Private::normalizeX(x) * d->zoom) << "\" cy=\"" << (Private::normalizeY(y) * d->zoom) << "\" stroke-width=\"" << sw << "\" r=\"" << radius << "\"";
     if (!color.empty())
         d->output << " stroke=\"" << color << "\"";
     d->output << "/>";
@@ -217,7 +218,7 @@ void SvgWriter::drawRoad(const std::vector<int> &x, const std::vector<int> &y, R
             d->output << " ";
         }
         first = false;
-        d->output << normalizeX(*itx) << "," << normalizeY(*ity);
+        d->output << (Private::normalizeX(*itx) * d->zoom) << "," << (Private::normalizeY(*ity) * d->zoom);
     }
     d->output << "\" />";
     if (!comment.empty())
