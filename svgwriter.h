@@ -25,11 +25,16 @@
 class SvgWriter
 {
 public:
+    enum Group {InvalidGroup = 0, BaseGroup, PoiGroup, TextGroup};
+
     explicit SvgWriter(const std::string &filename);
     ~SvgWriter();
 
-    void drawLine(int x1, int y1, int x2, int y2, const std::string &comment = std::string()) const;
-    void drawPolygon(const std::vector<int> &x, const std::vector<int> &y, const std::string &comment = std::string()) const;
+    void drawCaption(const std::string &caption) const;
+    void drawDescription(const std::string &description) const;
+    void drawLine(int x1, int y1, int x2, int y2, Group group = BaseGroup, const std::string &comment = std::string()) const;
+    void drawPolygon(const std::vector<int> &x, const std::vector<int> &y, Group group = BaseGroup, const std::string &comment = std::string()) const;
+    void drawPoint(int x, int y, Group group = PoiGroup, const std::string &comment = std::string()) const;
 
 private:
     class Private;
