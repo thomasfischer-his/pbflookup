@@ -951,8 +951,13 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
             d->roads.european[roadNumber].push_back(wayid);
         break;
     case National:
-        if (roadNumber < 1000)
+        if (roadNumber < 500)
+            /// National roads ('riksvägar') have numbers 1 to 99
+            /// Primary regional roads ('primära länsvägar') have numbers 100 to 499,
+            /// but no letters, therefore counted as national roads in this context
             d->roads.national[roadNumber].push_back(wayid);
+        else
+            Error::warn("Road number %d is 500 or larger, but no regional code/letter given for way https://www.openstreetmap.org/way/%lu", roadNumber, wayid);
         break;
     default:
     {
