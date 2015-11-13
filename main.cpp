@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
 
                 for (auto itWns = wns.cbegin(); itWns != wns.cend(); ++itWns) {
                     const WeightedNode &wn = *itWns;
-                    svgwriter.drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, std::to_string(wn.weight));
+                    svgwriter.drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, std::to_string(wn.id) + " " + std::to_string(wn.weight));
                 }
 
                 std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
