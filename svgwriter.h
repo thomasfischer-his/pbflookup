@@ -25,7 +25,8 @@
 class SvgWriter
 {
 public:
-    enum Group {InvalidGroup = 0, BaseGroup, PoiGroup, TextGroup};
+    enum Group {InvalidGroup = 0, BaseGroup, PoiGroup, ImportantPoiGroup, TextGroup, RoadGroup};
+    enum RoadImportance {RoadNoImportance = 0, RoadMinorImportance = 1, RoadAvgImportance = 2, RoadMajorImportance = 3};
 
     explicit SvgWriter(const std::string &filename);
     ~SvgWriter();
@@ -34,7 +35,8 @@ public:
     void drawDescription(const std::string &description) const;
     void drawLine(int x1, int y1, int x2, int y2, Group group = BaseGroup, const std::string &comment = std::string()) const;
     void drawPolygon(const std::vector<int> &x, const std::vector<int> &y, Group group = BaseGroup, const std::string &comment = std::string()) const;
-    void drawPoint(int x, int y, Group group = PoiGroup, const std::string &comment = std::string()) const;
+    void drawPoint(int x, int y, Group group = PoiGroup, const std::string &color = std::string(), const std::string &comment = std::string()) const;
+    void drawRoad(const std::vector<int> &x, const std::vector<int> &y, RoadImportance roadImportance, const std::string &comment = std::string()) const;
 
 private:
     class Private;

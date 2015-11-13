@@ -61,13 +61,17 @@ public:
 
         switch (group) {
         case SvgWriter::BaseGroup:
-            output << "  <g fill=\"white\" stroke=\"black\" stroke-width=\"1\" >" << std::endl;
+            output << "  <g fill=\"white\" stroke=\"black\" stroke-width=\"1\">" << std::endl;
             break;
         case SvgWriter::PoiGroup:
-            output << "  <g fill=\"yellow\" stroke=\"red\" stroke-width=\"2\" >" << std::endl;
+        case SvgWriter::ImportantPoiGroup:
+            output << "  <g fill=\"none\" stroke=\"red\" stroke-width=\"2\">" << std::endl;
             break;
         case SvgWriter::TextGroup:
-            output << "  <g fill=\"black\" stroke=\"black\" stroke-width=\"1\" >" << std::endl;
+            output << "  <g fill=\"black\" stroke=\"none\">" << std::endl;
+            break;
+        case SvgWriter::RoadGroup:
+            output << "  <g fill=\"none\" stroke=\"#369\" stroke-width=\"0.3\">" << std::endl;
             break;
         case SvgWriter::InvalidGroup:
             /// nothing to do here
@@ -75,6 +79,54 @@ public:
         }
 
         previousGroup = group;
+    }
+
+    std::string toHtml(const std::string &input) const {
+        std::string result;
+        const size_t len = input.length();
+        for (size_t i = 0; i < len; ++i) {
+            const unsigned char &c = input[i];
+            if (c == 0x26)
+                /// Ampersand
+                result.append("&amp;");
+            else  if (c == 0x3c)
+                /// Less than
+                result.append("&lt;");
+            else  if (c == 0x3e)
+                /// Greater than
+                result.append("&gt;");
+            else if (c >= 32 && c < 127)
+                /// Regular characters
+                result.push_back(c);
+            else if (c == 0xc3 && i < len - 1) {
+                /// Various Swedish umlauts consisting of two bytes
+                result.push_back(c);
+                ++i;
+                result.push_back(input[i]);
+            }
+        }
+
+        return result;
+    }
+
+    std::vector<std::string> splitIntoLines(const std::string &input) const {
+        std::vector<std::string> result;
+
+        std::string line;
+        const size_t len = input.length();
+        for (size_t pos = 0; pos < len; ++pos) {
+            const unsigned char &c = input[pos];
+            if ((c == ' ' || c == '\n' || c == '\r') && line.length() > 60) {
+                result.push_back(line);
+                line.clear();
+            } else
+                line.push_back(c);
+        }
+
+        if (!line.empty())
+            result.push_back(line);
+
+        return result;
     }
 };
 
@@ -92,13 +144,16 @@ SvgWriter::~SvgWriter() {
 void SvgWriter::drawCaption(const std::string &caption) const {
     d->switchGroup(SvgWriter::TextGroup);
 
-    d->output << "    <text style=\"font-family:sans-serif;font-size:36;\" x=\"0\" y=\"36\">" << caption << "</text>" << std::endl;
+    d->output << "    <text style=\"font-family:sans-serif;font-size:36;\" x=\"0\" y=\"36\">" << d->toHtml(caption) << "</text>" << std::endl;
 }
 
 void SvgWriter::drawDescription(const std::string &description) const {
     d->switchGroup(SvgWriter::TextGroup);
 
-    d->output << "    <text style=\"font-family:sans-serif;font-size:16;\" x=\"0\" y=\"60\">" << description << "</text>" << std::endl;
+    const std::vector<std::string> lines = d->splitIntoLines(description);
+    int y = 60;
+    for (auto it = lines.cbegin(); it != lines.cend(); ++it, y += 20)
+        d->output << "    <text style=\"font-family:sans-serif;font-size:16;\" x=\"0\" y=\"" << y << "\">" << d->toHtml(*it) << "</text>" << std::endl;
 }
 
 void SvgWriter::drawLine(int x1, int y1, int x2, int y2, Group group, const std::string &comment) const {
@@ -130,10 +185,36 @@ void SvgWriter::drawPolygon(const std::vector<int> &x, const std::vector<int> &y
     d->output << std::endl;
 }
 
-void SvgWriter::drawPoint(int x, int y, Group group, const std::string &comment) const {
+void SvgWriter::drawPoint(int x, int y, Group group, const std::string &color, const std::string &comment) const {
     d->switchGroup(group);
 
-    d->output << "    <circle cx=\"" << normalizeX(x) << "\" cy=\"" << normalizeY(y) << "\" r=\"5\" />";
+    const int radius = (group == ImportantPoiGroup) ? 8 : 4;
+    const int sw = (group == ImportantPoiGroup) ? 3 : 2;
+    d->output << "    <circle cx=\"" << normalizeX(x) << "\" cy=\"" << normalizeY(y) << "\" stroke-width=\"" << sw << "\" r=\"" << radius << "\"";
+    if (!color.empty())
+        d->output << " stroke=\"" << color << "\"";
+    d->output << "/>";
+    if (!comment.empty())
+        d->output << "<!-- " << comment << " -->";
+    d->output << std::endl;
+}
+
+void SvgWriter::drawRoad(const std::vector<int> &x, const std::vector<int> &y, RoadImportance roadImportance, const std::string &comment) const {
+    if (x.empty() || y.empty()) return;
+
+    d->switchGroup(RoadGroup);
+
+    const double width = (int)roadImportance * 0.4 + 0.3;
+    d->output << "    <polyline stroke-width=\"" << width << "\" points=\"";
+    bool first = true;
+    for (auto itx = x.cbegin(), ity = y.cbegin(); itx != x.cend() && ity != y.cend(); ++itx, ++ity) {
+        if (!first) {
+            d->output << " ";
+        }
+        first = false;
+        d->output << normalizeX(*itx) << "," << normalizeY(*ity);
+    }
+    d->output << "\" />";
     if (!comment.empty())
         d->output << "<!-- " << comment << " -->";
     d->output << std::endl;
