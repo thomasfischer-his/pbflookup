@@ -368,7 +368,10 @@ public:
 
     void drawArea(const std::string &filename, const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
         SvgWriter writer(filename);
+        drawArea(writer, code_to_relationid, code_to_polygons);
+    }
 
+    void drawArea(SvgWriter &svgWriter, const std::map<int, uint64_t> &code_to_relationid, std::map<int, Region> &code_to_polygons) {
         if (code_to_polygons.empty())
             rebuildCodeToPolygons(code_to_relationid, code_to_polygons);
 
@@ -384,11 +387,10 @@ public:
                     x.push_back(itC->x);
                     y.push_back(itC->y);
                 }
-                writer.drawPolygon(x, y, std::string(buffer));
+                svgWriter.drawPolygon(x, y, SvgWriter::BaseGroup, std::string(buffer));
             }
         }
     }
-
 
     void loadSCBcodeNames() {
         char filenamebuffer[1024];
@@ -789,8 +791,12 @@ std::vector<int> Sweden::insideNUTS3area(uint64_t nodeid) {
     return d->nodeIdToAreaCode(nodeid, d->nuts3code_to_relationid, d->nuts3code_to_polygons);
 }
 
-void Sweden::drawSCBarea(const std::string &filename) {
+void Sweden::drawSCBareas(const std::string &filename) {
     d->drawArea(filename, d->scbcode_to_relationid, d->scbcode_to_polygons);
+}
+
+void Sweden::drawSCBareas(SvgWriter &svgWriter) {
+    d->drawArea(svgWriter, d->scbcode_to_relationid, d->scbcode_to_polygons);
 }
 
 void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {

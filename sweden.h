@@ -23,6 +23,8 @@
 #include "idtree.h"
 #include "global.h"
 
+class SvgWriter;
+
 class Sweden
 {
 public:
@@ -51,7 +53,8 @@ public:
     void insertNUTS3area(const int code, uint64_t relid);
     std::vector<int> insideNUTS3area(uint64_t nodeid);
 
-    void drawSCBarea(const std::string &filename);
+    void drawSCBareas(const std::string &filename);
+    void drawSCBareas(SvgWriter &svgWriter);
 
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
