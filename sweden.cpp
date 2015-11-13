@@ -799,6 +799,49 @@ void Sweden::drawSCBareas(SvgWriter &svgWriter) {
     d->drawArea(svgWriter, d->scbcode_to_relationid, d->scbcode_to_polygons);
 }
 
+void Sweden::drawRoads(SvgWriter &svgWriter) {
+    WayNodes wn;
+    Coord c;
+    std::vector<int> x, y;
+
+    /// European roads
+    for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+        const size_t count = d->roads.european[d->EuropeanRoadNumbers[i]].size();
+        for (size_t r = 0; r < count; ++r) {
+            x.clear();
+            y.clear();
+            const uint64_t wayid = d->roads.european[d->EuropeanRoadNumbers[i]][r];
+            if (wayNodes->retrieve(wayid, wn)) {
+                for (uint32_t n = 0; n < wn.num_nodes; ++n)
+                    if (node2Coord->retrieve(wn.nodes[n], c)) {
+                        x.push_back(c.x);
+                        y.push_back(c.y);
+                    }
+                svgWriter.drawRoad(x, y, SvgWriter::RoadMajorImportance);
+            }
+        }
+    }
+
+    /// National roads
+    for (size_t i = 0; i < 1000; ++i)
+        if (!d->roads.national[i].empty())
+            for (int j = d->roads.national[i].size() - 1; j >= 0; --j) {
+                const uint64_t wayid = d->roads.national[i][j];
+                if (wayNodes->retrieve(wayid, wn)) {
+                    x.clear();
+                    y.clear();
+                    for (uint32_t n = 0; n < wn.num_nodes; ++n)
+                        if (node2Coord->retrieve(wn.nodes[n], c)) {
+                            x.push_back(c.x);
+                            y.push_back(c.y);
+                        }
+                    svgWriter.drawRoad(x, y, SvgWriter::RoadAvgImportance);
+                }
+            }
+
+    /// Omit regional roads, too many details
+}
+
 void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
     const char *cur = refValue;
 

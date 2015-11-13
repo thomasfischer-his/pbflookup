@@ -55,6 +55,7 @@ public:
 
     void drawSCBareas(const std::string &filename);
     void drawSCBareas(SvgWriter &svgWriter);
+    void drawRoads(SvgWriter &svgWriter);
 
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
