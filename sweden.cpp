@@ -379,8 +379,8 @@ public:
         for (auto itMR = code_to_polygons.cbegin(); itMR != code_to_polygons.cend(); ++itMR) {
             const int &code = itMR->first;
             const Sweden::Private::Region &region = itMR->second;
-            char buffer[1024];
-            snprintf(buffer, 1024, "area code: %i", code);
+            char buffer[STRING_BUFFER_SIZE];
+            snprintf(buffer, STRING_BUFFER_SIZE, "area code: %i", code);
             for (auto itVDC = region.polygons.cbegin(); itVDC != region.polygons.cend(); ++itVDC) {
                 const std::deque<Coord> dequeCoord = *itVDC;
                 std::vector<int> x, y;
@@ -394,8 +394,8 @@ public:
     }
 
     void loadSCBcodeNames() {
-        char filenamebuffer[1024];
-        snprintf(filenamebuffer, 1024, "%s/git/pbflookup/scb-lan-kommuner-kod.csv", getenv("HOME"));
+        char filenamebuffer[STRING_BUFFER_SIZE];
+        snprintf(filenamebuffer, STRING_BUFFER_SIZE, "%s/git/pbflookup/scb-lan-kommuner-kod.csv", getenv("HOME"));
         std::ifstream fp(filenamebuffer, std::ifstream::in | std::ifstream::binary);
         if (fp) {
             std::map<int, Land>::iterator nextLand = lands.begin();
