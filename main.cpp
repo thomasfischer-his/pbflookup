@@ -253,11 +253,12 @@ int main(int argc, char *argv[])
                 Error::info("Test set: %s", it->name.c_str());
                 const Coord expected = Coord::fromLonLat(it->lon, it->lat);
 
-                char svgfilename[1024];
-                snprintf(svgfilename, 1024, "/tmp/sweden-%02d.svg", setNr);
-                SvgWriter svgwriter(svgfilename, 3);
-                sweden->drawSCBareas(svgwriter);
-                sweden->drawRoads(svgwriter);
+                SvgWriter *svgwriter = NULL;
+                if (!it->svgoutputfilename.empty()) {
+                    svgwriter = new SvgWriter(it->svgoutputfilename, 2);
+                    sweden->drawSCBareas(*svgwriter);
+                    sweden->drawRoads(*svgwriter);
+                }
 
                 std::stringstream ss(it->text);
                 std::vector<std::string> words;
@@ -273,13 +274,15 @@ int main(int argc, char *argv[])
 
                 for (auto itWns = wns.cbegin(); itWns != wns.cend(); ++itWns) {
                     const WeightedNode &wn = *itWns;
-                    svgwriter.drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, std::to_string(wn.id) + " " + std::to_string(wn.weight));
+                    if (svgwriter != NULL)
+                        svgwriter->drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, std::to_string(wn.id) + " " + std::to_string(wn.weight));
                 }
 
                 std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
 
                 Coord center = wns.weightedCenter();
-                svgwriter.drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "green", "weightedCenter");
+                if (svgwriter != NULL)
+                    svgwriter->drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "green", "weightedCenter");
                 Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
@@ -308,7 +311,8 @@ int main(int argc, char *argv[])
                 std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
 
                 center = wns.weightedCenter();
-                svgwriter.drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "blue", "powerCluster weightedCenter");
+                if (svgwriter != NULL)
+                    svgwriter->drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "blue", "powerCluster weightedCenter");
                 Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
@@ -328,9 +332,14 @@ int main(int argc, char *argv[])
                     Error::debug("  Distance Lat/Lon: %i m", expected.distanceLatLon(Coord(wn.x, wn.y)));
                 }
 
-                svgwriter.drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "#f0c", "expected");
-                svgwriter.drawCaption(it->name);
-                svgwriter.drawDescription(it->text);
+                if (svgwriter != NULL) {
+                    svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "#f0c", "expected");
+                    svgwriter->drawCaption(it->name);
+                    svgwriter->drawDescription(it->text);
+
+                    delete svgwriter; ///< destructor will finalize SVG file
+                    svgwriter = NULL;
+                }
 
                 Error::info("======================================================");
             }

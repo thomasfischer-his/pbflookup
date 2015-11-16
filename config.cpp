@@ -148,6 +148,8 @@ bool init_configuration(const char *configfilename) {
                         ts.lat = testsetSetting.lookup("latitude");
                         ts.lon = testsetSetting.lookup("longitude");
                         ts.text = testsetSetting.lookup("text").c_str();
+                        /// "svgoutputfilename" is optional, so tolerate if it is not set
+                        testsetSetting.lookupValue("svgoutputfilename", ts.svgoutputfilename);///< ignore boolean return value
                         Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.lat, ts.lon);
                         testsets.push_back(ts);
                     }

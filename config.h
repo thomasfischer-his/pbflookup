@@ -30,6 +30,7 @@ struct testset {
     std::string name;
     double lat, lon;
     std::string text;
+    std::string svgoutputfilename;
 };
 extern std::vector<struct testset> testsets;
 
