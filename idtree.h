@@ -216,7 +216,7 @@ public:
 
     std::ostream &write(std::ostream &output) {
         const char *data = c_str();
-        const size_t len = strlen(data);
+        const size_t len = length();
         output.write((char *)&len, sizeof(len));
         if (!output)
             Error::err("Could not write string to output stream");
