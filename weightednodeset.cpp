@@ -23,6 +23,8 @@
 #include "sweden.h"
 #include "globalobjects.h"
 
+#define max(a,b) ((a)>(b)?(a):(b))
+
 WeightedNodeSet::WeightedNodeSet()
 {
     /// nothing
@@ -36,7 +38,7 @@ bool WeightedNodeSet::appendNode(uint64_t id, double weight, int overwriteX, int
         for (auto it = begin(); it != end(); ++it) {
             WeightedNode &wn = *it;
             if (wn.id == id) {
-                wn.weight *= 1.2; // TODO put into configuration file
+                wn.weight = max(wn.weight * 1.2 /* TODO put into configuration file */, weight);
                 alreadyKnown = true;
                 break;
             }
