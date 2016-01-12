@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadLoadOrSaveWayNodes(loadOrSaveWayNodes);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-        boost::thread threadLoadOrRelMem(loadOrSaveRelMem);
+        boost::thread threadLoadOrSaveRelMem(loadOrSaveRelMem);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
         boost::thread threadSaveSweden(saveSweden);
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));
@@ -229,7 +229,7 @@ int main(int argc, char *argv[])
         threadLoadOrSaveNode2Cood.join();
         threadLoadOrSaveNodeNames.join();
         threadLoadOrSaveWayNodes.join();
-        threadLoadOrRelMem.join();
+        threadLoadOrSaveRelMem.join();
         threadSaveSweden.join();
         Error::debug("All threads joined");
 

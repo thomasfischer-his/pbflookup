@@ -201,7 +201,7 @@ public:
         char *data = (char *)malloc(sizeof(char) * len);
         input.read(data, len);
         if (!input)
-            Error::err("Could not read coordinates from input stream");
+            Error::err("Could not read string from input stream");
 
         append(data, len);
         free(data);
@@ -212,13 +212,14 @@ public:
         const size_t len = strlen(data);
         output.write((char *)&len, sizeof(len));
         if (!output)
-            Error::err("Could not write coordinates to output stream");
+            Error::err("Could not write string to output stream");
         output.write(data, len);
         if (!output)
-            Error::err("Could not write coordinates to output stream");
+            Error::err("Could not write string to output stream");
         return output;
     }
 };
+
 
 /*:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::*/
 /*::  This function converts decimal degrees to radians             :*/
