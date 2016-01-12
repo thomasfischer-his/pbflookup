@@ -37,6 +37,8 @@ public:
             Error::err("Failed to open SVG file '%s'");
             /// Program will fail here
         }
+        output.setf(std::ofstream::fixed);
+        output.precision(3);
 
         output << "<?xml version=\"1.0\" standalone=\"no\"?>" << std::endl;
         //output << "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">" << std::endl << std::endl;
@@ -134,6 +136,33 @@ public:
 
         return result;
     }
+
+    void splitColorAndTransparency(const std::string &inputColor, std::string &justColor, float &transparency)const {
+        transparency = 1.0;
+        justColor = inputColor;
+        if (inputColor[0] == '#') {
+            if (inputColor.length() == 5) { /// pattern #rgba
+                justColor = inputColor.substr(0, 4);
+                const unsigned char transparencyChar = inputColor[4] | 0x20;
+                if (transparencyChar >= '0' && transparencyChar <= '9')
+                    transparency = (transparencyChar - '0') / 15.0;
+                else if (transparencyChar >= 'a' && transparencyChar <= 'f')
+                    transparency = (transparencyChar - 'a' + 10) / 15.0;
+            } else if (inputColor.length() == 9) { /// pattern #rgba
+                justColor = inputColor.substr(0, 7);
+                const unsigned char transparencyCharA = inputColor[7] | 0x20;
+                if (transparencyCharA >= '0' && transparencyCharA <= '9')
+                    transparency = (transparencyCharA - '0') / 15.0;
+                else if (transparencyCharA >= 'a' && transparencyCharA <= 'f')
+                    transparency = (transparencyCharA - 'a' + 10) / 15.0;
+                const unsigned char transparencyCharB = inputColor[8] | 0x20;
+                if (transparencyCharB >= '0' && transparencyCharB <= '9')
+                    transparency += (transparencyCharB - '0') / 15.0 / 16.0;
+                else if (transparencyCharB >= 'a' && transparencyCharB <= 'f')
+                    transparency = (transparencyCharB - 'a' + 10) / 15.0 / 16.0;
+            }
+        }
+    }
 };
 
 
@@ -194,12 +223,18 @@ void SvgWriter::drawPolygon(const std::vector<int> &x, const std::vector<int> &y
 void SvgWriter::drawPoint(int x, int y, Group group, const std::string &color, const std::string &comment) const {
     d->switchGroup(group);
 
+    std::string justColor = color;
+    float transparency = 1.0;
+    d->splitColorAndTransparency(color, justColor, transparency);
+
     const int radius = (group == ImportantPoiGroup) ? 8 : 4;
     const int sw = (group == ImportantPoiGroup) ? 3 : 2;
-    d->output << "    <circle cx=\"" << (Private::normalizeX(x) * d->zoom) << "\" cy=\"" << (Private::normalizeY(y) * d->zoom) << "\" stroke-width=\"" << sw << "\" r=\"" << radius << "\"";
-    if (!color.empty())
-        d->output << " stroke=\"" << color << "\"";
-    d->output << "/>";
+    d->output << "    <circle cx=\"" << (Private::normalizeX(x) * d->zoom) << "\" cy=\"" << (Private::normalizeY(y) * d->zoom) << "\" r=\"" << radius << "\" style=\"stroke-width:" << sw << ";";
+    if (!justColor.empty())
+        d->output << "stroke:" << justColor << ";";
+    if (transparency < 1.0)
+        d->output << "stroke-opacity:" << transparency << ";";
+    d->output << "\" />";
     if (!comment.empty())
         d->output << "<!-- " << comment << " -->";
     d->output << std::endl;
