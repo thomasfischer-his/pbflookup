@@ -93,6 +93,9 @@ public:
         return 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
     }
 
+    static constexpr double initialWeightPlaceLarge = 100000.0;
+    static constexpr double initialWeightPlaceMedium = 1000.0;
+
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
         if (id_list.empty()) return 0; ///< too few elements as input
 
@@ -202,10 +205,13 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
                         if (type == OSMElement::Node) {
+                            const OSMElement::NodeType node_type = (*it).nodeType;
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/node/%llu", id);
 #endif // DEBUG
-                            wns.appendNode(id, Private::initialWeight(s, wordlen));
+                            const float weight = node_type == OSMElement::PlaceLarge ? Private::initialWeightPlaceLarge : (OSMElement::PlaceMedium ? Private::initialWeightPlaceMedium : Private::initialWeight(s, wordlen));
+                            Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, Private::initialWeight(s, wordlen));
+                            wns.appendNode(id, weight);
                         } else if (type == OSMElement::Way) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/way/%llu", id);
