@@ -194,17 +194,24 @@ public:
 
     WriteableString(std::istream &input)
         : std::string() {
+        /// Make use of a static buffer to avoid dynamic memory allocations
+        static const size_t buffer_size = 8192; ///< size should be sufficient
+        static char buffer[buffer_size];
         size_t len;
         input.read((char *)&len, sizeof(len));
         if (!input)
-            Error::err("Could not string len from input stream");
-        char *data = (char *)malloc(sizeof(char) * len);
-        input.read(data, len);
+            Error::err("Could not read string len from input stream");
+        if (len > buffer_size) {
+            Error::err("String length larger than buffer size");
+            len = buffer_size;
+        }
+        input.read(buffer, len);
         if (!input)
             Error::err("Could not read string from input stream");
+        /// Keep in mind: string in 'buffer' is not zero-terminated
 
-        append(data, len);
-        free(data);
+        clear(); ///< remove any data/garbage that may be inside the string
+        append(buffer, len);
     }
 
     std::ostream &write(std::ostream &output) {
