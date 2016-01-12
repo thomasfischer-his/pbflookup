@@ -18,13 +18,16 @@
 #define TYPES_H
 
 struct OSMElement {
-    enum ElementType {Unknown = 0, Node, Way, Relation};
+    enum ElementType {UnknownElementType = 0, Node, Way, Relation};
+    enum NodeType { UnknownNodeType = 0, PlaceLarge, PlaceMedium, PlaceSmall};
     uint64_t id;
     ElementType type;
+    NodeType nodeType;
 
-    OSMElement(uint64_t _id, ElementType _type) {
+    OSMElement(uint64_t _id, ElementType _type, NodeType _nodeType) {
         id = _id;
         type = _type;
+        nodeType = _nodeType;
     }
 };
 

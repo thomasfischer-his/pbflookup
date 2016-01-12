@@ -248,6 +248,9 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                     const int maxnodes = pg.nodes_size();
                     for (int j = 0; j < maxnodes; ++j) {
+                        OSMElement::NodeType node_type = OSMElement::UnknownNodeType;
+                        std::string name;
+
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
                         node2Coord->insert(pg.nodes(j).id(), Coord::fromLonLat(lon, lat));
@@ -255,14 +258,33 @@ bool OsmPbfReader::parse(std::istream &input) {
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                const uint64_t id = pg.nodes(j).id();
-                                node2Coord->increaseCounter(id);
-                                const OSMElement element(id, OSMElement::Node);
-                                const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.nodes(j).vals(k)), element);
-                                if (!result)
-                                    Error::warn("Cannot insert %s", primblock.stringtable().s(pg.nodes(j).vals(k)).c_str());
-                                nodeNames->insert(id, WriteableString(primblock.stringtable().s(pg.nodes(j).keys(k))));
+                                name = primblock.stringtable().s(pg.nodes(j).vals(k));
+                            } else if (strcmp("place", ckey) == 0) {
+                                const char *cvalue = primblock.stringtable().s(pg.nodes(j).vals(k)).c_str();
+
+                                if (strcmp("city", cvalue) == 0)
+                                    node_type = OSMElement::PlaceLarge;
+                                else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
+                                    node_type = OSMElement::PlaceMedium;
+                                else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
+                                    node_type = OSMElement::PlaceSmall;
+                                else {
+                                    /// Skipping other types of places:
+                                    /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
+                                    /// * Neither continents nor islands may be very helpful
+                                    /// * Very small places like farms or plots neither
+                                }
                             }
+                        }
+
+                        if (!name.empty()) {
+                            const uint64_t id = pg.nodes(j).id();
+                            node2Coord->increaseCounter(id);
+                            const OSMElement element(id, OSMElement::Node, node_type);
+                            const bool result = swedishTextTree->insert(name, element);
+                            if (!result)
+                                Error::warn("Cannot insert %s", name.c_str());
+                            nodeNames->insert(id, WriteableString(name));
                         }
                     }
                 }
@@ -275,6 +297,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                     double last_lat = 0.0, last_lon = 0.0;
                     const int idmax = pg.dense().id_size();
                     for (int j = 0; j < idmax; ++j) {
+                        OSMElement::NodeType node_type = OSMElement::UnknownNodeType;
+                        std::string name;
+
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
@@ -295,14 +320,33 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
-                                    node2Coord->increaseCounter(last_id);
-                                    const OSMElement element(last_id, OSMElement::Node);
-                                    const bool result = swedishTextTree->insert(primblock.stringtable().s(value), element);
-                                    if (!result)
-                                        Error::warn("Cannot insert %s", primblock.stringtable().s(value).c_str());
-                                    nodeNames->insert(last_id, WriteableString(primblock.stringtable().s(value)));
+                                    name = primblock.stringtable().s(value);
+                                } else if (strcmp("place", ckey) == 0) {
+                                    const char *cvalue = primblock.stringtable().s(value).c_str();
+
+                                    if (strcmp("city", cvalue) == 0)
+                                        node_type = OSMElement::PlaceLarge;
+                                    else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
+                                        node_type = OSMElement::PlaceMedium;
+                                    else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
+                                        node_type = OSMElement::PlaceSmall;
+                                    else {
+                                        /// Skipping other types of places:
+                                        /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
+                                        /// * Neither continents nor islands may be very helpful
+                                        /// * Very small places like farms or plots neither
+                                    }
                                 }
                             }
+                        }
+
+                        if (!name.empty()) {
+                            node2Coord->increaseCounter(last_id);
+                            const OSMElement element(last_id, OSMElement::Node, node_type);
+                            const bool result = swedishTextTree->insert(name, element);
+                            if (!result)
+                                Error::warn("Cannot insert %s", name.c_str());
+                            nodeNames->insert(last_id, WriteableString(name));
                         }
                     }
                 }
@@ -318,7 +362,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                const OSMElement element(wayId, OSMElement::Way);
+                                const OSMElement element(wayId, OSMElement::Way, OSMElement::UnknownNodeType);
                                 const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.ways(w).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.ways(w).vals(k)).c_str());
@@ -361,7 +405,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         for (int k = 0; k < maxkv; ++k) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
-                                const OSMElement element(relId, OSMElement::Relation);
+                                const OSMElement element(relId, OSMElement::Relation, OSMElement::UnknownNodeType);
                                 const bool result = swedishTextTree->insert(primblock.stringtable().s(pg.relations(i).vals(k)), element);
                                 if (!result)
                                     Error::warn("Cannot insert %s", primblock.stringtable().s(pg.relations(i).vals(k)).c_str());
@@ -388,7 +432,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 flags |= RelationFlags::RoleOuter;
                             else if (strcmp("inner", primblock.stringtable().s(pg.relations(i).roles_sid(k)).c_str()) == 0)
                                 flags |= RelationFlags::RoleInner;
-                            OSMElement::ElementType type = OSMElement::Unknown;
+                            OSMElement::ElementType type = OSMElement::UnknownElementType;
                             if (pg.relations(i).types(k) == 0)
                                 type = OSMElement::Node;
                             else if (pg.relations(i).types(k) == 1)
@@ -397,7 +441,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 type = OSMElement::Relation;
                             else
                                 Error::warn("Unknown relation type for member %llu in relation %llu : type=%d", memId, relId, pg.relations(i).types(k));
-                            rm.members[k] = OSMElement(memId, type);
+                            rm.members[k] = OSMElement(memId, type, OSMElement::UnknownNodeType);
                             rm.member_flags[k] = flags;
                         }
                         relMembers->insert(relId, rm);
