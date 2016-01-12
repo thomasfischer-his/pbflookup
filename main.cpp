@@ -275,14 +275,14 @@ int main(int argc, char *argv[])
                 for (auto itWns = wns.cbegin(); itWns != wns.cend(); ++itWns) {
                     const WeightedNode &wn = *itWns;
                     if (svgwriter != NULL)
-                        svgwriter->drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, std::to_string(wn.id) + " " + std::to_string(wn.weight));
+                        svgwriter->drawPoint(wn.x, wn.y, SvgWriter::PoiGroup, "#fffc", std::to_string(wn.id) + " " + std::to_string(wn.weight));
                 }
 
                 std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
 
                 Coord center = wns.weightedCenter();
                 if (svgwriter != NULL)
-                    svgwriter->drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "green", "weightedCenter");
+                    svgwriter->drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "blue", "weightedCenter");
                 Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
 
                 center = wns.weightedCenter();
                 if (svgwriter != NULL)
-                    svgwriter->drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "blue", "powerCluster weightedCenter");
+                    svgwriter->drawPoint(center.x, center.y, SvgWriter::ImportantPoiGroup, "red", "powerCluster weightedCenter");
                 Error::debug("Expected location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", it->lat, it->lon);
                 Error::debug("Computed location:  http://www.openstreetmap.org/#map=17/%.4f/%.4f", Coord::toLatitude(center.y), Coord::toLongitude(center.x));
                 Error::info("  Distance Lat/Lon: %i m", center.distanceLatLon(expected));
@@ -333,7 +333,7 @@ int main(int argc, char *argv[])
                 }
 
                 if (svgwriter != NULL) {
-                    svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "#f0c", "expected");
+                    svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "green", "expected");
                     svgwriter->drawCaption(it->name);
                     svgwriter->drawDescription(it->text);
 
