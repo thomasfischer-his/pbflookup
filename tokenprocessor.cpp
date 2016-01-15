@@ -29,6 +29,16 @@
 
 class TokenProcessor::Private
 {
+private:
+
+    static constexpr double initialWeightPlaceLarge = 1000.0;
+    static constexpr double initialWeightPlaceMedium = 100.0;
+    static constexpr double initialWeightPlaceSmall = 10.0;
+    static constexpr double initialWeightRoadMajor = 1000.0;
+    static constexpr double initialWeightRoadMedium = 100.0;
+    static constexpr double initialWeightRoadMinor = 10.0;
+    static constexpr double initialWeightDefault = 1.0;
+
 public:
     std::vector<struct Sweden::Road> knownRoads;
 
@@ -89,12 +99,18 @@ public:
         return Sweden::UnknownRoadType;
     }
 
-    static inline double initialWeight(int s, size_t wordlen) {
-        return 1.0 * exp(log(s) * 3) * exp(log(wordlen) * 0.5);
+    static inline double initialWeight(OSMElement::RealWorldType node_type) {
+        switch (node_type) {
+        case OSMElement::PlaceLarge: return initialWeightPlaceLarge;
+        case OSMElement::PlaceMedium: return initialWeightPlaceMedium;
+        case OSMElement::PlaceSmall: return initialWeightPlaceSmall;
+        case OSMElement::RoadMajor: return initialWeightRoadMajor;
+        case OSMElement::RoadMedium: return initialWeightRoadMedium;
+        case OSMElement::RoadMinor: return initialWeightRoadMinor;
+        default:
+            return initialWeightDefault;
+        }
     }
-
-    static constexpr double initialWeightPlaceLarge = 100000.0;
-    static constexpr double initialWeightPlaceMedium = 1000.0;
 
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
         if (id_list.empty()) return 0; ///< too few elements as input
@@ -204,24 +220,24 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                     for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
+                        const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
+                        const float weight = Private::initialWeight(realworld_type);
+                        Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, weight);
                         if (type == OSMElement::Node) {
-                            const OSMElement::NodeType node_type = (*it).nodeType;
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/node/%llu", id);
 #endif // DEBUG
-                            const float weight = node_type == OSMElement::PlaceLarge ? Private::initialWeightPlaceLarge : (OSMElement::PlaceMedium ? Private::initialWeightPlaceMedium : Private::initialWeight(s, wordlen));
-                            Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, Private::initialWeight(s, wordlen));
                             wns.appendNode(id, weight);
                         } else if (type == OSMElement::Way) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/way/%llu", id);
 #endif // DEBUG
-                            wns.appendWay(id, Private::initialWeight(s, wordlen));
+                            wns.appendWay(id, weight);
                         } else if (type == OSMElement::Relation) {
 #ifdef DEBUG
                             Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
 #endif // DEBUG
-                            wns.appendRelation(id, Private::initialWeight(s, wordlen));
+                            wns.appendRelation(id, weight);
                         } else
                             Error::warn("  Neither node, way, nor relation: %llu", id);
                     }

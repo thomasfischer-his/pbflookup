@@ -19,15 +19,15 @@
 
 struct OSMElement {
     enum ElementType {UnknownElementType = 0, Node, Way, Relation};
-    enum NodeType { UnknownNodeType = 0, PlaceLarge, PlaceMedium, PlaceSmall};
+    enum RealWorldType { UnknownRealWorldType = 0, PlaceLarge, PlaceMedium, PlaceSmall, RoadMajor, RoadMedium, RoadMinor};
     uint64_t id;
     ElementType type;
-    NodeType nodeType;
+    RealWorldType realworld_type;
 
-    OSMElement(uint64_t _id, ElementType _type, NodeType _nodeType) {
+    OSMElement(uint64_t _id, ElementType _type, RealWorldType _realworld_type) {
         id = _id;
         type = _type;
-        nodeType = _nodeType;
+        realworld_type = _realworld_type;
     }
 };
 
