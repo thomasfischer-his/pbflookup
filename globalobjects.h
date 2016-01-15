@@ -20,12 +20,37 @@
 #include "idtree.h"
 #include "swedishtexttree.h"
 #include "sweden.h"
+#include "timer.h"
 
-extern IdTree<WayNodes> *wayNodes; ///< defined in 'main.cpp'
-extern IdTree<Coord> *node2Coord; ///< defined in 'main.cpp'
-extern IdTree<RelationMem> *relMembers; ///< defined in 'main.cpp'
-extern IdTree<WriteableString> *nodeNames; ///< defined in 'main.cpp'
-extern SwedishTextTree *swedishTextTree; ///< defined in 'main.cpp'
-extern Sweden *sweden; ///< defined in 'main.cpp'
+extern IdTree<WayNodes> *wayNodes; ///< defined in 'globalobjects.cpp'
+extern IdTree<Coord> *node2Coord; ///< defined in 'globalobjects.cpp'
+extern IdTree<RelationMem> *relMembers; ///< defined in 'globalobjects.cpp'
+extern IdTree<WriteableString> *nodeNames; ///< defined in 'globalobjects.cpp'
+extern SwedishTextTree *swedishTextTree; ///< defined in 'globalobjects.cpp'
+extern Sweden *sweden; ///< defined in 'globalobjects.cpp'
+
+
+class GlobalObjectManager {
+public:
+    static GlobalObjectManager *instance();
+    ~GlobalObjectManager();
+
+protected:
+    void load();
+    void save() const;
+
+    /**
+     * Test if a file can be read and is not empty
+     * @param filename
+     * @return
+     */
+    static bool testNonEmptyFile(const std::string &filename, unsigned int minimumSize = 16);
+
+private:
+    static GlobalObjectManager *self;
+    Timer timer;
+
+    GlobalObjectManager();
+};
 
 #endif // GLOBAL_OBJECTS_H
