@@ -112,6 +112,18 @@ public:
         }
     }
 
+    static inline double rareNameBonus(int count) {
+        if (count == 1)
+            return 1000.0;
+        else if (count <= 3)
+            return 100.0;
+        else if (count <= 10)
+            return 10.0;
+        else if (count <= 25)
+            return 1.0;
+        return 0.0;
+    }
+
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
         if (id_list.empty()) return 0; ///< too few elements as input
 
@@ -221,7 +233,7 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
                         const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
-                        const float weight = Private::initialWeight(realworld_type);
+                        const float weight = Private::initialWeight(realworld_type) + Private::rareNameBonus(id_list.size());
                         Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, weight);
                         if (type == OSMElement::Node) {
 #ifdef DEBUG
