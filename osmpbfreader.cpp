@@ -371,6 +371,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                             } else if (strcmp("highway", ckey) == 0) {
                                 const char *cvalue = primblock.stringtable().s(pg.ways(w).vals(k)).c_str();
 
+                                /// Store 'highway' string for later use
+                                strncpy(buffer_highway, cvalue, SHORT_STRING_BUFFER_SIZE);
+
                                 if (strcmp("motorway", cvalue) == 0 || strcmp("trunk", cvalue) == 0 || strcmp("primary", cvalue) == 0)
                                     realworld_type = OSMElement::RoadMajor;
                                 else if (strcmp("secondary", cvalue) == 0 || strcmp("tertiary", cvalue) == 0)
@@ -386,9 +389,6 @@ bool OsmPbfReader::parse(std::istream &input) {
                             } else if (strcmp("ref", ckey) == 0)
                                 /// Store 'ref' string for later use
                                 strncpy(buffer_ref, primblock.stringtable().s(pg.ways(w).vals(k)).c_str(), SHORT_STRING_BUFFER_SIZE);
-                            else if (strcmp("highway", ckey) == 0)
-                                /// Store 'highway' string for later use
-                                strncpy(buffer_highway, primblock.stringtable().s(pg.ways(w).vals(k)).c_str(), SHORT_STRING_BUFFER_SIZE);
                         }
 
                         /// If 'ref' string is not empty and 'highway' string is 'primary', 'secondary', or 'tertiary' ...
