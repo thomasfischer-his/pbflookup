@@ -35,9 +35,11 @@ public:
     static void debug(const char *format, ...);
 
 private:
+    enum MessageType {MessageError, MessageWarn, MessageInfo, MessageDebug};
+
     Error();
 
-    static void msg(const char *format, int color, va_list args);
+    static void msg(MessageType messageType, const char *format, int color, va_list args);
 };
 
 #endif // ERROR_H

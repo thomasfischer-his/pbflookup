@@ -26,6 +26,8 @@ extern char osmpbffilename[];
 extern char inputextfilename[];
 extern char stopwordfilename[];
 
+extern FILE *logfile; ///< defined in 'error.cpp'
+
 struct testset {
     std::string name;
     double lat, lon;

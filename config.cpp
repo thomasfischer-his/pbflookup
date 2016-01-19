@@ -17,6 +17,8 @@
 #include "config.h"
 
 #include <cstring>
+#include <ctime>
+#include <unistd.h>
 
 /// see http://www.hyperrealm.com/libconfig/
 #include <libconfig.h++>
@@ -32,6 +34,8 @@ char inputextfilename[MAX_STRING_LEN];
 char stopwordfilename[MAX_STRING_LEN];
 
 std::vector<struct testset> testsets;
+
+static time_t current_time;
 
 void replacetildehome(char *text) {
     if (text[0] == '~' && text[1] == '/') {
@@ -55,6 +59,22 @@ void replacevariablenames(char *text) {
         strncpy(needlepos, mapname, MAX_STRING_LEN - prefixlen);
         strncpy(needlepos + mapnamelen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
     }
+
+    if (current_time != (time_t)(-1)) {
+        static const char needle_timestamp[] = "${timestamp}";
+        needlepos = strstr(text, needle_timestamp);
+        if (needlepos != NULL) {
+            static char temp[MAX_STRING_LEN], timestamp[MAX_STRING_LEN];
+            strftime(timestamp, MAX_STRING_LEN, "%Y%m%d-%H%M%S", localtime(&current_time));
+            snprintf(timestamp + 15, MAX_STRING_LEN - 15, "-%d", getpid());
+            strncpy(temp, text, MAX_STRING_LEN);
+            const size_t prefixlen = needlepos - text;
+            const size_t timestamplen = strlen(timestamp);
+            static const size_t variablelen = strlen(needle_timestamp);
+            strncpy(needlepos, timestamp, MAX_STRING_LEN - prefixlen);
+            strncpy(needlepos + timestamplen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
+        }
+    }
 }
 
 bool init_configuration(const char *configfilename) {
@@ -67,6 +87,8 @@ bool init_configuration(const char *configfilename) {
 #ifdef DEBUG
     Error::info("Loading configuration file '%s'", configfilename);
 #endif // DEBUG
+
+    time(&current_time);///< get and memorize current time
 
     libconfig::Config config;
 
@@ -103,6 +125,21 @@ bool init_configuration(const char *configfilename) {
 #ifdef DEBUG
         Error::debug("  mapname = '%s'", mapname);
 #endif // DEBUG
+
+        static char logfilename[MAX_STRING_LEN];
+        if (config.lookupValue("logfile", buffer)) {
+            strncpy(logfilename, buffer, MAX_STRING_LEN - 1);
+            replacetildehome(logfilename);
+            replacevariablenames(logfilename);
+        } else
+            logfilename[0] = '\0';
+#ifdef DEBUG
+        Error::debug("  logfilename = '%s'", logfilename);
+#endif // DEBUG
+        if (logfilename[0] != '\0') {
+            logfile = fopen(logfilename, "w");
+            /// TODO figure out how to close file at program termination
+        }
 
         if (config.lookupValue("osmpbffilename", buffer))
             strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
