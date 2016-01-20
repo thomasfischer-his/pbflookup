@@ -50,7 +50,10 @@ int main(int argc, char *argv[])
     }
 
     /// std::unique_ptr will take care of destroying the unique instance of
-    /// GlobalObjectManager when this function exists
+    /// GlobalObjectManager when this function exists.
+    /// Note: 'gom' is not used correctly. Rather, it will initialize various
+    /// global variables/objects during creation and free those global variables/
+    /// objects during its destruction.
     std::unique_ptr<GlobalObjectManager> gom(GlobalObjectManager::instance());
 
     Timer timer;
@@ -203,7 +206,8 @@ int main(int argc, char *argv[])
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to search SCB/NUTS3 in data: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
         */
-    }
+    } else
+        Error::err("No all variables got initialized correctly: relMembers, wayNodes, node2Coord, nodeNames, swedishTextTree, sweden");
 
     return 0;
 }
