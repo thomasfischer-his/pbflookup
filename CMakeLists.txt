@@ -6,6 +6,11 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 # Requre C++-11 support
 set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 
+# Use GProf for profiling
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+#SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+#SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
+
 add_definitions(-DDEBUG)
 add_definitions(-DREVERSE_ID_TREE)
 
