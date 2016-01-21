@@ -124,7 +124,9 @@ public:
         return 0.0;
     }
 
-    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
+    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances) {
+        considered_nodes = considered_distances = 0;
+
         if (id_list.empty()) return 0; ///< too few elements as input
 
         std::unordered_set<uint64_t> node_ids;
@@ -156,6 +158,7 @@ public:
             }
         }
 
+        considered_nodes = node_ids.size();
         if (node_ids.size() <= 1)
             return 0; ///< too few nodes found
 
@@ -168,9 +171,11 @@ public:
         for (auto it = node_ids.cbegin(); it != node_ids.cend(); ++it, ++i)
             node_id_array[i] = *it;
 
+        int count_small_distances = 0;
         std::vector<int> distances;
-        const int stepcount = 4;
-        const size_t step = node_ids.size() / stepcount + 1;
+        const int stepcount = min(7, node_ids.size() / 2 + 1);
+        size_t step = node_ids.size() / stepcount + 1;
+        while (node_ids.size() % step == 0) ++step;
         for (size_t a = 0; a < node_ids.size(); ++a) {
             size_t b = a;
             Coord cA;
@@ -181,16 +186,24 @@ public:
                     if (node_id_array[a] < node_id_array[b] && node2Coord->retrieve(node_id_array[b], cB)) {
                         const int d = Coord::distanceLatLon(cA, cB);
                         if (d > 2500000) ///< 2500 km
-                            Error::warn("Distance btwn node %llu and %llu very large: %d", node_id_array[a], node_id_array[b], d);
-                        distances.push_back(d);
+                            Error::warn("Distance btwn node %llu and %llu is very large: %d", node_id_array[a], node_id_array[b], d);
+                        else if (d < 250) { ///< 250 m
+                            // Error::warn("Distance btwn node %llu and %llu small: %d", node_id_array[a], node_id_array[b], d);
+                            ++count_small_distances;
+                        } else
+                            distances.push_back(d);
                     }
                 }
         }
         free(node_id_array);
+        considered_distances = distances.size();
+
+        if (count_small_distances > 0)
+            Error::info("%d small distances were ignored, keep %d distances", count_small_distances, distances.size());
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
-        Error::debug("1.quartile= %i  median= %i", distances[distances.size() / 4], distances[distances.size() / 2]);
+        Error::debug("1.quartile= %i  median= %i  considered_nodes= %i  considered_distances= %i", distances[distances.size() / 4], distances[distances.size() / 2], considered_nodes, considered_distances);
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
@@ -224,7 +237,8 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                 Error::info("Got no hits for word '%s' (s=%i), skipping", combined, s);
             else {
                 Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                const int estDist = d->interIdEstimatedDistance(id_list);
+                unsigned int considered_nodes, considered_distances;
+                const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
                 if (estDist > 10000) ///< 10 km
                     Error::info("Estimated distance (%i km) too large for word '%s' (s=%i, hits=%i), skipping", (estDist + 500) / 1000, combined, s, id_list.size());
                 else {
