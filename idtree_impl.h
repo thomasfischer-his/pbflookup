@@ -160,23 +160,31 @@ public:
             }
 
 #ifdef REVERSE_ID_TREE
+            /// For 64-bit-wide ids and 4 bits per node, shiftOffset is 60
             static const int shiftOffset = (sizeof(workingId) * 8 /** size in Bytes to size in Bits */) - IdTreeNode<T>::bitsPerNode;
-            const unsigned int lowerBits = (workingId & (IdTree::Private::mask << shiftOffset)) >> shiftOffset;
+            /// For 4 bits per node, mask is (2^4)-1 = 15 (i.e. four bits set)
+            /// Extracts the most-significant bitsPerNode-many bits from workingId,
+            /// then shifts them to be in range 0 .. (2^bitsPerNode)-1
+            const unsigned int bits = (workingId & (IdTree::Private::mask << shiftOffset)) >> shiftOffset;
+            /// Shift out to the left bits that were just extracted
             workingId <<= IdTreeNode<T>::bitsPerNode;
 #else // REVERSE_ID_TREE
-            const unsigned int lowerBits = workingId & IdTree::Private::mask;
+            /// Extracts the least-significant bitsPerNode-many bits from workingId
+            /// Result will be in range 0 .. (2^bitsPerNode)-1
+            const unsigned int bits = workingId & IdTree::Private::mask;
+            /// Shift out to the right bits that were just extracted
             workingId >>= IdTreeNode<T>::bitsPerNode;
 #endif // REVERSE_ID_TREE
 
-            if (cur->children[lowerBits] == NULL) {
+            if (cur->children[bits] == NULL) {
 #ifdef DEBUG
-                Error::debug("IdTree<%s> node has no children at pos %d to follow id %llu", typeid(T).name(), lowerBits, id);
+                Error::debug("IdTree<%s> node has no children at pos %d to follow id %llu", typeid(T).name(), bits, id);
 #endif // DEBUG
                 return NULL;
             }
 
             if (path != NULL) path->push_back(cur);
-            cur = cur->children[lowerBits];
+            cur = cur->children[bits];
         }
         if (path != NULL) path->push_back(cur);
 
