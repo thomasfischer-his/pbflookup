@@ -36,11 +36,24 @@ inline bool ends_with(std::string const &value, std::string const &ending)
     return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
 }
 
+void init_rand() {
+    FILE *devrandom = fopen("/dev/urandom", "r");
+    unsigned int seed = time(NULL) ^ (getpid() << 8);
+    if (devrandom != NULL) {
+        fread((void *)&seed, sizeof(seed), 1, devrandom);
+        fclose(devrandom);
+    }
+
+    Error::debug("seed=%08x", seed);
+    srand(seed);
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef DEBUG
     Error::debug("DEBUG flag enabled");
 #endif // DEBUG
+    init_rand();
 
     char defaultconfigfile[1024];
     snprintf(defaultconfigfile, 1024, "%s/git/pbflookup/sweden.config", getenv("HOME"));
@@ -60,6 +73,8 @@ int main(int argc, char *argv[])
     int64_t cputime, walltime;
 
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
+        node2Coord->analyze();
+
         int setNr = 0;
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
             Error::info("Test set: %s", it->name.c_str());

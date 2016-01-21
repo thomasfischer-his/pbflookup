@@ -318,6 +318,43 @@ size_t IdTree<T>::size() const {
 }
 
 template <class T>
+void IdTree<T>::analyze() const {
+    static const int num_repetitions = 255;
+    static const int max_levels = IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode;
+    static int level_children[max_levels];
+    static int level_children_probes[max_levels];
+    for (int i = 0; i < max_levels; ++i) level_children[i] = level_children_probes[i] = 0;
+
+    for (int r = 0; r < num_repetitions; ++r) {
+        IdTreeNode<T> *cur = d->root;
+        int level = 0;
+        while (cur->children != NULL && level < max_levels) {
+            int count_children = 0;
+            for (unsigned int i = 0; i < IdTreeNode<T>::numChildren; ++i)
+                if (cur->children[i] != NULL) ++count_children;
+
+            Error::debug("level=%i  count_children=%i", level, count_children);
+            level_children[level] += count_children;
+            ++level_children_probes[level];
+            if (count_children == 0) break;
+
+            int pos = rand() % IdTreeNode<T>::numChildren;
+            while (cur->children[pos] == NULL) {
+                ++pos;
+                pos %= IdTreeNode<T>::numChildren;
+            }
+
+            cur = cur->children[pos];
+            ++level;
+        }
+    }
+
+    for (int i = 0; i < max_levels; ++i) {
+        Error::debug("level=%d  probes=%i  children=%.1f", i, level_children_probes[i], 1.0 * level_children[i] / level_children_probes[i]);
+    }
+}
+
+template <class T>
 uint16_t IdTree<T>::counter(const uint64_t id) const {
     IdTreeNode<T> *cur = d->findNodeForId(id);
     if (cur == NULL)

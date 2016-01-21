@@ -420,6 +420,8 @@ public:
      */
     size_t size() const;
 
+    void analyze() const;
+
     uint16_t counter(const uint64_t id) const;
     void increaseCounter(const uint64_t id);
 
