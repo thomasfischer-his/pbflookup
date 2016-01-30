@@ -116,7 +116,9 @@ public:
         return weight;
     }
 
-    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
+    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances) {
+        considered_nodes = considered_distances = 0;
+
         if (id_list.empty()) return 0; ///< too few elements as input
 
         std::unordered_set<uint64_t> node_ids;
@@ -148,6 +150,7 @@ public:
             }
         }
 
+        considered_nodes = node_ids.size();
         if (node_ids.size() <= 1)
             return 0; ///< too few nodes found
 
@@ -174,16 +177,18 @@ public:
                     if (node_id_array[a] < node_id_array[b] && node2Coord->retrieve(node_id_array[b], cB)) {
                         const int d = Coord::distanceLatLon(cA, cB);
                         if (d > 2500000) ///< 2500 km
-                            Error::warn("Distance btwn node %llu and %llu very large: %d", node_id_array[a], node_id_array[b], d);
-                        distances.push_back(d);
+                            Error::warn("Distance btwn node %llu and %llu is very large: %d", node_id_array[a], node_id_array[b], d);
+                        else
+                            distances.push_back(d);
                     }
                 }
         }
         free(node_id_array);
+        considered_distances = distances.size();
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
-        Error::debug("1.quartile= %i  median= %i", distances[distances.size() / 4], distances[distances.size() / 2]);
+        Error::debug("1.quartile= %i  median= %i  considered_nodes= %i  considered_distances= %i", distances[distances.size() / 4], distances[distances.size() / 2], considered_nodes, considered_distances);
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
@@ -217,7 +222,8 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                 Error::info("Got no hits for word '%s' (s=%i), skipping", combined, s);
             else {
                 Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                const int estDist = d->interIdEstimatedDistance(id_list);
+                unsigned int considered_nodes, considered_distances;
+                const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
                 if (estDist > 10000) ///< 10 km
                     Error::info("Estimated distance (%i km) too large for word '%s' (s=%i, hits=%i), skipping", (estDist + 500) / 1000, combined, s, id_list.size());
                 else {
