@@ -124,6 +124,7 @@ class IdTree<T>::Private
 {
 private:
     IdTree *p;
+    std::vector<IdTreeNode<T> *> zeroPath;
 
 public:
     static const unsigned int num_children;
@@ -143,15 +144,64 @@ public:
             delete root;
     }
 
-    IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = NULL) const {
+#ifdef REVERSE_ID_TREE
+    /**
+     * It is an observation that out of the 64-bit space for ids, most used ids are small,
+     * i.e. have their most significant bits set to zero. This results in that the id tree
+     * will be very unbalanced, as for the first levels the 0th child will be used.
+     * To avoid costly traversals of a tree that is unbalanced, here the id is checked if the
+     * bits used for the up to eight first traversal steps are all set to zero. If true,
+     * a pre-recorded path ('zeroPath') will be used that guides the search function faster
+     * through the tree than a 'regular' tree traversal would do.
+     * Initial tests showed a 25% decrease in CPU time if using this function.
+     * @param id
+     * @param s
+     * @param path
+     * @return
+     */
+    IdTreeNode<T> *skipAheadOnZeroPath(uint64_t &id, unsigned int &s, std::vector<IdTreeNode<T> *> *path = NULL) {
+#define mask_for_level(n) (IdTree::Private::mask<<((sizeof(id) * 8 /** size in Bytes to size in Bits */) - ((n)+1) * IdTreeNode<T>::bitsPerNode))
+        static const int depth = 8;
+        static const uint64_t masks[depth] = {
+            mask_for_level(0),
+            mask_for_level(0) | mask_for_level(1),
+            mask_for_level(0) | mask_for_level(1) | mask_for_level(2),
+            mask_for_level(0) | mask_for_level(1) | mask_for_level(2) | mask_for_level(3),
+            mask_for_level(0) | mask_for_level(1) | mask_for_level(2) | mask_for_level(3) | mask_for_level(4),
+            mask_for_level(0) | mask_for_level(1) | mask_for_level(2) | mask_for_level(3) | mask_for_level(4) | mask_for_level(5),
+            mask_for_level(0) | mask_for_level(1) | mask_for_level(2) | mask_for_level(3) | mask_for_level(4) | mask_for_level(5) | mask_for_level(6),
+            mask_for_level(0) | mask_for_level(1) | mask_for_level(2) | mask_for_level(3) | mask_for_level(4) | mask_for_level(5) | mask_for_level(6) | mask_for_level(7)
+        };
+
+        for (s = depth; s > 0; --s) {
+            if ((id & masks[s - 1]) == 0 && zeroPath.size() > s) {
+                /// id would pick child 0 for the first s-many levels when traversing tree
+                id <<= IdTreeNode<T>::bitsPerNode * s;
+                if (path != NULL)
+                    for (unsigned int k = 0; k < s; ++k) path->push_back(zeroPath[k]);
+                return zeroPath[s];
+            }
+        }
+
+        return root;
+    }
+#endif // REVERSE_ID_TREE
+
+    IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = NULL) {
         if (root == NULL) {
             Error::warn("IdTree<%s> root is invalid, no id was ever added", typeid(T).name());
             return NULL;
         }
 
-        IdTreeNode<T> *cur = root;
+        unsigned int s = 0;
         uint64_t workingId = id;
-        for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
+#ifdef REVERSE_ID_TREE
+        IdTreeNode<T> *cur = skipAheadOnZeroPath(workingId, s, path);
+#else // REVERSE_ID_TREE
+        IdTreeNode<T> *cur = root;
+#endif // REVERSE_ID_TREE
+        bool onZeroPath = s == 0;
+        for (unsigned int s_limit = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode); s < s_limit && workingId > 0; ++s) {
             if (cur->children == NULL) {
 #ifdef DEBUG
                 Error::debug("IdTree<%s> node has no children to follow id %llu", typeid(T).name(), id);
@@ -175,6 +225,13 @@ public:
             /// Shift out to the right bits that were just extracted
             workingId >>= IdTreeNode<T>::bitsPerNode;
 #endif // REVERSE_ID_TREE
+
+            /// Update zero path if necessary
+            onZeroPath &= bits == 0;
+            if (onZeroPath && zeroPath.size() == s) {
+                /// zeroPath needs to grow
+                zeroPath.push_back(cur);
+            }
 
             if (cur->children[bits] == NULL) {
 #ifdef DEBUG
