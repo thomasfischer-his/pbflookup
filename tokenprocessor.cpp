@@ -226,7 +226,11 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                 const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
                 if (estDist > 10000) ///< 10 km
                     Error::info("Estimated distance (%i km) too large for word '%s' (s=%i, hits=%i), skipping", (estDist + 500) / 1000, combined, s, id_list.size());
+                else if (considered_nodes == 0)
+                    Error::info("No node to consider");
                 else {
+                    if (considered_nodes > 3 && considered_distances < considered_nodes)
+                        Error::info("Considered more than %i nodes, but only %i distances eventually considered", considered_nodes, considered_distances);
                     Error::debug("Estimated distance is %i m", estDist);
                     for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
                         const uint64_t id = (*it).id;
