@@ -99,17 +99,21 @@ public:
         return Sweden::UnknownRoadType;
     }
 
-    static inline double initialWeight(OSMElement::RealWorldType node_type) {
+    static inline double initialWeight(OSMElement::RealWorldType node_type, int word_count) {
+        double weight = 0.0;
+
         switch (node_type) {
-        case OSMElement::PlaceLarge: return initialWeightPlaceLarge;
-        case OSMElement::PlaceMedium: return initialWeightPlaceMedium;
-        case OSMElement::PlaceSmall: return initialWeightPlaceSmall;
-        case OSMElement::RoadMajor: return initialWeightRoadMajor;
-        case OSMElement::RoadMedium: return initialWeightRoadMedium;
-        case OSMElement::RoadMinor: return initialWeightRoadMinor;
+        case OSMElement::PlaceLarge: weight = initialWeightPlaceLarge; break;
+        case OSMElement::PlaceMedium: weight = initialWeightPlaceMedium; break;
+        case OSMElement::PlaceSmall: weight = initialWeightPlaceSmall; break;
+        case OSMElement::RoadMajor: weight = initialWeightRoadMajor; break;
+        case OSMElement::RoadMedium: weight = initialWeightRoadMedium; break;
+        case OSMElement::RoadMinor: weight = initialWeightRoadMinor; break;
         default:
-            return initialWeightDefault;
+            weight = initialWeightDefault;
         }
+
+        return weight;
     }
 
     static inline double rareNameBonus(int count) {
@@ -233,7 +237,7 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
                         const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
-                        const float weight = Private::initialWeight(realworld_type) + Private::rareNameBonus(id_list.size());
+                        const float weight = Private::initialWeight(realworld_type, s);
                         Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, weight);
                         if (type == OSMElement::Node) {
 #ifdef DEBUG
