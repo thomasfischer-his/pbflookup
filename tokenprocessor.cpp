@@ -161,8 +161,9 @@ public:
             node_id_array[i] = *it;
 
         std::vector<int> distances;
-        const int stepcount = 4;
-        const size_t step = node_ids.size() / stepcount + 1;
+        const int stepcount = min(7, node_ids.size() / 2 + 1);
+        size_t step = node_ids.size() / stepcount + 1;
+        while (node_ids.size() % step == 0) ++step;
         for (size_t a = 0; a < node_ids.size(); ++a) {
             size_t b = a;
             Coord cA;
