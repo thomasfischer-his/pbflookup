@@ -186,7 +186,7 @@ public:
             if (path != NULL) path->push_back(cur);
             cur = cur->children[bits];
         }
-        if (path != NULL) path->push_back(cur);
+        // FIXME why this line?  if (path != NULL) path->push_back(cur);
 
 #ifdef DEBUG
         if (cur->id != id) {
