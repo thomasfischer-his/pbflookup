@@ -117,7 +117,7 @@ const int IdTreeNode<T>::bitsPerNode = 4;
 template <typename T>
 const int IdTreeNode<T>::bitsPerId = 64;
 template <typename T>
-const unsigned int IdTreeNode<T>::numChildren = 1 << 4;
+const unsigned int IdTreeNode<T>::numChildren = 1 << IdTreeNode<T>::bitsPerNode;
 
 template <class T>
 class IdTree<T>::Private
@@ -193,8 +193,6 @@ public:
 };
 
 template <typename T>
-const unsigned int IdTree<T>::Private::num_children = 1 << IdTreeNode<T>::bitsPerNode;
-template <typename T>
 const uint64_t IdTree<T>::Private::mask = (1 << IdTreeNode<T>::bitsPerNode) - 1;
 
 template <class T>
@@ -235,7 +233,7 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
     uint64_t workingId = id;
     for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
         if (cur->children == NULL) {
-            cur->children = (IdTreeNode<T> **)calloc(IdTree::Private::num_children, sizeof(IdTreeNode<T> *));
+            cur->children = (IdTreeNode<T> **)calloc(IdTreeNode<T>::numChildren, sizeof(IdTreeNode<T> *));
             if (cur->children == NULL)
                 Error::err("IdTree<%s>: Could not allocate memory for cur->children", typeid(T).name());
         }
