@@ -116,18 +116,6 @@ public:
         return weight;
     }
 
-    static inline double rareNameBonus(int count) {
-        if (count == 1)
-            return 1000.0;
-        else if (count <= 3)
-            return 100.0;
-        else if (count <= 10)
-            return 10.0;
-        else if (count <= 25)
-            return 1.0;
-        return 0.0;
-    }
-
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list) {
         if (id_list.empty()) return 0; ///< too few elements as input
 
