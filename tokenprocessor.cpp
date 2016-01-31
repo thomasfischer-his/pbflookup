@@ -99,29 +99,21 @@ public:
         return Sweden::UnknownRoadType;
     }
 
-    static inline double initialWeight(OSMElement::RealWorldType node_type) {
-        switch (node_type) {
-        case OSMElement::PlaceLarge: return initialWeightPlaceLarge;
-        case OSMElement::PlaceMedium: return initialWeightPlaceMedium;
-        case OSMElement::PlaceSmall: return initialWeightPlaceSmall;
-        case OSMElement::RoadMajor: return initialWeightRoadMajor;
-        case OSMElement::RoadMedium: return initialWeightRoadMedium;
-        case OSMElement::RoadMinor: return initialWeightRoadMinor;
-        default:
-            return initialWeightDefault;
-        }
-    }
+    static inline double initialWeight(OSMElement::RealWorldType node_type, int word_count) {
+        double weight = 0.0;
 
-    static inline double rareNameBonus(int count) {
-        if (count == 1)
-            return 1000.0;
-        else if (count <= 3)
-            return 100.0;
-        else if (count <= 10)
-            return 10.0;
-        else if (count <= 25)
-            return 1.0;
-        return 0.0;
+        switch (node_type) {
+        case OSMElement::PlaceLarge: weight = initialWeightPlaceLarge; break;
+        case OSMElement::PlaceMedium: weight = initialWeightPlaceMedium; break;
+        case OSMElement::PlaceSmall: weight = initialWeightPlaceSmall; break;
+        case OSMElement::RoadMajor: weight = initialWeightRoadMajor; break;
+        case OSMElement::RoadMedium: weight = initialWeightRoadMedium; break;
+        case OSMElement::RoadMinor: weight = initialWeightRoadMinor; break;
+        default:
+            weight = initialWeightDefault;
+        }
+
+        return weight;
     }
 
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances) {
@@ -171,7 +163,6 @@ public:
         for (auto it = node_ids.cbegin(); it != node_ids.cend(); ++it, ++i)
             node_id_array[i] = *it;
 
-        int count_small_distances = 0;
         std::vector<int> distances;
         const int stepcount = min(7, node_ids.size() / 2 + 1);
         size_t step = node_ids.size() / stepcount + 1;
@@ -187,19 +178,13 @@ public:
                         const int d = Coord::distanceLatLon(cA, cB);
                         if (d > 2500000) ///< 2500 km
                             Error::warn("Distance btwn node %llu and %llu is very large: %d", node_id_array[a], node_id_array[b], d);
-                        else if (d < 250) { ///< 250 m
-                            // Error::warn("Distance btwn node %llu and %llu small: %d", node_id_array[a], node_id_array[b], d);
-                            ++count_small_distances;
-                        } else
+                        else
                             distances.push_back(d);
                     }
                 }
         }
         free(node_id_array);
         considered_distances = distances.size();
-
-        if (count_small_distances > 0)
-            Error::info("%d small distances were ignored, keep %d distances", count_small_distances, distances.size());
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
@@ -241,13 +226,17 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
                 const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
                 if (estDist > 10000) ///< 10 km
                     Error::info("Estimated distance (%i km) too large for word '%s' (s=%i, hits=%i), skipping", (estDist + 500) / 1000, combined, s, id_list.size());
+                else if (considered_nodes == 0)
+                    Error::info("No node to consider");
                 else {
+                    if (considered_nodes > 3 && considered_distances < considered_nodes)
+                        Error::info("Considered more than %i nodes, but only %i distances eventually considered", considered_nodes, considered_distances);
                     Error::debug("Estimated distance is %i m", estDist);
                     for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
                         const uint64_t id = (*it).id;
                         const OSMElement::ElementType type = (*it).type;
                         const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
-                        const float weight = Private::initialWeight(realworld_type);// + Private::rareNameBonus(id_list.size());
+                        const float weight = Private::initialWeight(realworld_type, s);
                         Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, weight);
                         if (type == OSMElement::Node) {
 #ifdef DEBUG
