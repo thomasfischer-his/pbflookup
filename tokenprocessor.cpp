@@ -267,52 +267,71 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
     static const std::string swedishWordWay("v\xc3\xa4g");
     static const std::string swedishWordTheWay("v\xc3\xa4gen");
     static const std::string swedishWordNationalWay("riksv\xc3\xa4g");
+    static const std::string swedishWordTheNationalWay("riksv\xc3\xa4gen");
+    static const uint16_t invalidRoadNumber = 0;
 
     d->knownRoads.clear();
 
+    /// For each element in 'words', i.e. each word ...
     for (size_t i = 0; i < words.size(); ++i) {
-        uint16_t roadNumber = 0;
-        Sweden::RoadType roadType = Sweden::National;
+        /// Mark road number and type as unknown/unset
+        uint16_t roadNumber = invalidRoadNumber;
+        Sweden::RoadType roadType = Sweden::UnknownRoadType;
+
+        /// Current word is one or two characters long and following word starts with digit 1 to 9
         if (i < words.size() - 1 && (words[i][1] == '\0' || words[i][2] == '\0') && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+            /// Get following word's numeric value as 'roadNumber'
             char *next;
             const char *cur = words[i + 1].c_str();
             roadNumber = (uint16_t)strtol(cur, &next, 10);
+            /// If got a valid road number, try interpreting current word as road identifier
             if (roadNumber > 0 && next > cur)
                 roadType = d->lettersToRoadType(words[i].c_str(), roadNumber);
             else {
                 Error::debug("Not a road number:%s", cur);
-                roadNumber = -1;
+                roadNumber = invalidRoadNumber;
             }
-        } else if (words[i][0] >= 'a' && words[i][0] <= 'z' && words[i][1] >= '1' && words[i][1] <= '9') {
-            const char buffer[] = {words[i][0], '\0'};
+        }
+        /// Current word starts with letter, followed by digit 1 to 9
+        else if (words[i][0] >= 'a' && words[i][0] <= 'z' && words[i][1] >= '1' && words[i][1] <= '9') {
+            /// Get numeric value of current word starting from second character as 'roadNumber'
             char *next;
             const char *cur = words[i].c_str() + 1;
             roadNumber = (uint16_t)strtol(cur, &next, 10);
-            if (roadNumber > 0 && next > cur)
+            if (roadNumber > 0 && next > cur) {
+                /// If got a valid road number, try interpreting current word's first character as road identifier
+                const char buffer[] = {words[i][0], '\0'};
                 roadType = d->lettersToRoadType(buffer, roadNumber);
-            else {
+            } else {
                 Error::debug("Not a road number:%s", cur);
-                roadNumber = -1;
+                roadNumber = invalidRoadNumber;
             }
-        } else if (words[i][0] >= 'a' && words[i][0] <= 'b' && words[i][1] >= 'a' && words[i][1] <= 'd' && words[i][2] >= '1' && words[i][2] <= '9') {
-            const char buffer[] = {words[i][0], words[i][1], '\0'};
+        }
+        /// Current word starts with letter 'a' or 'b', followed by 'a'..'d', followed by digit 1 to 9
+        else if (words[i][0] >= 'a' && words[i][0] <= 'b' && words[i][1] >= 'a' && words[i][1] <= 'd' && words[i][2] >= '1' && words[i][2] <= '9') {
+            /// Get numeric value of current word starting from third character as 'roadNumber'
             char *next;
             const char *cur = words[i].c_str() + 2;
             roadNumber = (uint16_t)strtol(cur, &next, 10);
-            if (roadNumber > 0 && next > cur)
+            if (roadNumber > 0 && next > cur) {
+                /// If got a valid road number, try interpreting current word's first two characters as road identifier
+                const char buffer[] = {words[i][0], words[i][1], '\0'};
                 roadType = d->lettersToRoadType(buffer, roadNumber);
-            else {
+            } else {
                 Error::debug("Not a road number:%s", cur);
-                roadNumber = -1;
+                roadNumber = invalidRoadNumber;
             }
-        } else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+        }
+        /// If current word looks like word describing a national road in Swedish and
+        /// following word starts with digit 1 to 9 ...
+        else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
             roadType = Sweden::National;
             char *next;
             const char *cur = words[i + 1].c_str();
             roadNumber = (uint16_t)strtol(cur, &next, 10);
         }
 
-        if (roadNumber > 0 && roadType != Sweden::UnknownRoadType) {
+        if (roadNumber != invalidRoadNumber && roadType != Sweden::UnknownRoadType) {
 #ifdef DEBUG
             Error::info("Found road %i (type %i)", roadNumber, roadType);
 #endif // DEBUG
@@ -328,6 +347,7 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
             }
             */
 
+            /// Add only unique its to result list
             bool known = false;
             for (auto it = d->knownRoads.cbegin(); !known && it != d->knownRoads.cend(); ++it) {
                 const Sweden::Road &road = *it;
