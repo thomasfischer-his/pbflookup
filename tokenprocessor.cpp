@@ -262,7 +262,7 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
     }
 }
 
-void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const {
+void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) {
     static const std::string swedishWordRv("rv"); ///< as in Rv. 43
     static const std::string swedishWordWay("v\xc3\xa4g");
     static const std::string swedishWordTheWay("v\xc3\xa4gen");

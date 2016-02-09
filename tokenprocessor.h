@@ -27,7 +27,7 @@ public:
     ~TokenProcessor();
 
     void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
+    void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns);
     std::vector<struct Sweden::Road> &knownRoads() const;
 
 private:
