@@ -65,6 +65,18 @@ public:
     */
     static RoadType identifyEroad(uint16_t roadNumber);
 
+    /**
+     * For a given position (x,y) and a given Swedish road, determine the node in this road
+     * closest to the given position and the distance between the node and the position in
+     * decimeter to the square. To get the distance in km, take the square root and divide
+     * by 10000 (decimeter to kilometer)
+     *
+     * @param x
+     * @param y
+     * @param road
+     * @param bestNode
+     * @param minSqDistance
+     */
     void closestPointToRoad(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const;
 
 private:
