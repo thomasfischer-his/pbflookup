@@ -336,17 +336,6 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
             Error::info("Found road %i (type %i)", roadNumber, roadType);
 #endif // DEBUG
 
-            /*
-            double weight = 2.0; ///< default weight for regional roads
-            if (roadType == Sweden::National) weight = 5.0; ///< weight for national roads
-            else if (roadType == Sweden::Europe) weight = 15.0; ///< weight for European roads
-
-            std::vector<uint64_t> ways = d->sweden->waysForRoad(roadType, roadNumber);
-            for (std::vector<uint64_t>::const_iterator it = ways.cbegin(); it != ways.cend(); ++it) {
-                wns.appendWay(*it, weight);
-            }
-            */
-
             /// Add only unique its to result list
             bool known = false;
             for (auto it = d->knownRoads.cbegin(); !known && it != d->knownRoads.cend(); ++it) {
