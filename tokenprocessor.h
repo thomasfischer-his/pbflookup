@@ -28,6 +28,7 @@ public:
 
     void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
     void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns);
+    std::vector<struct Sweden::Road> identifyRoads(const std::vector<std::string> &words) const;
     std::vector<struct Sweden::Road> &knownRoads() const;
 
 private:

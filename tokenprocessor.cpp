@@ -263,6 +263,10 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
 }
 
 void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) {
+     // TODO
+}
+
+std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector<std::string> &words) const {
     static const std::string swedishWordRv("rv"); ///< as in Rv. 43
     static const std::string swedishWordWay("v\xc3\xa4g");
     static const std::string swedishWordTheWay("v\xc3\xa4gen");
@@ -270,7 +274,7 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
     static const std::string swedishWordTheNationalWay("riksv\xc3\xa4gen");
     static const uint16_t invalidRoadNumber = 0;
 
-    d->knownRoads.clear();
+    std::vector<struct Sweden::Road> result;
 
     /// For each element in 'words', i.e. each word ...
     for (size_t i = 0; i < words.size(); ++i) {
@@ -338,13 +342,15 @@ void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, Weighte
 
             /// Add only unique its to result list
             bool known = false;
-            for (auto it = d->knownRoads.cbegin(); !known && it != d->knownRoads.cend(); ++it) {
+            for (auto it = result.cbegin(); !known && it != result.cend(); ++it) {
                 const Sweden::Road &road = *it;
                 known = (road.type == roadType) && (road.number == roadNumber);
             }
-            if (!known) d->knownRoads.push_back(Sweden::Road(roadType, roadNumber));
+            if (!known) result.push_back(Sweden::Road(roadType, roadNumber));
         }
     }
+
+    return result;
 }
 
 std::vector<struct Sweden::Road> &TokenProcessor::knownRoads() const {
