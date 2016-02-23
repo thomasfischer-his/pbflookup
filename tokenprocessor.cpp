@@ -263,7 +263,59 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
 }
 
 void TokenProcessor::evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns) {
-     // TODO
+    d->knownRoads = identifyRoads(words);
+
+    if (d->knownRoads.empty()) return; /// No roads known? Nothing to do -> return
+
+    static const size_t combined_len = 8188;
+    static const int max_number_words_combined = 3; // TODO put into configuration file
+    char combined[combined_len + 4];
+    for (int s = min(max_number_words_combined, words.size()); s >= 1; --s) {
+        for (size_t i = 0; i <= words.size() - s; ++i) {
+            char *p = combined;
+            for (int k = 0; k < s; ++k) {
+                if (k > 0)
+                    p += snprintf(p, combined_len - (p - combined), " ");
+                p += snprintf(p, combined_len - (p - combined), "%s", words[i + k].c_str());
+            }
+
+            std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+            if (id_list.empty())
+                Error::info("Got no hits for word '%s' (s=%i), skipping", combined, s);
+            else {
+                Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
+
+                for (auto itR = d->knownRoads.cbegin(); itR != d->knownRoads.cend(); ++itR) {
+                    uint64_t bestRoadNode = 0, bestWordNode = 0;
+                    int64_t minSqDistance = INT64_MAX;
+                    for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
+                        const uint64_t id = (*itN).id;
+                        // UNUSED const OSMElement::ElementType type = (*itN).type;
+                        const OSMElement::RealWorldType realworld_type = (*itN).realworld_type;
+
+                        Coord c;
+                        const bool foundNode = node2Coord->retrieve(id, c);
+                        if (!foundNode) continue;
+
+                        if (realworld_type == OSMElement::PlaceLarge || realworld_type == OSMElement::PlaceMedium || realworld_type == OSMElement::PlaceSmall) {
+                            uint64_t node = 0;
+                            int64_t sqDistance = INT64_MAX;
+                            sweden->closestPointToRoad(c.x, c.y, *itR, node, sqDistance);
+                            if (sqDistance < minSqDistance) {
+                                bestRoadNode = node;
+                                bestWordNode = id;
+                                minSqDistance = sqDistance;
+                            }
+                        }
+                    }
+
+                    if (minSqDistance < (INT64_MAX >> 1))
+                        Error::debug("Distance between '%s' and road %d: %.1f km (between road node %llu and word's node %llu)", combined, itR->number, sqrt(minSqDistance) / 10000.0, bestRoadNode, bestWordNode);
+                }
+
+            }
+        }
+    }
 }
 
 std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector<std::string> &words) const {
