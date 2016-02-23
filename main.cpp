@@ -73,8 +73,6 @@ int main(int argc, char *argv[])
     int64_t cputime, walltime;
 
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
-        node2Coord->analyze();
-
         int setNr = 0;
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
             Error::info("Test set: %s", it->name.c_str());
