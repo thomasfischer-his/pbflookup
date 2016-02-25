@@ -996,6 +996,36 @@ std::vector<uint64_t> Sweden::waysForRoad(RoadType roadType, uint16_t roadNumber
     return std::vector<uint64_t>();
 }
 
+std::string Sweden::roadTypeToString(Sweden::RoadType roadType) {
+    switch (roadType) {
+    case Europe: return std::string("E");
+    case National: return std::string("Nat");
+    case LanM: return std::string("M");
+    case LanK: return std::string("K");
+    case LanI: return std::string("I");
+    case LanH: return std::string("H");
+    case LanG: return std::string("G");
+    case LanN: return std::string("N");
+    case LanO: return std::string("O");
+    case LanF: return std::string("F");
+    case LanE: return std::string("E");
+    case LanD: return std::string("D");
+    case LanAB: return std::string("AB");
+    case LanC: return std::string("C");
+    case LanU: return std::string("U");
+    case LanT: return std::string("T");
+    case LanS: return std::string("S");
+    case LanW: return std::string("W");
+    case LanX: return std::string("X");
+    case LanZ: return std::string("Z");
+    case LanY: return std::string("Y");
+    case LanAC: return std::string("AC");
+    case LanBD: return std::string("BD");
+    case LanUnknown: return std::string("Reg");
+    default: return std::string("???");
+    }
+}
+
 Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
     for (int i = 0; i < 20 && Private::EuropeanRoadNumbers[i] > 0; ++i)
         if (Private::EuropeanRoadNumbers[i] == roadNumber)

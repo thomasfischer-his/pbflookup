@@ -28,7 +28,7 @@ class SvgWriter;
 class Sweden
 {
 public:
-    enum RoadType {Europe = 0, National = 1, LanM = 2, LanK = 3, LanI = 4, LanH = 5, LanG = 6, LanN = 7, LanO = 8, LanF = 9, LanE = 10, LanD = 11, LanAB = 12, LanC = 13, LanU = 14, LanT = 15, LanS = 16, LanW = 17, LanX = 18, LanZ = 19, LanY = 20, LanAC = 21, LanBD = 22, UnknownRoadType = 23};
+    enum RoadType {Europe = 0, National = 1, LanM = 2, LanK = 3, LanI = 4, LanH = 5, LanG = 6, LanN = 7, LanO = 8, LanF = 9, LanE = 10, LanD = 11, LanAB = 12, LanC = 13, LanU = 14, LanT = 15, LanS = 16, LanW = 17, LanX = 18, LanZ = 19, LanY = 20, LanAC = 21, LanBD = 22, LanUnknown = 23, UnknownRoadType = 24};
     struct Road {
         Road(Sweden::RoadType _type, int _number)
             : type(_type), number(_number) {
@@ -60,6 +60,15 @@ public:
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
     std::vector<uint64_t> waysForRoad(RoadType roadType, uint16_t roadNumber);
+
+    /**
+     * Determine a short textual representation for a road type.
+     * Example: LanAB will return 'AB'.
+     * @param roadType road type to represent
+     * @return short text string
+     */
+    static std::string roadTypeToString(RoadType roadType);
+
     /** Handle the case that E may be used for European roads
     * or roads in East Gothland
     */
