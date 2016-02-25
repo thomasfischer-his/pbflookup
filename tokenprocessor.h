@@ -27,7 +27,21 @@ public:
     ~TokenProcessor();
 
     void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
-    void evaluteRoads(const std::vector<std::string> &words, WeightedNodeSet &wns);
+
+    struct RoadMatch {
+        RoadMatch(const std::string &_word_combination, const Sweden::Road &_road, uint64_t _bestRoadNode, uint64_t _bestWordNode, int64_t _distance)
+            : word_combination(_word_combination), road(_road), bestRoadNode(_bestRoadNode), bestWordNode(_bestWordNode), distance(_distance) {
+            /// nothing
+        }
+
+        std::string word_combination;
+        Sweden::Road road;
+        uint64_t bestRoadNode, bestWordNode;
+        int64_t distance; ///< in decimeter (10th of a meter)
+    };
+
+    std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, std::vector<struct Sweden::Road> knownRoads);
+
     std::vector<struct Sweden::Road> identifyRoads(const std::vector<std::string> &words) const;
 
 private:
