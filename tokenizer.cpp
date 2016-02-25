@@ -25,6 +25,8 @@
 #include "error.h"
 #include "config.h"
 
+#define min(a,b) ((b)>(a)?(a):(b))
+
 class Tokenizer::Private
 {
 private:
@@ -160,6 +162,32 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
     }
 
     return words.size();
+}
+
+int Tokenizer::generate_word_combinations(const std::vector<std::string> &words, std::vector<std::string> &combinations, const size_t words_per_combination, const Multiplicity multiplicity) {
+    combinations.clear();
+    std::unordered_set<std::string> known_combinations;
+
+    for (int s = min(words_per_combination, words.size()); s >= 1; --s) {
+        for (size_t i = 0; i <= words.size() - s; ++i) {
+            std::string combined_word;
+            for (int k = 0; k < s; ++k) {
+                if (k > 0)
+                    combined_word.append(" ", 1);
+                combined_word.append(words[i + k]);
+            }
+            if (multiplicity == Duplicates)
+                combinations.push_back(combined_word);
+            else if (multiplicity == Unique)
+                known_combinations.insert(combined_word);
+        }
+    }
+
+    if (multiplicity == Unique && !known_combinations.empty() && combinations.empty())
+        for (auto it = known_combinations.cbegin(); it != known_combinations.cend(); ++it)
+            combinations.push_back(*it);
+
+    return combinations.size();
 }
 
 std::string Tokenizer::input_text() const {

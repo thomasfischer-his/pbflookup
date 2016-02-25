@@ -31,6 +31,8 @@ public:
     int read_words(const std::string &text, std::vector<std::string> &words, Multiplicity multiplicity);
     int read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity);
 
+    int generate_word_combinations(const std::vector<std::string> &words, std::vector<std::string> &combinations, const size_t words_per_combination, const Multiplicity multiplicity);
+
     std::string input_text() const;
 
 private:
