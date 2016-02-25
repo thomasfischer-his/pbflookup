@@ -80,6 +80,7 @@ int main(int argc, char *argv[])
 
             SvgWriter *svgwriter = NULL;
             if (!it->svgoutputfilename.empty()) {
+                /// If requested in configuration file, prepare to write SVG file
                 svgwriter = new SvgWriter(it->svgoutputfilename, 2);
                 sweden->drawSCBareas(*svgwriter);
                 sweden->drawRoads(*svgwriter);
@@ -173,7 +174,7 @@ int main(int argc, char *argv[])
             Error::debug("Running 'powerCluster'");
             wns.powerCluster(2.0, 2.0 / wns.size());
             timer.elapsed(&cputime, &walltime);
-            Error::info("Spent CPU time to run powerCluster on testset '%s': %lius == %.1fs  (wall time: %lius == %.1fs)", it->name.c_str(), cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+            Error::info("Spent CPU time to run powerCluster on testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
             std::sort(wns.begin(), wns.end(), std::greater<WeightedNode>());
 
