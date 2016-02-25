@@ -342,7 +342,7 @@ std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector
             if (roadNumber > 0 && next > cur)
                 roadType = d->lettersToRoadType(words[i].c_str(), roadNumber);
             else {
-                Error::debug("Not a road number:%s", cur);
+                Error::debug("Not a road number: %s", cur);
                 roadNumber = invalidRoadNumber;
             }
         }
@@ -357,7 +357,7 @@ std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector
                 const char buffer[] = {words[i][0], '\0'};
                 roadType = d->lettersToRoadType(buffer, roadNumber);
             } else {
-                Error::debug("Not a road number:%s", cur);
+                Error::debug("Not a road number: %s", cur);
                 roadNumber = invalidRoadNumber;
             }
         }
@@ -372,7 +372,7 @@ std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector
                 const char buffer[] = {words[i][0], words[i][1], '\0'};
                 roadType = d->lettersToRoadType(buffer, roadNumber);
             } else {
-                Error::debug("Not a road number:%s", cur);
+                Error::debug("Not a road number: %s", cur);
                 roadNumber = invalidRoadNumber;
             }
         }
