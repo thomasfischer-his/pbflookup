@@ -212,6 +212,10 @@ int main(int argc, char *argv[])
                 svgwriter = NULL;
             }
 
+            if (result.isValid())
+                Error::info("Able to determine a likely position: lon=%.5f lat=%.5f", Coord::toLongitude(result.x), Coord::toLatitude(result.y));
+            else
+                Error::warn("Unable to determine a likely position");
             Error::info("======================================================");
         }
     } else
