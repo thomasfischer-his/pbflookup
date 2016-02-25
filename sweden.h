@@ -86,7 +86,7 @@ public:
      * @param bestNode
      * @param minSqDistance
      */
-    void closestPointToRoad(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const;
+    Sweden::RoadType closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const;
 
 private:
     class Private;
