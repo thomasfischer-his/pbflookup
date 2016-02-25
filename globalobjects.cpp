@@ -214,7 +214,7 @@ GlobalObjectManager::GlobalObjectManager() {
 
             int64_t cputime, walltime;
             timer.elapsed(&cputime, &walltime);
-            Error::info("Spent CPU time to parse .osm.pbf file: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+            Error::info("Spent CPU time to parse .osm.pbf file: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
             save();
         } else
@@ -240,7 +240,7 @@ GlobalObjectManager::~GlobalObjectManager() {
         delete sweden;
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);
-    Error::info("Spent CPU time to free memory: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+    Error::info("Spent CPU time to free memory: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
     self = NULL; /// make global instance inaccessible through instance()
 }
@@ -267,7 +267,7 @@ void GlobalObjectManager::load() {
     loadSweden();
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);
-    Error::info("Spent CPU time to read files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+    Error::info("Spent CPU time to read files: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 }
 
 void GlobalObjectManager::save() const {
@@ -294,7 +294,7 @@ void GlobalObjectManager::save() const {
     Error::debug("All save threads joined");
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);
-    Error::info("Spent CPU time to write files: %lius == %.1fs  (wall time: %lius == %.1fs)", cputime, cputime / 1000000.0, walltime, walltime / 1000000.0);
+    Error::info("Spent CPU time to write files: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 }
 
 bool GlobalObjectManager::testNonEmptyFile(const std::string &filename, unsigned int minimumSize) {
