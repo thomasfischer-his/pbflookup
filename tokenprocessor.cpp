@@ -47,8 +47,8 @@ public:
         /// nothing
     }
 
-    Sweden::RoadType lettersToRoadType(const char *letters, uint16_t roadNumber) {
-        if (letters[0] >= 'c' && letters[0] <= 'z' && letters[1] == '\0') {
+    Sweden::RoadType lettersToRoadType(const char *letters, uint16_t roadNumber) const {
+        if (letters[1] == '\0') {
             switch (letters[0]) {
             case 'c':
                 return Sweden::LanC;
@@ -87,7 +87,7 @@ public:
             case 'z':
                 return Sweden::LanZ;
             }
-        } else if (letters[0] >= 'a' && letters[0] <= 'b' && letters[1] >= 'b' && letters[1] <= 'd' && letters[2] == '\0') {
+        } else if (letters[2] == '\0') {
             if (letters[0] == 'a' && letters[1] == 'b')
                 return Sweden::LanAB;
             else if (letters[0] == 'a' && letters[1] == 'c')
@@ -96,6 +96,7 @@ public:
                 return Sweden::LanBD;
         }
 
+        Error::warn("Cannot determine road type for letters %s and road number %d", letters, roadNumber);
         return Sweden::UnknownRoadType;
     }
 
