@@ -272,6 +272,10 @@ struct Coord {
             Error::err("Could not read coordinates from input stream");
     }
 
+    /**
+     * Test if this coordinate is valid (i.e. correctly initialized).
+     * @return True if a valid position
+     */
     bool isValid() const {
         return x > 0 && y > 0;
     }
