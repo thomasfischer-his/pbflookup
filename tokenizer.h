@@ -28,6 +28,7 @@ public:
     explicit Tokenizer();
     ~Tokenizer();
 
+    int read_words(const std::string &text, std::vector<std::string> &words, Multiplicity multiplicity);
     int read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity);
 
     std::string input_text() const;

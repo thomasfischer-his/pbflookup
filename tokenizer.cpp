@@ -17,6 +17,7 @@
 #include "tokenizer.h"
 
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <cstdlib>
 #include <unordered_set>
@@ -98,6 +99,10 @@ Tokenizer::~Tokenizer() {
     delete d;
 }
 
+int Tokenizer::read_words(const std::string &text, std::vector<std::string> &words, Multiplicity multiplicity) {
+    std::stringstream ss(text);
+    return read_words(ss, words, multiplicity);
+}
 
 int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity) {
     std::string line;
