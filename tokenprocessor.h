@@ -26,7 +26,7 @@ public:
     explicit TokenProcessor();
     ~TokenProcessor();
 
-    void evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const;
+    void evaluteWordCombinations(const std::vector<std::string> &word_combinations, WeightedNodeSet &wns) const;
 
     struct RoadMatch {
         RoadMatch(const std::string &_word_combination, const Sweden::Road &_road, uint64_t _bestRoadNode, uint64_t _bestWordNode, int64_t _distance)

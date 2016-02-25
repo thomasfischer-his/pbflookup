@@ -98,7 +98,7 @@ public:
         return Sweden::UnknownRoadType;
     }
 
-    static inline double initialWeight(OSMElement::RealWorldType node_type, int word_count) {
+    static inline double initialWeight(OSMElement::RealWorldType node_type) {
         double weight = 0.0;
 
         switch (node_type) {
@@ -202,59 +202,48 @@ TokenProcessor::~TokenProcessor() {
     delete d;
 }
 
-void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &words, WeightedNodeSet &wns) const {
-    static const size_t combined_len = 8188;
-    static const int max_number_words_combined = 3; // TODO put into configuration file
-    char combined[combined_len + 4];
-    for (int s = min(max_number_words_combined, words.size()); s >= 1; --s) {
-        for (size_t i = 0; i <= words.size() - s; ++i) {
-            char *p = combined;
-            for (int k = 0; k < s; ++k) {
-                if (k > 0)
-                    p += snprintf(p, combined_len - (p - combined), " ");
-                p += snprintf(p, combined_len - (p - combined), "%s", words[i + k].c_str());
-            }
-
-            const size_t wordlen = strlen(combined);
-            std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-            if (id_list.empty())
-                Error::info("Got no hits for word '%s' (s=%i), skipping", combined, s);
+void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &word_combinations, WeightedNodeSet &wns) const {
+    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
+        const std::string &combined = *itW;
+        const char *combined_cstr = combined.c_str();
+        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        if (id_list.empty())
+            Error::info("Got no hits for word combination '%s', skipping", combined_cstr);
+        else {
+            Error::info("Got %i hits for word combination '%s'", id_list.size(), combined_cstr);
+            unsigned int considered_nodes, considered_distances;
+            const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
+            if (estDist > 10000) ///< 10 km
+                Error::info("Estimated distance (%i km) too large for word combination '%s' (hits=%i), skipping", (estDist + 500) / 1000, combined_cstr, id_list.size());
+            else if (considered_nodes == 0)
+                Error::info("No node to consider");
             else {
-                Error::info("Got %i hits for word '%s' (s=%i)", id_list.size(), combined, s);
-                unsigned int considered_nodes, considered_distances;
-                const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
-                if (estDist > 10000) ///< 10 km
-                    Error::info("Estimated distance (%i km) too large for word '%s' (s=%i, hits=%i), skipping", (estDist + 500) / 1000, combined, s, id_list.size());
-                else if (considered_nodes == 0)
-                    Error::info("No node to consider");
-                else {
-                    if (considered_nodes > 3 && considered_distances < considered_nodes)
-                        Error::info("Considered more than %i nodes, but only %i distances eventually considered", considered_nodes, considered_distances);
-                    Error::debug("Estimated distance is %i m", estDist);
-                    for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
-                        const uint64_t id = (*it).id;
-                        const OSMElement::ElementType type = (*it).type;
-                        const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
-                        const float weight = Private::initialWeight(realworld_type, s);
-                        Error::debug("s=%d  wordlen=%d  weight=%.3f", s, wordlen, weight);
-                        if (type == OSMElement::Node) {
+                if (considered_nodes > 3 && considered_distances < considered_nodes)
+                    Error::info("Considered more than %i nodes, but only %i distances eventually considered", considered_nodes, considered_distances);
+                Error::debug("Estimated distance is %i m", estDist);
+                for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
+                    const uint64_t id = (*it).id;
+                    const OSMElement::ElementType type = (*it).type;
+                    const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
+                    const float weight = Private::initialWeight(realworld_type);
+                    Error::debug("weight=%.3f", weight);
+                    if (type == OSMElement::Node) {
 #ifdef DEBUG
-                            Error::debug("   https://www.openstreetmap.org/node/%llu", id);
+                        Error::debug("   https://www.openstreetmap.org/node/%llu", id);
 #endif // DEBUG
-                            wns.appendNode(id, weight);
-                        } else if (type == OSMElement::Way) {
+                        wns.appendNode(id, weight);
+                    } else if (type == OSMElement::Way) {
 #ifdef DEBUG
-                            Error::debug("   https://www.openstreetmap.org/way/%llu", id);
+                        Error::debug("   https://www.openstreetmap.org/way/%llu", id);
 #endif // DEBUG
-                            wns.appendWay(id, weight);
-                        } else if (type == OSMElement::Relation) {
+                        wns.appendWay(id, weight);
+                    } else if (type == OSMElement::Relation) {
 #ifdef DEBUG
-                            Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
+                        Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
 #endif // DEBUG
-                            wns.appendRelation(id, weight);
-                        } else
-                            Error::warn("  Neither node, way, nor relation: %llu", id);
-                    }
+                        wns.appendRelation(id, weight);
+                    } else
+                        Error::warn("  Neither node, way, nor relation: %llu", id);
                 }
             }
         }
