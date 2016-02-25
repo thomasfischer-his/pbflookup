@@ -15,7 +15,6 @@
  ***************************************************************************/
 
 #include <cstdlib>
-#include <sstream>
 #include <fstream>
 
 #include "swedishtexttree.h"
@@ -75,6 +74,7 @@ int main(int argc, char *argv[])
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         int setNr = 0;
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
+            Coord result;
             Error::info("Test set: %s", it->name.c_str());
             const Coord expected = Coord::fromLonLat(it->lon, it->lat);
 
@@ -85,11 +85,52 @@ int main(int argc, char *argv[])
                 sweden->drawRoads(*svgwriter);
             }
 
-            std::stringstream ss(it->text);
-            std::vector<std::string> words;
-            Timer timer;
+            timer.start();
             Tokenizer tokenizer;
-            tokenizer.read_words(ss, words, Tokenizer::Unique);
+            std::vector<std::string> words, word_combinations;
+            tokenizer.read_words(it->text, words, Tokenizer::Unique);
+            tokenizer.generate_word_combinations(words, word_combinations, 3 /** TODO configurable */, Tokenizer::Unique);
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to tokenize text in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+
+            TokenProcessor tokenProcessor;
+
+            if (!result.isValid() /** no valid result found yet */) {
+                /// ===================================================================================
+                /// Check if the test input contains road labels (e.g. 'E 20') and city/town names.
+                /// Then determine the clostest distance between any city/town and any identified road.
+                /// If distance is below an acceptable threshold, assume location on road closest to
+                /// town as resulting position.
+                /// -----------------------------------------------------------------------------------
+                Error::info("=== Testing for roads close to cities/towns ===");
+
+                timer.start();
+                std::vector<struct Sweden::Road> identifiedRoads = tokenProcessor.identifyRoads(words);
+                std::vector<struct TokenProcessor::RoadMatch> roadMatch = tokenProcessor.evaluteRoads(word_combinations, identifiedRoads);
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+
+                if (!roadMatch.empty()) {
+                    auto bestIt = roadMatch.cend();
+                    int64_t closestDistance = INT64_MAX;
+                    for (auto it = roadMatch.cbegin(); it != roadMatch.cend(); ++it) {
+                        const TokenProcessor::RoadMatch &roadMatch = *it;
+                        if (roadMatch.distance < closestDistance) {
+                            closestDistance = roadMatch.distance;
+                            bestIt = it;
+                        }
+                    }
+
+                    if (closestDistance < 100000) {
+                        /// Closer than 10km
+                        const TokenProcessor::RoadMatch &roadMatch = *bestIt;
+                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), Sweden::roadTypeToString(roadMatch.road.type).c_str(), roadMatch.road.number, roadMatch.distance / 10000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
+                        if (!node2Coord->retrieve(roadMatch.bestRoadNode, result))
+                            result.invalidate();
+                    }
+                }
+            }
+
             WeightedNodeSet wns;
             TokenProcessor tokenProcessor;
             tokenProcessor.evaluteWordCombinations(words, wns);
@@ -159,6 +200,8 @@ int main(int argc, char *argv[])
 
             if (svgwriter != NULL) {
                 svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "green", "expected");
+                if (result.isValid())
+                    svgwriter->drawPoint(result.x, result.y, SvgWriter::ImportantPoiGroup, "red", "computed");
                 svgwriter->drawCaption(it->name);
                 svgwriter->drawDescription(it->text);
 
