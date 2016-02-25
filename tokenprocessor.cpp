@@ -40,8 +40,6 @@ private:
     static constexpr double initialWeightDefault = 1.0;
 
 public:
-    std::vector<struct Sweden::Road> knownRoads;
-
     explicit Private()
     {
         /// nothing
@@ -404,8 +402,4 @@ std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector
     }
 
     return result;
-}
-
-std::vector<struct Sweden::Road> &TokenProcessor::knownRoads() const {
-    return d->knownRoads;
 }
