@@ -352,7 +352,7 @@ std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector
             char *next;
             const char *cur = words[i].c_str() + 1;
             roadNumber = (uint16_t)strtol(cur, &next, 10);
-            if (roadNumber > 0 && next > cur) {
+            if (roadNumber > 0 && roadNumber < 9999 && next > cur) {
                 /// If got a valid road number, try interpreting current word's first character as road identifier
                 const char buffer[] = {words[i][0], '\0'};
                 roadType = d->lettersToRoadType(buffer, roadNumber);
@@ -379,10 +379,16 @@ std::vector<struct Sweden::Road> TokenProcessor::identifyRoads(const std::vector
         /// If current word looks like word describing a national road in Swedish and
         /// following word starts with digit 1 to 9 ...
         else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
-            roadType = Sweden::National;
             char *next;
             const char *cur = words[i + 1].c_str();
             roadNumber = (uint16_t)strtol(cur, &next, 10);
+            if (roadNumber > 0 && next > cur) {
+                /// Got a valid road number
+                roadType = roadNumber < 500 ? Sweden::National : Sweden::LanUnknown;
+            } else {
+                Error::debug("Not a road number: %s", cur);
+                roadNumber = invalidRoadNumber;
+            }
         }
 
         if (roadNumber != invalidRoadNumber && roadType != Sweden::UnknownRoadType) {
