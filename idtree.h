@@ -272,6 +272,14 @@ struct Coord {
             Error::err("Could not read coordinates from input stream");
     }
 
+    bool isValid() const {
+        return x > 0 && y > 0;
+    }
+
+    void invalidate() {
+        x = y = 0;
+    }
+
     std::ostream &write(std::ostream &output) {
         output.write((char *)&x, sizeof(x));
         if (!output)
