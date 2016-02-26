@@ -37,7 +37,7 @@ public:
         std::string word_combination;
         Sweden::Road road;
         uint64_t bestRoadNode, bestWordNode;
-        int64_t distance; ///< in decimeter (10th of a meter)
+        int64_t distance; ///< in meter
     };
 
     std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, std::vector<struct Sweden::Road> knownRoads);
