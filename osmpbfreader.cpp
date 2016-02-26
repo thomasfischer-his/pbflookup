@@ -326,7 +326,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 } else if (strcmp("place", ckey) == 0) {
                                     const char *cvalue = primblock.stringtable().s(value).c_str();
 
-                                    if (strcmp("city", cvalue) == 0)
+                                    if (strcmp("city", cvalue) == 0 || strcmp("county", cvalue) == 0)
                                         realworld_type = OSMElement::PlaceLarge;
                                     else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
                                         realworld_type = OSMElement::PlaceMedium;
