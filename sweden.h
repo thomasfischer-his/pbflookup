@@ -97,6 +97,16 @@ public:
      */
     std::vector<struct Sweden::Road> identifyRoads(const std::vector<std::string> &words) const;
 
+    /**
+     * Process the provided list of word combination and see if there
+     * are known places (cities, towns, hamlets, ...) referred to.
+     * The resulting list is sorted by the places' size/importance.
+     * Cities and counties go first, hamlets or small settlements go last.
+     * @param word_combinations Word combinations to check for places
+     * @return List of places, sorted by places' importance (important ones go first)
+     */
+    std::vector<struct OSMElement> identifyPlaces(const std::vector<std::string> &word_combinations) const;
+
 private:
     class Private;
     Private *const d;

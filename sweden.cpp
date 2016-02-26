@@ -21,6 +21,7 @@
 #include <iostream>
 #include <fstream>
 #include <deque>
+#include <algorithm>
 
 #include "error.h"
 #include "globalobjects.h"
@@ -1240,6 +1241,45 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
             if (!known) result.push_back(Sweden::Road(roadType, roadNumber));
         }
     }
+
+    return result;
+}
+
+std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::string> &word_combinations) const {
+    std::vector<struct OSMElement> result;
+
+    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
+        const std::string &combined = *itW;
+        const char *combined_cstr = combined.c_str();
+
+        /// Retrieve all OSM elements matching a given word combination
+        const std::vector<struct OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        if (!id_list.empty())
+            for (auto itE = id_list.cbegin(); itE != id_list.cend(); ++itE) {
+                const struct OSMElement &element = *itE;
+                if (element.type != OSMElement::Node) continue; /// only nodes considered
+                if (element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
+                    result.push_back(element);
+            }
+    }
+
+    /// Sort found places using this lambda expression,
+    /// large places go first, small places go last
+    std::sort(result.begin(), result.end(), [](struct OSMElement & a, struct OSMElement & b) {
+        return a.realworld_type < b.realworld_type;
+    });
+
+#ifdef DEBUG
+    static const size_t maxlen = 16128;
+    char id_str[maxlen + 256];
+    char *p = id_str;
+    for (auto it = result.cbegin(); it != result.cend() && (size_t)(p - id_str) < maxlen; ++it) {
+        WriteableString placeName;
+        nodeNames->retrieve(it->id, placeName);
+        p += snprintf(p, maxlen - (p - id_str), " %lu (%s)", it->id, placeName.c_str());
+    }
+    Error::debug("Num elements: %d  List of ids:%s", result.size(), id_str);
+#endif
 
     return result;
 }
