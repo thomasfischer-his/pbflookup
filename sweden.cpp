@@ -507,7 +507,7 @@ public:
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
-const int Sweden::Private::regional_len = UnknownRoadType - 2;
+const int Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
 const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
 
 Sweden::Sweden()
@@ -1131,14 +1131,16 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
         wayIds = &d->roads.national[road.number];
         break;
     case LanUnknown:
+    {
         wayIds = new std::vector<uint64_t>();
+        const int firstIndex = road.number / 100, secondIndex = road.number % 100;
         for (int i = 0; i < Private::regional_len; ++i) {
             lanStartingIndex[i] = wayIds->size();
-            const int firstIndex = road.number / 100, secondIndex = road.number % 100;
             if (d->roads.regional[i] != NULL && d->roads.regional[i][firstIndex] != NULL && d->roads.regional[i][firstIndex][secondIndex] != NULL)
                 wayIds->insert(wayIds->cend(), d->roads.regional[i][firstIndex][secondIndex]->cbegin(), d->roads.regional[i][firstIndex][secondIndex]->cend());
         }
         break;
+    }
     default:
         const int idx = (int)road.type - 2;
         if (idx >= 0 && idx < Private::regional_len && road.number > 0) {

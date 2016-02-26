@@ -227,12 +227,9 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                         continue;
                     }
 
-                    Coord c;
-                    const bool foundNode = node2Coord->retrieve(id, c);
-                    if (!foundNode) continue;
-
                     /// Process only places as reference points
-                    if (realworld_type == OSMElement::PlaceLarge || realworld_type == OSMElement::PlaceMedium || realworld_type == OSMElement::PlaceSmall) {
+                    Coord c;
+                    if ((realworld_type == OSMElement::PlaceLarge || realworld_type == OSMElement::PlaceMedium || realworld_type == OSMElement::PlaceSmall) && node2Coord->retrieve(id, c)) {
                         uint64_t node = 0;
                         int64_t distance = INT64_MAX;
                         /// Given x/y coordinates and a road to process,
