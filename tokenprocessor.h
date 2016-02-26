@@ -42,6 +42,31 @@ public:
 
     std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, std::vector<struct Sweden::Road> knownRoads);
 
+    struct NearPlaceMatch {
+        NearPlaceMatch(struct OSMElement _place, uint64_t _node, int64_t _distance)
+            : place(_place), node(_node), distance(_distance) {
+            /// nothing
+        }
+
+        struct OSMElement place;
+        uint64_t node;
+        int64_t distance; ///< in meter
+    };
+
+    /**
+     * Based on a list of word combinations and a list of places,
+     * determine a list of place-word combo pairs that match
+     * local-scope locations (as described by word combinations)
+     * and global-scope locations (places).
+     * The resulting list will be sorted by distance between place
+     * and word combination's closest location, shorter distances
+     * first.
+     * @param word_combinations Word combinations describing local-scope locations
+     * @param places Places of cities, towns, hamlets, ...
+     * @return List of matching pairs of place-word combinations
+     */
+    std::vector<struct NearPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
+
 private:
     class Private;
     Private *const d;

@@ -262,3 +262,85 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
 
     return result;
 }
+
+std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places) {
+    std::vector<struct TokenProcessor::NearPlaceMatch> result;
+    if (places.empty()) return result;; /// No places known? Nothing to do -> return
+
+    /// Retrieve coordinates for all known places
+    std::vector<std::pair<struct OSMElement, struct Coord> > placesToCoord;
+    for (auto itP = places.cbegin(); itP != places.cend(); ++itP) {
+        Coord c;
+        if (node2Coord->retrieve(itP->id, c))
+            placesToCoord.push_back(std::pair<struct OSMElement, struct Coord>(*itP, c));
+    }
+
+    /// Go through all word combinations (usually 1 to 3 words combined)
+    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
+        const std::string &combined = *itW;
+        const char *combined_cstr = combined.c_str();
+
+
+        /// Retrieve all OSM elements matching a given word combination
+        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        int64_t minSqDistance = INT64_MAX;
+        auto bestPlace = placesToCoord.cend();
+        uint64_t bestNode = 0;
+        for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
+            uint64_t id = (*itN).id;
+            OSMElement::ElementType type = (*itN).type;
+
+            if (type == OSMElement::Way) {
+                /// If current element is a way, simply pick the
+                /// way's center node as a representative for this way
+                WayNodes wn;
+                if (wayNodes->retrieve(id, wn) && wn.num_nodes > 0) {
+                    id = wn.nodes[wn.num_nodes / 2];
+                    type = OSMElement::Node;
+                }
+            }
+
+            if (type != OSMElement::Node) {
+                /// Only nodes will be processed
+                continue;
+            }
+
+            Coord c;
+            const bool foundNode = node2Coord->retrieve(id, c);
+            if (!foundNode) continue;
+
+            for (auto itP = placesToCoord.cbegin(); itP != placesToCoord.cend(); ++itP) {
+                const struct OSMElement &place = itP->first;
+                const struct Coord &placeCoord = itP->second;
+
+                if (place.id == id) continue; ///< do not compare place with itself
+                const int distance = Coord::distanceLatLon(c, placeCoord);
+                if (distance < minSqDistance) {
+                    minSqDistance = distance;
+                    bestPlace = itP;
+                    bestNode = id;
+                }
+            }
+        }
+
+        if (minSqDistance < INT64_MAX && bestPlace != placesToCoord.cend() && bestNode > 0)
+            result.push_back(NearPlaceMatch(bestPlace->first, bestNode, minSqDistance));
+    }
+
+    /// Sort found places-word combinations using this lambda expression,
+    /// closests distances go first
+    std::sort(result.begin(), result.end(), [](struct TokenProcessor::NearPlaceMatch & a, struct TokenProcessor::NearPlaceMatch & b) {
+        return a.distance < b.distance;
+    });
+
+#ifdef DEBUG
+    for (auto it = result.cbegin(); it != result.cend(); ++it) {
+        WriteableString nodeName, placeName;
+        nodeNames->retrieve(it->node, nodeName);
+        nodeNames->retrieve(it->place.id, placeName);
+        Error::debug("Found node %llu (%s) near place %llu (%s) with distance %.1fkm", it->node, nodeName.c_str(), it->place.id, placeName.c_str(), it->distance / 1000.0);
+    }
+#endif
+
+    return result;
+}
