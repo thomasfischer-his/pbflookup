@@ -115,9 +115,9 @@ int main(int argc, char *argv[])
                     const TokenProcessor::RoadMatch &closestRoadMatch = roadMatch.front();
                     const int64_t closestDistance = closestRoadMatch.distance;
 
-                    if (closestDistance < 100000) {
+                    if (closestDistance < 10000) {
                         /// Closer than 10km
-                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", closestRoadMatch.word_combination.c_str(), Sweden::roadTypeToString(closestRoadMatch.road.type).c_str(), closestRoadMatch.road.number, closestDistance / 10000.0, closestRoadMatch.bestRoadNode, closestRoadMatch.bestWordNode);
+                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", closestRoadMatch.word_combination.c_str(), Sweden::roadTypeToString(closestRoadMatch.road.type).c_str(), closestRoadMatch.road.number, closestDistance / 1000.0, closestRoadMatch.bestRoadNode, closestRoadMatch.bestWordNode);
                         if (!node2Coord->retrieve(closestRoadMatch.bestRoadNode, result))
                             result.invalidate();
                     }

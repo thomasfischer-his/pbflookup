@@ -1116,7 +1116,7 @@ Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
     return LanE;
 }
 
-Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const {
+Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &distance) const {
     std::vector<uint64_t> *wayIds = NULL;
     int lanStartingIndex[Private::regional_len];
 
@@ -1152,22 +1152,25 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
     if (wayIds != NULL) {
         bestNode = 0;
         bestNodeIndex = 0;
-        minSqDistance = INT64_MAX;
+        distance = INT64_MAX;
+        int64_t minSqDistance = INT64_MAX;
         int i = 0;
         for (auto it = wayIds->cbegin(); it != wayIds->cend(); ++it, ++i) {
             const uint64_t &wayId = *it;
             uint64_t node = 0;
-            int64_t dist = INT64_MAX;
-            d->closestWayNodeToCoord(x, y, wayId, node, dist);
-            if (dist < minSqDistance) {
+            int64_t sqDist = INT64_MAX;
+            d->closestWayNodeToCoord(x, y, wayId, node, sqDist);
+            if (sqDist < minSqDistance) {
                 bestNodeIndex = i;
-                minSqDistance = dist;
+                minSqDistance = sqDist;
                 bestNode = node;
             }
         }
         if (minSqDistance < INT64_MAX && bestNode > 0) {
-            Error::debug("Closest node of road %d to x=%d,y=%d is node %llu at distance %.3f km", road.number, x, y, bestNode, sqrt(minSqDistance) / 1000.0);
-        }
+            distance = sqrt(minSqDistance) / 10.0 + .5;
+            Error::debug("Closest node of road %s %d to x=%d,y=%d is node %llu at distance %.1f km", roadTypeToString(road.type).c_str(), road.number, x, y, bestNode, distance / 1000.0);
+        } else
+            bestNode = 0;
     }
 
     if (road.type == LanUnknown) {

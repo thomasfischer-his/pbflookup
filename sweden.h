@@ -78,16 +78,15 @@ public:
     /**
      * For a given position (x,y) and a given Swedish road, determine the node in this road
      * closest to the given position and the distance between the node and the position in
-     * decimeter to the square. To get the distance in km, take the square root and divide
-     * by 10000 (decimeter to kilometer)
+     * meters.
      *
      * @param x
      * @param y
      * @param road
      * @param bestNode
-     * @param minSqDistance
+     * @param distance
      */
-    Sweden::RoadType closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const;
+    Sweden::RoadType closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &distance) const;
 
     /**
      * Process the provided list of words and see if there is
