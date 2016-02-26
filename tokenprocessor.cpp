@@ -208,9 +208,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
 
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        if (id_list.empty())
-            Error::debug("Got no hits for word '%s', skipping", combined_cstr);
-        else {
+        if (!id_list.empty()) {
             Error::debug("Got %i hits for word '%s'", id_list.size(), combined_cstr);
 
             /// Find shortest distance between any OSM element and any road element
