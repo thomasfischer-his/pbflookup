@@ -40,7 +40,7 @@ public:
         int64_t distance; ///< in meter
     };
 
-    std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, std::vector<struct Sweden::Road> knownRoads);
+    std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads);
 
     struct NearPlaceMatch {
         NearPlaceMatch(struct OSMElement _place, uint64_t _node, int64_t _distance)

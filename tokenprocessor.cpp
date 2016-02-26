@@ -197,7 +197,7 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
     }
 }
 
-std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const std::vector<std::string> &word_combinations, std::vector<struct Sweden::Road> knownRoads) {
+std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads) {
     std::vector<struct RoadMatch> result;
     if (knownRoads.empty()) return result; /// No roads known? Nothing to do -> return
 
@@ -240,7 +240,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                         /// will be returned
                         /// Function closestRoadNodeToCoord() may even correct a road's type
                         /// (e.g. if it was unknown due to missing information)
-                        itR->type = sweden->closestRoadNodeToCoord(c.x, c.y, *itR, node, sqDistance);
+                        sweden->closestRoadNodeToCoord(c.x, c.y, *itR, node, distance);
 
                         if (sqDistance < minSqDistance) {
                             bestRoadNode = node;
