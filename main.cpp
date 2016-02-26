@@ -112,21 +112,13 @@ int main(int argc, char *argv[])
                 Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
                 if (!roadMatch.empty()) {
-                    auto bestIt = roadMatch.cend();
-                    int64_t closestDistance = INT64_MAX;
-                    for (auto it = roadMatch.cbegin(); it != roadMatch.cend(); ++it) {
-                        const TokenProcessor::RoadMatch &roadMatch = *it;
-                        if (roadMatch.distance < closestDistance) {
-                            closestDistance = roadMatch.distance;
-                            bestIt = it;
-                        }
-                    }
+                    const TokenProcessor::RoadMatch &closestRoadMatch = roadMatch.front();
+                    const int64_t closestDistance = closestRoadMatch.distance;
 
                     if (closestDistance < 100000) {
                         /// Closer than 10km
-                        const TokenProcessor::RoadMatch &roadMatch = *bestIt;
-                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), Sweden::roadTypeToString(roadMatch.road.type).c_str(), roadMatch.road.number, roadMatch.distance / 10000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
-                        if (!node2Coord->retrieve(roadMatch.bestRoadNode, result))
+                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", closestRoadMatch.word_combination.c_str(), Sweden::roadTypeToString(closestRoadMatch.road.type).c_str(), closestRoadMatch.road.number, closestDistance / 10000.0, closestRoadMatch.bestRoadNode, closestRoadMatch.bestWordNode);
+                        if (!node2Coord->retrieve(closestRoadMatch.bestRoadNode, result))
                             result.invalidate();
                     }
                 }

@@ -258,6 +258,12 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
         }
     }
 
+    /// Sort found road matches using this lambda expression,
+    /// closests distances go first
+    std::sort(result.begin(), result.end(), [](struct TokenProcessor::RoadMatch & a, struct TokenProcessor::RoadMatch & b) {
+        return a.distance < b.distance;
+    });
+
     return result;
 }
 
