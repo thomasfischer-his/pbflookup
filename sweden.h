@@ -50,6 +50,7 @@ public:
 
     void insertSCBarea(const int code, uint64_t relid);
     std::vector<int> insideSCBarea(uint64_t nodeid);
+    static Sweden::RoadType roadTypeForSCBarea(int scbarea);
     void insertNUTS3area(const int code, uint64_t relid);
     std::vector<int> insideNUTS3area(uint64_t nodeid);
 
@@ -96,6 +97,17 @@ public:
      * @return List of roads (type and number per road)
      */
     std::vector<struct Sweden::Road> identifyRoads(const std::vector<std::string> &words) const;
+
+    /**
+     * OpenStreetMap data contains regional roads without proper
+     * region codes. This roads are by default assigned to an
+     * "unknown" region.
+     * This function processes those roads by picking a pivot
+     * node from each way and then determines in which region
+     * the node is located. Based on this localization, the road
+     * is reclassified and migrated to the proper region.
+     */
+    void fixUnlabeledRegionalRoads();
 
     /**
      * Process the provided list of word combination and see if there

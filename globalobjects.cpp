@@ -212,6 +212,9 @@ GlobalObjectManager::GlobalObjectManager() {
             google::protobuf::ShutdownProtobufLibrary();
             fp.close();
 
+            if (sweden != NULL)
+                sweden->fixUnlabeledRegionalRoads();
+
             int64_t cputime, walltime;
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to parse .osm.pbf file: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);

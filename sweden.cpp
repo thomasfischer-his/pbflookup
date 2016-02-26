@@ -838,6 +838,34 @@ std::vector<int> Sweden::insideSCBarea(uint64_t nodeid) {
     return d->nodeIdToAreaCode(nodeid, d->scbcode_to_relationid, d->scbcode_to_polygons);
 }
 
+Sweden::RoadType Sweden::roadTypeForSCBarea(int scbarea) {
+    switch (scbarea / 100) {
+    case 10: return RoadType::LanK;
+    case 20: return RoadType::LanW;
+    case 9: return RoadType::LanI;
+    case 21: return RoadType::LanX;
+    case 13: return RoadType::LanN;
+    case 23: return RoadType::LanZ;
+    case 6: return RoadType::LanF;
+    case 8: return RoadType::LanH;
+    case 7: return RoadType::LanG;
+    case 25: return RoadType::LanBD;
+    case 12: return RoadType::LanM;
+    case 1: return RoadType::LanAB;
+    case 4: return RoadType::LanD;
+    case 3: return RoadType::LanC;
+    case 17: return RoadType::LanS;
+    case 24: return RoadType::LanAC;
+    case 22: return RoadType::LanY;
+    case 19: return RoadType::LanU;
+    case 14: return RoadType::LanO;
+    case 18: return RoadType::LanT;
+    case 5: return RoadType::LanE;
+    default:
+        return RoadType::LanUnknown;
+    }
+}
+
 void Sweden::insertNUTS3area(const int code, uint64_t relid) {
     d->nuts3code_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
@@ -1243,6 +1271,65 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
     }
 
     return result;
+}
+
+void Sweden::fixUnlabeledRegionalRoads() {
+    const int unknownLanIdx = (int)LanUnknown - 2;
+    if (d->roads.regional[unknownLanIdx] != NULL) {
+        for (int outer = 0; outer < 100; ++outer)
+            if (d->roads.regional[unknownLanIdx][outer] != NULL) {
+                for (int inner = 0; inner < 100; ++inner)
+                    if (d->roads.regional[unknownLanIdx][outer][inner] != NULL) {
+                        std::vector<uint64_t> *wayIds = d->roads.regional[unknownLanIdx][outer][inner];
+                        for (auto it = wayIds->cbegin(); it != wayIds->cend();) {
+                            WayNodes wn;
+                            if (wayNodes->retrieve(*it, wn) && wn.num_nodes > 0) {
+                                const uint64_t pivotNodeId = wn.nodes[wn.num_nodes / 2];
+                                std::vector<int> scbAreas = insideSCBarea(pivotNodeId);
+                                if (scbAreas.size() == 1) {
+                                    const RoadType properLan = roadTypeForSCBarea(scbAreas.front());
+                                    const int properLanIdx = (int)properLan - 2;
+                                    if (d->roads.regional[properLanIdx] == NULL)
+                                        d->roads.regional[properLanIdx] = (std::vector<uint64_t> ** *)calloc(100, sizeof(std::vector<uint64_t> **));
+                                    if (d->roads.regional[properLanIdx][outer] == NULL)
+                                        d->roads.regional[properLanIdx][outer] = (std::vector<uint64_t> **)calloc(100, sizeof(std::vector<uint64_t> *));
+                                    if (d->roads.regional[properLanIdx][outer][inner] == NULL)
+                                        d->roads.regional[properLanIdx][outer][inner] = new std::vector<uint64_t>();
+                                    d->roads.regional[properLanIdx][outer][inner]->push_back(*it);
+
+                                    Error::debug("Setting region %s to way %llu with road number %d", roadTypeToString(properLan).c_str(), *it, outer * 100 + inner);
+
+                                    it = wayIds->erase(it);
+                                    continue;
+                                }
+                            }
+                            /// No proper region found, keep road in "Unknown Lan"
+                            ++it;
+                        }
+
+                        if (wayIds->empty()) {
+                            delete wayIds;
+                            d->roads.regional[unknownLanIdx][outer][inner] = NULL;
+                        }
+                    }
+
+                bool allNull = true;
+                for (int inner = 0; allNull && inner < 100; ++inner)
+                    allNull &= d->roads.regional[unknownLanIdx][outer][inner] == NULL;
+                if (allNull) {
+                    delete d->roads.regional[unknownLanIdx][outer];
+                    d->roads.regional[unknownLanIdx][outer] = NULL;
+                }
+            }
+
+        bool allNull = true;
+        for (int outer = 0; allNull && outer < 100; ++outer)
+            allNull &= d->roads.regional[unknownLanIdx][outer] == NULL;
+        if (allNull) {
+            delete d->roads.regional[unknownLanIdx];
+            d->roads.regional[unknownLanIdx] = NULL;
+        }
+    }
 }
 
 std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::string> &word_combinations) const {

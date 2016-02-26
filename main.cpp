@@ -132,6 +132,17 @@ int main(int argc, char *argv[])
                 }
             }
 
+            std::vector<struct OSMElement> places;
+            if (!result.isValid() /** no valid result found yet */) {
+                Error::info("=== Testing for local-scope places near global-scope places ===");
+
+                timer.start();
+                places = sweden->identifyPlaces(word_combinations);
+                tokenProcessor.evaluateNearPlaces(word_combinations, places);
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+            }
+
             /*
             WeightedNodeSet wns;
             TokenProcessor tokenProcessor;
