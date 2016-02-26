@@ -450,6 +450,59 @@ public:
             }
         }
     }
+
+    Sweden::RoadType lettersToRoadType(const char *letters, uint16_t roadNumber) const {
+        if (letters[1] == '\0') {
+            switch (letters[0]) {
+            case 'c':
+                return Sweden::LanC;
+            case 'd':
+                return Sweden::LanD;
+            case 'e':
+                return Sweden::identifyEroad(roadNumber);
+            case 'f':
+                return Sweden::LanF;
+            case 'g':
+                return Sweden::LanG;
+            case 'h':
+                return Sweden::LanH;
+            case 'i':
+                return Sweden::LanI;
+            case 'k':
+                return Sweden::LanK;
+            case 'm':
+                return Sweden::LanM;
+            case 'n':
+                return Sweden::LanN;
+            case 'o':
+                return Sweden::LanO;
+            case 's':
+                return Sweden::LanS;
+            case 't':
+                return Sweden::LanT;
+            case 'u':
+                return Sweden::LanU;
+            case 'w':
+                return Sweden::LanW;
+            case 'x':
+                return Sweden::LanX;
+            case 'y':
+                return Sweden::LanY;
+            case 'z':
+                return Sweden::LanZ;
+            }
+        } else if (letters[2] == '\0') {
+            if (letters[0] == 'a' && letters[1] == 'b')
+                return Sweden::LanAB;
+            else if (letters[0] == 'a' && letters[1] == 'c')
+                return Sweden::LanAC;
+            else if (letters[0] == 'b' && letters[1] == 'd')
+                return Sweden::LanBD;
+        }
+
+        Error::warn("Cannot determine road type for letters %s and road number %d", letters, roadNumber);
+        return Sweden::UnknownRoadType;
+    }
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
@@ -1096,4 +1149,97 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
         return Sweden::LanUnknown;
     } else
         return road.type;
+}
+
+std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::string> &words) const {
+    static const std::string swedishWordRv("rv"); ///< as in Rv. 43
+    static const std::string swedishWordWay("v\xc3\xa4g");
+    static const std::string swedishWordTheWay("v\xc3\xa4gen");
+    static const std::string swedishWordNationalWay("riksv\xc3\xa4g");
+    static const std::string swedishWordTheNationalWay("riksv\xc3\xa4gen");
+    static const uint16_t invalidRoadNumber = 0;
+
+    std::vector<struct Sweden::Road> result;
+
+    /// For each element in 'words', i.e. each word ...
+    for (size_t i = 0; i < words.size(); ++i) {
+        /// Mark road number and type as unknown/unset
+        uint16_t roadNumber = invalidRoadNumber;
+        Sweden::RoadType roadType = Sweden::UnknownRoadType;
+
+        /// Current word is one or two characters long and following word starts with digit 1 to 9
+        if (i < words.size() - 1 && (words[i][1] == '\0' || words[i][2] == '\0') && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+            /// Get following word's numeric value as 'roadNumber'
+            char *next;
+            const char *cur = words[i + 1].c_str();
+            roadNumber = (uint16_t)strtol(cur, &next, 10);
+            /// If got a valid road number, try interpreting current word as road identifier
+            if (roadNumber > 0 && next > cur)
+                roadType = d->lettersToRoadType(words[i].c_str(), roadNumber);
+            else {
+                Error::debug("Not a road number: %s", cur);
+                roadNumber = invalidRoadNumber;
+            }
+        }
+        /// Current word starts with letter, followed by digit 1 to 9
+        else if (words[i][0] >= 'a' && words[i][0] <= 'z' && words[i][1] >= '1' && words[i][1] <= '9') {
+            /// Get numeric value of current word starting from second character as 'roadNumber'
+            char *next;
+            const char *cur = words[i].c_str() + 1;
+            roadNumber = (uint16_t)strtol(cur, &next, 10);
+            if (roadNumber > 0 && roadNumber < 9999 && next > cur) {
+                /// If got a valid road number, try interpreting current word's first character as road identifier
+                const char buffer[] = {words[i][0], '\0'};
+                roadType = d->lettersToRoadType(buffer, roadNumber);
+            } else {
+                Error::debug("Not a road number: %s", cur);
+                roadNumber = invalidRoadNumber;
+            }
+        }
+        /// Current word starts with letter 'a' or 'b', followed by 'a'..'d', followed by digit 1 to 9
+        else if (words[i][0] >= 'a' && words[i][0] <= 'b' && words[i][1] >= 'a' && words[i][1] <= 'd' && words[i][2] >= '1' && words[i][2] <= '9') {
+            /// Get numeric value of current word starting from third character as 'roadNumber'
+            char *next;
+            const char *cur = words[i].c_str() + 2;
+            roadNumber = (uint16_t)strtol(cur, &next, 10);
+            if (roadNumber > 0 && next > cur) {
+                /// If got a valid road number, try interpreting current word's first two characters as road identifier
+                const char buffer[] = {words[i][0], words[i][1], '\0'};
+                roadType = d->lettersToRoadType(buffer, roadNumber);
+            } else {
+                Error::debug("Not a road number: %s", cur);
+                roadNumber = invalidRoadNumber;
+            }
+        }
+        /// If current word looks like word describing a national road in Swedish and
+        /// following word starts with digit 1 to 9 ...
+        else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+            char *next;
+            const char *cur = words[i + 1].c_str();
+            roadNumber = (uint16_t)strtol(cur, &next, 10);
+            if (roadNumber > 0 && next > cur) {
+                /// Got a valid road number
+                roadType = roadNumber < 500 ? Sweden::National : Sweden::LanUnknown;
+            } else {
+                Error::debug("Not a road number: %s", cur);
+                roadNumber = invalidRoadNumber;
+            }
+        }
+
+        if (roadNumber != invalidRoadNumber && roadType != Sweden::UnknownRoadType) {
+#ifdef DEBUG
+            Error::info("Found road %i (type %i)", roadNumber, roadType);
+#endif // DEBUG
+
+            /// Add only unique its to result list
+            bool known = false;
+            for (auto it = result.cbegin(); !known && it != result.cend(); ++it) {
+                const Sweden::Road &road = *it;
+                known = (road.type == roadType) && (road.number == roadNumber);
+            }
+            if (!known) result.push_back(Sweden::Road(roadType, roadNumber));
+        }
+    }
+
+    return result;
 }

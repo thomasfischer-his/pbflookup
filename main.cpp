@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
                 Error::info("=== Testing for roads close to cities/towns ===");
 
                 timer.start();
-                std::vector<struct Sweden::Road> identifiedRoads = tokenProcessor.identifyRoads(words);
+                std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
                 std::vector<struct TokenProcessor::RoadMatch> roadMatch = tokenProcessor.evaluteRoads(word_combinations, identifiedRoads);
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);

@@ -88,6 +88,15 @@ public:
      */
     Sweden::RoadType closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &minSqDistance) const;
 
+    /**
+     * Process the provided list of words and see if there is
+     * a sequence of words that looks like a road label (e.g.
+     * 'E 20').
+     * @param words tokenized list of single words, not combinations
+     * @return List of roads (type and number per road)
+     */
+    std::vector<struct Sweden::Road> identifyRoads(const std::vector<std::string> &words) const;
+
 private:
     class Private;
     Private *const d;

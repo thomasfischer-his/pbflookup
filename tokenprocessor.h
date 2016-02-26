@@ -42,15 +42,6 @@ public:
 
     std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, std::vector<struct Sweden::Road> knownRoads);
 
-    /**
-     * Process the provided list of words and see if there is
-     * a sequence of words that looks like a road label (e.g.
-     * 'E 20').
-     * @param words tokenized list of single words, not combinations
-     * @return List of roads (type and number per road)
-     */
-    std::vector<struct Sweden::Road> identifyRoads(const std::vector<std::string> &words) const;
-
 private:
     class Private;
     Private *const d;
