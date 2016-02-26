@@ -1262,7 +1262,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
 
         if (roadNumber != invalidRoadNumber && roadType != Sweden::UnknownRoadType) {
 #ifdef DEBUG
-            Error::info("Found road %i (type %i)", roadNumber, roadType);
+            Error::info("Found road %s %i", Sweden::roadTypeToString(roadType).c_str(), roadNumber);
 #endif // DEBUG
 
             /// Add only unique its to result list
