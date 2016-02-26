@@ -212,9 +212,25 @@ int main(int argc, char *argv[])
                 svgwriter = NULL;
             }
 
-            if (result.isValid())
-                Error::info("Able to determine a likely position: lon=%.5f lat=%.5f", Coord::toLongitude(result.x), Coord::toLatitude(result.y));
-            else
+            if (!result.isValid() && !places.empty()) {
+                /// No good result found, but some places have been recognized in the process.
+                /// Pick one of the larger places as result.
+                if (!node2Coord->retrieve(places.front().id, result))
+                    result.invalidate();
+            }
+
+            if (result.isValid()) {
+                const double lon = Coord::toLongitude(result.x);
+                const double lat = Coord::toLatitude(result.y);
+                Error::info("Able to determine a likely position: lon=%.5f lat=%.5f", lon, lat);
+                Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
+                if (expected.isValid()) {
+                    Error::info("Distance to expected result: %.1fkm", expected.distanceLatLon(result) / 1000.0);
+                    const double lon = Coord::toLongitude(expected.x);
+                    const double lat = Coord::toLatitude(expected.y);
+                    Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
+                }
+            } else
                 Error::warn("Unable to determine a likely position");
             Error::info("======================================================");
         }
