@@ -218,8 +218,23 @@ int main(int argc, char *argv[])
             if (!result.isValid() && !places.empty()) {
                 /// No good result found, but some places have been recognized in the process.
                 /// Pick one of the larger places as result.
-                if (!node2Coord->retrieve(places.front().id, result))
-                    result.invalidate();
+                // FIXME picking the right place from the list is rather ugly. Can do better?
+                OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
+                for (auto it = places.cbegin(); it != places.cend(); ++it) {
+                    if (it->realworld_type == OSMElement::PlaceMedium && rwt >= OSMElement::PlaceSmall) {
+                        node2Coord->retrieve(it->id, result);
+                        rwt = it->realworld_type;
+                    } else if (it->realworld_type < OSMElement::PlaceMedium && rwt >= OSMElement::PlaceMedium) {
+                        node2Coord->retrieve(it->id, result);
+                        rwt = it->realworld_type;
+                    } else if (rwt != OSMElement::PlaceLarge && it->realworld_type == OSMElement::PlaceLargeArea) {
+                        node2Coord->retrieve(it->id, result);
+                        rwt = it->realworld_type;
+                    } else if (rwt == OSMElement::PlaceLargeArea && it->realworld_type == OSMElement::PlaceLarge) {
+                        node2Coord->retrieve(it->id, result);
+                        rwt = it->realworld_type;
+                    }
+                }
             }
 
             if (result.isValid()) {
