@@ -19,7 +19,7 @@
 
 struct OSMElement {
     enum ElementType {UnknownElementType = 0, Node, Way, Relation};
-    enum RealWorldType { UnknownRealWorldType = 0, PlaceLarge = 100, PlaceMedium = 105, PlaceSmall = 110, RoadMajor = 200, RoadMedium = 205, RoadMinor = 210};
+    enum RealWorldType { UnknownRealWorldType = 0, PlaceLargeArea = 100, PlaceLarge = 105, PlaceMedium = 110, PlaceSmall = 115, RoadMajor = 200, RoadMedium = 205, RoadMinor = 210};
     uint64_t id;
     ElementType type;
     RealWorldType realworld_type;

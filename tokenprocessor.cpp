@@ -49,6 +49,7 @@ public:
         double weight = 0.0;
 
         switch (node_type) {
+        case OSMElement::PlaceLargeArea: weight = initialWeightPlaceLarge; break;
         case OSMElement::PlaceLarge: weight = initialWeightPlaceLarge; break;
         case OSMElement::PlaceMedium: weight = initialWeightPlaceMedium; break;
         case OSMElement::PlaceSmall: weight = initialWeightPlaceSmall; break;
@@ -229,7 +230,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
 
                     /// Process only places as reference points
                     Coord c;
-                    if ((realworld_type == OSMElement::PlaceLarge || realworld_type == OSMElement::PlaceMedium || realworld_type == OSMElement::PlaceSmall) && node2Coord->retrieve(id, c)) {
+                    if ((realworld_type == OSMElement::PlaceLargeArea || realworld_type == OSMElement::PlaceLarge || realworld_type == OSMElement::PlaceMedium || realworld_type == OSMElement::PlaceSmall) && node2Coord->retrieve(id, c)) {
                         uint64_t node = 0;
                         int64_t distance = INT64_MAX;
                         /// Given x/y coordinates and a road to process,

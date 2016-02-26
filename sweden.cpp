@@ -1350,7 +1350,7 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
             for (auto itE = id_list.cbegin(); itE != id_list.cend(); ++itE) {
                 const struct OSMElement &element = *itE;
                 if (element.type != OSMElement::Node) continue; /// only nodes considered
-                if (element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
+                if (element.realworld_type == OSMElement::PlaceLargeArea || element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
                     result.push_back(element);
             }
     }
