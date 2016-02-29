@@ -44,7 +44,7 @@ private:
             Error::info("Reading stopword file: %s", stopwordfilename);
             std::string line;
             while (getline(stopwordsfile, line)) {
-                if (line[0] == 0 || line[0] == '#') continue; // skip empty lines and comments
+                if (line[0] == 0 || line[0] == '#') continue; ///< skip empty lines and comments
                 stopwords.push_back(line);
             }
             stopwordsfile.close();

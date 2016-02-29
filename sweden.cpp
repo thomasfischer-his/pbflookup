@@ -17,8 +17,7 @@
 /** FIXME
  *  Much of this code here uses 'old-style' C with malloc/calloc and, more severe,
  *  keeping track of arrays in variables separate of the array variable itself.
- *  This code should be ported to a more modern, safer style. Some investigations
- *  are necessary, but 'array_view' sounds relevant.
+ *  This code should be ported to a more modern, safer style.
  */
 
 #include "sweden.h"
@@ -542,7 +541,7 @@ Sweden::Sweden(std::istream &input)
     char chr = '\0';
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'S') {
-        size_t  num_elements;
+        size_t num_elements;
         input.read((char *)&num_elements, sizeof(num_elements));
         for (size_t i = 0; i < num_elements; ++i) {
             int code;
@@ -770,7 +769,7 @@ void Sweden::test() {
 std::ostream &Sweden::write(std::ostream &output) {
     char chr = 'S';
     output.write((char *)&chr, sizeof(chr));
-    size_t  num_elements = d->scbcode_to_relationid.size();
+    size_t num_elements = d->scbcode_to_relationid.size();
     output.write((char *)&num_elements, sizeof(num_elements));
     for (std::map<int, uint64_t>::const_iterator it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
         output.write((char *) & ((*it).first), sizeof(int));
@@ -1081,7 +1080,7 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
                 d->roads.regional[idx][firstIndex][secondIndex] = new std::vector<uint64_t>();
             d->roads.regional[idx][firstIndex][secondIndex]->push_back(wayid);
         } else
-            Error::warn("Combination of road number %d and road type %d (%s) is invalid", roadNumber, roadType, roadTypeToString(roadType).c_str());
+            Error::warn("Combination of way id %llu, road number %d, and road type %d (%s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str());
     }
     }
 }
