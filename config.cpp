@@ -60,6 +60,18 @@ void replacevariablenames(char *text) {
         strncpy(needlepos + mapnamelen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
     }
 
+    static const char needle_tempdir[] = "${tempdir}";
+    needlepos = strstr(text, needle_tempdir);
+    if (needlepos != NULL) {
+        static char temp[MAX_STRING_LEN];
+        strncpy(temp, text, MAX_STRING_LEN);
+        const size_t prefixlen = needlepos - text;
+        const size_t tempdirlen = strlen(tempdir);
+        static const size_t variablelen = strlen(needle_tempdir);
+        strncpy(needlepos, tempdir, MAX_STRING_LEN - prefixlen);
+        strncpy(needlepos + tempdirlen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
+    }
+
     if (current_time != (time_t)(-1)) {
         static const char needle_timestamp[] = "${timestamp}";
         needlepos = strstr(text, needle_timestamp);
@@ -144,7 +156,7 @@ bool init_configuration(const char *configfilename) {
         if (config.lookupValue("osmpbffilename", buffer))
             strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
         else
-            snprintf(osmpbffilename, MAX_STRING_LEN - 1, "~/git/pbflookup/${mapname}.osm.pbf");
+            snprintf(osmpbffilename, MAX_STRING_LEN - 1, "${mapname}-latest.osm.pbf");
         replacetildehome(osmpbffilename);
         replacevariablenames(osmpbffilename);
 #ifdef DEBUG
@@ -165,7 +177,7 @@ bool init_configuration(const char *configfilename) {
         if (config.lookupValue("stopwordfilename", buffer))
             strncpy(stopwordfilename, buffer, MAX_STRING_LEN - 1);
         else
-            snprintf(stopwordfilename, MAX_STRING_LEN - 1, "~/git/pbflookup/stopwords-${mapname}.txt");
+            snprintf(stopwordfilename, MAX_STRING_LEN - 1, "stopwords-${mapname}.txt");
         replacetildehome(stopwordfilename);
         replacevariablenames(stopwordfilename);
 #ifdef DEBUG

@@ -54,8 +54,7 @@ int main(int argc, char *argv[])
 #endif // DEBUG
     init_rand();
 
-    char defaultconfigfile[1024];
-    snprintf(defaultconfigfile, 1024, "%s/git/pbflookup/sweden.config", getenv("HOME"));
+    const char *defaultconfigfile = "sweden.config";
     if (!init_configuration((argc < 2) ? defaultconfigfile : argv[argc - 1])) {
         Error::err("Cannot continue without properly parsing configuration file");
         return 1;
