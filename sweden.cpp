@@ -103,6 +103,19 @@ public:
         free(roads.regional);
     }
 
+    static inline int europeanRoadNumberToIndex(int eRoadNumber) {
+        if (eRoadNumber < 40)
+            return eRoadNumber;
+        else if (eRoadNumber < 40 + (int)european_len)
+            return eRoadNumber - 40;
+        else if (eRoadNumber == 265)
+            return 1;
+        else {
+            Error::warn("Cannot map E%d to a road number index", eRoadNumber);
+            return 0;
+        }
+    }
+
     /**
      * Adding the nodes contained in a WayNodes object to an existing
      * polygon (list of nodes). Emphasis is put on adding a WayNode's
@@ -523,7 +536,7 @@ public:
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
 const size_t Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
 const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
-const size_t Sweden::Private::european_len = 100;
+const size_t Sweden::Private::european_len = 30;
 const size_t Sweden::Private::national_len = 500;
 /// Assumption: no regional road number is larger or equal to regional_outer_len * regional_inner_len = 4096
 const size_t Sweden::Private::regional_outer_len = 64;
@@ -579,7 +592,7 @@ Sweden::Sweden(std::istream &input)
             uint64_t wayid;
             for (size_t r = 0; r < count; ++r) {
                 input.read((char *)&wayid, sizeof(wayid));
-                d->roads.european[d->EuropeanRoadNumbers[i]].push_back(wayid);
+                d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].push_back(wayid);
             }
         }
     } else
@@ -796,10 +809,10 @@ std::ostream &Sweden::write(std::ostream &output) {
     chr = 'E';
     output.write((char *)&chr, sizeof(chr));
     for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
-        const size_t count = d->roads.european[d->EuropeanRoadNumbers[i]].size();
+        const size_t count = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].size();
         output.write((char *) &count, sizeof(count));
         for (size_t r = 0; r < count; ++r) {
-            const uint64_t wayid = d->roads.european[d->EuropeanRoadNumbers[i]][r];
+            const uint64_t wayid = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])][r];
             output.write((char *) &wayid, sizeof(uint64_t));
         }
     }
@@ -915,11 +928,11 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
 
     /// European roads
     for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
-        const size_t count = d->roads.european[d->EuropeanRoadNumbers[i]].size();
+        const size_t count = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].size();
         for (size_t r = 0; r < count; ++r) {
             x.clear();
             y.clear();
-            const uint64_t wayid = d->roads.european[d->EuropeanRoadNumbers[i]][r];
+            const uint64_t wayid = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])][r];
             if (wayNodes->retrieve(wayid, wn)) {
                 for (uint32_t n = 0; n < wn.num_nodes; ++n)
                     if (node2Coord->retrieve(wn.nodes[n], c)) {
@@ -1071,10 +1084,7 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
 
     switch (roadType) {
     case Europe:
-        if (roadNumber < Private::european_len)
-            d->roads.european[roadNumber].push_back(wayid);
-        else
-            Error::warn("Road number %d is too large for a European road number", roadNumber);
+        d->roads.european[Private::europeanRoadNumberToIndex(roadNumber)].push_back(wayid);
         break;
     case National:
         if (roadNumber < Private::national_len)
@@ -1110,7 +1120,7 @@ std::vector<uint64_t> Sweden::waysForRoad(RoadType roadType, uint16_t roadNumber
     switch (roadType) {
     case Europe:
         if (roadNumber < Private::european_len)
-            return d->roads.european[roadNumber];
+            return d->roads.european[Private::europeanRoadNumberToIndex(roadNumber)];
     case National:
         if (roadNumber < Private::national_len)
             return d->roads.national[roadNumber];
@@ -1172,7 +1182,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
 
     switch (road.type) {
     case Europe:
-        wayIds = &d->roads.european[road.number];
+        wayIds = &d->roads.european[Private::europeanRoadNumberToIndex(road.number)];
         break;
     case National:
         wayIds = &d->roads.national[road.number];
