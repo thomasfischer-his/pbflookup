@@ -609,15 +609,15 @@ Sweden::Sweden(std::istream &input)
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'L') {
-        uint16_t region;
+        size_t region;
         input.read((char *)&region, sizeof(region));
         while (region != terminator16bit) {
             d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
-            uint16_t a;
+            size_t a;
             input.read((char *)&a, sizeof(a));
             while (a != terminator16bit) {
                 d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
-                uint16_t b;
+                size_t b;
                 input.read((char *)&b, sizeof(b));
                 while (b != terminator16bit) {
                     d->roads.regional[region][a][b] = new std::vector<uint64_t>();
@@ -804,11 +804,11 @@ std::ostream &Sweden::write(std::ostream &output) {
         }
     }
 
-    static const uint16_t terminator16bit = 0xff;
+    static const uint16_t terminator16bit = 0xfefe;
 
     chr = 'R';
     output.write((char *)&chr, sizeof(chr));
-    for (size_t i = 0; i < Private::national_len; ++i)
+    for (uint16_t i = 0; i < Private::national_len; ++i)
         if (d->roads.national[i].empty()) continue;
         else {
             output.write((char *) &i, sizeof(i));
