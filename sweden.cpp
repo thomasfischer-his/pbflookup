@@ -14,6 +14,13 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>.  *
  ***************************************************************************/
 
+/** FIXME
+ *  Much of this code here uses 'old-style' C with malloc/calloc and, more severe,
+ *  keeping track of arrays in variables separate of the array variable itself.
+ *  This code should be ported to a more modern, safer style. Some investigations
+ *  are necessary, but 'array_view' sounds relevant.
+ */
+
 #include "sweden.h"
 
 #include <cmath>
@@ -62,25 +69,31 @@ public:
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
     std::map<int, Region> scbcode_to_polygons, nuts3code_to_polygons;
 
+    static const size_t european_len, national_len, regional_outer_len, regional_inner_len;
     struct {
-        std::vector<uint64_t> european[100];
-        std::vector<uint64_t> national[1000];
+        std::vector<uint64_t> *european;
+        std::vector<uint64_t> *national;
         std::vector<uint64_t> ** **regional;
     } roads;
-    static const int regional_len;
+    static const size_t regional_len;
     static const int EuropeanRoadNumbers[];
 
     explicit Private(Sweden *parent)
         : p(parent) {
+        roads.european = (std::vector<uint64_t> *)calloc(european_len, sizeof(std::vector<uint64_t>));
+        roads.national = (std::vector<uint64_t> *)calloc(national_len, sizeof(std::vector<uint64_t>));
         roads.regional = (std::vector<uint64_t> ** **)calloc(regional_len, sizeof(std::vector<uint64_t> ** *));
     }
 
     ~Private() {
-        for (int i = 0; i < regional_len; ++i)
+        free(roads.european);
+        free(roads.national);
+
+        for (size_t i = 0; i < regional_len; ++i)
             if (roads.regional[i] != NULL) {
-                for (int j = 0; j < 100; ++j)
+                for (size_t j = 0; j < regional_outer_len; ++j)
                     if (roads.regional[i][j] != NULL) {
-                        for (int k = 0; k < 100; ++k)
+                        for (size_t k = 0; k < regional_inner_len; ++k)
                             if (roads.regional[i][j][k] != NULL) delete roads.regional[i][j][k];
                         free(roads.regional[i][j]);
                     }
@@ -507,8 +520,13 @@ public:
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
-const int Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
+const size_t Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
 const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
+const size_t Sweden::Private::european_len = 100;
+const size_t Sweden::Private::national_len = 500;
+/// Assumption: no regional road number is larger or equal to regional_outer_len * regional_inner_len = 4096
+const size_t Sweden::Private::regional_outer_len = 64;
+const size_t Sweden::Private::regional_inner_len = 64;
 
 Sweden::Sweden()
     : d(new Sweden::Private(this))
@@ -589,11 +607,11 @@ Sweden::Sweden(std::istream &input)
         uint8_t region;
         input.read((char *)&region, sizeof(region));
         while (region != terminator8bit) {
-            d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(100, sizeof(std::vector<uint64_t> **));
+            d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
             uint8_t a;
             input.read((char *)&a, sizeof(a));
             while (a != terminator8bit) {
-                d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(100, sizeof(std::vector<uint64_t> *));
+                d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
                 uint8_t b;
                 input.read((char *)&b, sizeof(b));
                 while (b != terminator8bit) {
@@ -783,7 +801,7 @@ std::ostream &Sweden::write(std::ostream &output) {
 
     chr = 'R';
     output.write((char *)&chr, sizeof(chr));
-    for (uint8_t i = 0; i < 100; ++i)
+    for (uint8_t i = 0; i < Private::national_len; ++i)
         if (d->roads.national[i].empty()) continue;
         else {
             output.write((char *) &i, sizeof(i));
@@ -802,12 +820,12 @@ std::ostream &Sweden::write(std::ostream &output) {
         else
         {
             output.write((char *) &l, sizeof(l));
-            for (uint8_t a = 0; a < 100; ++a)
+            for (uint8_t a = 0; a < Private::regional_outer_len; ++a)
                 if (d->roads.regional[l][a] == NULL) continue;
                 else
                 {
                     output.write((char *) &a, sizeof(a));
-                    for (uint8_t b = 0; b < 100; ++b)
+                    for (uint8_t b = 0; b < Private::regional_inner_len; ++b)
                         if (d->roads.regional[l][a][b] == NULL) continue;
                         else
                         {
@@ -908,7 +926,7 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
     }
 
     /// National roads
-    for (size_t i = 0; i < 1000; ++i)
+    for (size_t i = 0; i < Private::national_len; ++i)
         if (!d->roads.national[i].empty())
             for (int j = d->roads.national[i].size() - 1; j >= 0; --j) {
                 const uint64_t wayid = d->roads.national[i][j];
@@ -1028,50 +1046,62 @@ void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
 }
 
 void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber) {
+    /// Check for invalid parameters
+    if (wayid == 0 || roadType >= UnknownRoadType || roadNumber <= 0) {
+        Error::warn("Combination of way id %llu, road number %d, and road type %d (%s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str());
+        return;
+    }
+
     switch (roadType) {
     case Europe:
-        if (roadNumber < 100)
+        if (roadNumber < Private::european_len)
             d->roads.european[roadNumber].push_back(wayid);
+        else
+            Error::warn("Road number %d is too large for a European road number", roadNumber);
         break;
     case National:
-        if (roadNumber < 500)
+        if (roadNumber < Private::national_len)
             /// National roads ('riksvägar') have numbers 1 to 99
             /// Primary regional roads ('primära länsvägar') have numbers 100 to 499,
             /// but no letters, therefore counted as national roads in this context
             d->roads.national[roadNumber].push_back(wayid);
         else
-            Error::warn("Road number %d is 500 or larger, but no regional code/letter given for way https://www.openstreetmap.org/way/%lu", roadNumber, wayid);
+            Error::warn("Road number %d is %d or larger, but no regional code/letter given for way https://www.openstreetmap.org/way/%lu", roadNumber, Private::national_len, wayid);
         break;
     default:
     {
         const int idx = (int)roadType - 2;
-        if (idx < Private::regional_len) {
+        if (idx >= 0 && (size_t)idx < Private::regional_len && roadNumber < Private::regional_outer_len * Private::regional_inner_len) {
             if (d->roads.regional[idx] == NULL)
-                d->roads.regional[idx] = (std::vector<uint64_t> ** *)calloc(100, sizeof(std::vector<uint64_t> **));
-            const int firstIndex = roadNumber / 100, secondIndex = roadNumber % 100;
+                d->roads.regional[idx] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
+            const int firstIndex = roadNumber / Private::regional_inner_len, secondIndex = roadNumber % Private::regional_inner_len;
             if (d->roads.regional[idx][firstIndex] == NULL)
-                d->roads.regional[idx][firstIndex] = (std::vector<uint64_t> **)calloc(100, sizeof(std::vector<uint64_t> *));
+                d->roads.regional[idx][firstIndex] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
             if (d->roads.regional[idx][firstIndex][secondIndex] == NULL)
                 d->roads.regional[idx][firstIndex][secondIndex] = new std::vector<uint64_t>();
             d->roads.regional[idx][firstIndex][secondIndex]->push_back(wayid);
-        }
+        } else
+            Error::warn("Combination of road number %d and road type %d (%s) is invalid", roadNumber, roadType, roadTypeToString(roadType).c_str());
     }
     }
 }
 
 std::vector<uint64_t> Sweden::waysForRoad(RoadType roadType, uint16_t roadNumber) {
+    if (roadNumber <= 0 || roadType >= UnknownRoadType)
+        return std::vector<uint64_t>();
+
     switch (roadType) {
     case Europe:
-        if (roadNumber < 100)
+        if (roadNumber < Private::european_len)
             return d->roads.european[roadNumber];
     case National:
-        if (roadNumber < 1000)
+        if (roadNumber < Private::national_len)
             return d->roads.national[roadNumber];
     default:
     {
         const int idx = (int)roadType - 2;
-        const int firstIndex = roadNumber / 100, secondIndex = roadNumber % 100;
-        if (idx < Private::regional_len && d->roads.regional[idx] != NULL && firstIndex < 100 && d->roads.regional[idx][firstIndex] != NULL && d->roads.regional[idx][firstIndex][secondIndex] != NULL)
+        const size_t firstIndex = roadNumber / Private::regional_inner_len, secondIndex = roadNumber % Private::regional_inner_len;
+        if (idx >= 0 && (size_t)idx < Private::regional_len && firstIndex < Private::regional_outer_len && d->roads.regional[idx] != NULL &&  d->roads.regional[idx][firstIndex] != NULL && d->roads.regional[idx][firstIndex][secondIndex] != NULL)
             return *d->roads.regional[idx][firstIndex][secondIndex];
     }
     }
@@ -1133,18 +1163,19 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
     case LanUnknown:
     {
         wayIds = new std::vector<uint64_t>();
-        const int firstIndex = road.number / 100, secondIndex = road.number % 100;
-        for (int i = 0; i < Private::regional_len; ++i) {
-            lanStartingIndex[i] = wayIds->size();
-            if (d->roads.regional[i] != NULL && d->roads.regional[i][firstIndex] != NULL && d->roads.regional[i][firstIndex][secondIndex] != NULL)
-                wayIds->insert(wayIds->cend(), d->roads.regional[i][firstIndex][secondIndex]->cbegin(), d->roads.regional[i][firstIndex][secondIndex]->cend());
-        }
+        const size_t firstIndex = road.number / Private::regional_inner_len, secondIndex = road.number % Private::regional_inner_len;
+        if (firstIndex < Private::regional_outer_len)
+            for (size_t i = 0; i < Private::regional_len; ++i) {
+                lanStartingIndex[i] = wayIds->size();
+                if (d->roads.regional[i] != NULL && d->roads.regional[i][firstIndex] != NULL && d->roads.regional[i][firstIndex][secondIndex] != NULL)
+                    wayIds->insert(wayIds->cend(), d->roads.regional[i][firstIndex][secondIndex]->cbegin(), d->roads.regional[i][firstIndex][secondIndex]->cend());
+            }
         break;
     }
     default:
         const int idx = (int)road.type - 2;
-        if (idx >= 0 && idx < Private::regional_len && road.number > 0) {
-            const int firstIndex = road.number / 100, secondIndex = road.number % 100;
+        if (idx >= 0 && (size_t)idx < Private::regional_len && road.number > 0 && (size_t)road.number < Private::regional_outer_len * Private::regional_inner_len) {
+            const int firstIndex = road.number / Private::regional_inner_len, secondIndex = road.number % Private::regional_inner_len;
             if (d->roads.regional[idx] != NULL && d->roads.regional[idx][firstIndex] != NULL && d->roads.regional[idx][firstIndex][secondIndex] != NULL)
                 wayIds = d->roads.regional[idx][firstIndex][secondIndex];
         }
@@ -1177,7 +1208,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
 
     if (road.type == LanUnknown) {
         if (wayIds != NULL) delete wayIds;
-        for (int i = 0; i < Private::regional_len; ++i)
+        for (size_t i = 0; i < Private::regional_len; ++i)
             if (lanStartingIndex[i] <= bestNodeIndex && (i == Private::regional_len - 1 || lanStartingIndex[i + 1] > bestNodeIndex))
                 return (Sweden::RoadType)(i + 2);
         return Sweden::LanUnknown;
@@ -1281,9 +1312,9 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
 void Sweden::fixUnlabeledRegionalRoads() {
     const int unknownLanIdx = (int)LanUnknown - 2;
     if (d->roads.regional[unknownLanIdx] != NULL) {
-        for (int outer = 0; outer < 100; ++outer)
+        for (size_t outer = 0; outer < Private::regional_outer_len; ++outer)
             if (d->roads.regional[unknownLanIdx][outer] != NULL) {
-                for (int inner = 0; inner < 100; ++inner)
+                for (size_t inner = 0; inner < Private::regional_inner_len; ++inner)
                     if (d->roads.regional[unknownLanIdx][outer][inner] != NULL) {
                         std::vector<uint64_t> *wayIds = d->roads.regional[unknownLanIdx][outer][inner];
                         for (auto it = wayIds->cbegin(); it != wayIds->cend();) {
@@ -1295,14 +1326,14 @@ void Sweden::fixUnlabeledRegionalRoads() {
                                     const RoadType properLan = roadTypeForSCBarea(scbAreas.front());
                                     const int properLanIdx = (int)properLan - 2;
                                     if (d->roads.regional[properLanIdx] == NULL)
-                                        d->roads.regional[properLanIdx] = (std::vector<uint64_t> ** *)calloc(100, sizeof(std::vector<uint64_t> **));
+                                        d->roads.regional[properLanIdx] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
                                     if (d->roads.regional[properLanIdx][outer] == NULL)
-                                        d->roads.regional[properLanIdx][outer] = (std::vector<uint64_t> **)calloc(100, sizeof(std::vector<uint64_t> *));
+                                        d->roads.regional[properLanIdx][outer] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
                                     if (d->roads.regional[properLanIdx][outer][inner] == NULL)
                                         d->roads.regional[properLanIdx][outer][inner] = new std::vector<uint64_t>();
                                     d->roads.regional[properLanIdx][outer][inner]->push_back(*it);
 
-                                    Error::debug("Setting region %s to way %llu with road number %d", roadTypeToString(properLan).c_str(), *it, outer * 100 + inner);
+                                    Error::debug("Setting region %s to way %llu with road number %d", roadTypeToString(properLan).c_str(), *it, outer * Private::regional_inner_len + inner);
 
                                     it = wayIds->erase(it);
                                     continue;
@@ -1319,7 +1350,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
                     }
 
                 bool allNull = true;
-                for (int inner = 0; allNull && inner < 100; ++inner)
+                for (size_t inner = 0; allNull && inner < Private::regional_inner_len; ++inner)
                     allNull &= d->roads.regional[unknownLanIdx][outer][inner] == NULL;
                 if (allNull) {
                     free(d->roads.regional[unknownLanIdx][outer]);
@@ -1328,7 +1359,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
             }
 
         bool allNull = true;
-        for (int outer = 0; allNull && outer < 100; ++outer)
+        for (size_t outer = 0; allNull && outer < Private::regional_outer_len; ++outer)
             allNull &= d->roads.regional[unknownLanIdx][outer] == NULL;
         if (allNull) {
             free(d->roads.regional[unknownLanIdx]);
