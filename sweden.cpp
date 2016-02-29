@@ -570,7 +570,7 @@ Sweden::Sweden(std::istream &input)
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'E') {
-        for (uint8_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+        for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
             size_t count;
             input.read((char *)&count, sizeof(count));
             uint64_t wayid;
@@ -582,13 +582,13 @@ Sweden::Sweden(std::istream &input)
     } else
         Error::warn("Expected 'E', got '0x%02x'", chr);
 
-    const uint8_t terminator8bit = 0xff;
+    static const uint16_t terminator16bit = 0xfefe;
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'R') {
-        uint8_t road;
+        uint16_t road;
         input.read((char *)&road, sizeof(road));
-        while (road != terminator8bit) {
+        while (road != terminator16bit) {
             size_t count;
             input.read((char *)&count, sizeof(count));
             uint64_t wayid;
@@ -604,17 +604,17 @@ Sweden::Sweden(std::istream &input)
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'L') {
-        uint8_t region;
+        uint16_t region;
         input.read((char *)&region, sizeof(region));
-        while (region != terminator8bit) {
+        while (region != terminator16bit) {
             d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
-            uint8_t a;
+            uint16_t a;
             input.read((char *)&a, sizeof(a));
-            while (a != terminator8bit) {
+            while (a != terminator16bit) {
                 d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
-                uint8_t b;
+                uint16_t b;
                 input.read((char *)&b, sizeof(b));
-                while (b != terminator8bit) {
+                while (b != terminator16bit) {
                     d->roads.regional[region][a][b] = new std::vector<uint64_t>();
                     size_t count;
                     input.read((char *)&count, sizeof(count));
@@ -788,7 +788,7 @@ std::ostream &Sweden::write(std::ostream &output) {
 
     chr = 'E';
     output.write((char *)&chr, sizeof(chr));
-    for (uint8_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+    for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
         const size_t count = d->roads.european[d->EuropeanRoadNumbers[i]].size();
         output.write((char *) &count, sizeof(count));
         for (size_t r = 0; r < count; ++r) {
@@ -797,11 +797,11 @@ std::ostream &Sweden::write(std::ostream &output) {
         }
     }
 
-    const uint8_t terminator8bit = 0xff;
+    static const uint16_t terminator16bit = 0xff;
 
     chr = 'R';
     output.write((char *)&chr, sizeof(chr));
-    for (uint8_t i = 0; i < Private::national_len; ++i)
+    for (size_t i = 0; i < Private::national_len; ++i)
         if (d->roads.national[i].empty()) continue;
         else {
             output.write((char *) &i, sizeof(i));
@@ -811,21 +811,21 @@ std::ostream &Sweden::write(std::ostream &output) {
                 output.write((char *) &d->roads.national[i][r], sizeof(uint64_t));
             }
         }
-    output.write((char *) &terminator8bit, sizeof(terminator8bit));
+    output.write((char *) &terminator16bit, sizeof(terminator16bit));
 
     chr = 'L';
     output.write((char *)&chr, sizeof(chr));
-    for (uint8_t l = 0; l < Private::regional_len; ++l)
+    for (size_t l = 0; l < Private::regional_len; ++l)
         if (d->roads.regional[l] == NULL) continue;
         else
         {
             output.write((char *) &l, sizeof(l));
-            for (uint8_t a = 0; a < Private::regional_outer_len; ++a)
+            for (size_t a = 0; a < Private::regional_outer_len; ++a)
                 if (d->roads.regional[l][a] == NULL) continue;
                 else
                 {
                     output.write((char *) &a, sizeof(a));
-                    for (uint8_t b = 0; b < Private::regional_inner_len; ++b)
+                    for (size_t b = 0; b < Private::regional_inner_len; ++b)
                         if (d->roads.regional[l][a][b] == NULL) continue;
                         else
                         {
@@ -836,11 +836,11 @@ std::ostream &Sweden::write(std::ostream &output) {
                                 output.write((char *) &d->roads.regional[l][a][b]->at(r), sizeof(uint64_t));
                             }
                         }
-                    output.write((char *) &terminator8bit, sizeof(terminator8bit));
+                    output.write((char *) &terminator16bit, sizeof(terminator16bit));
                 }
-            output.write((char *) &terminator8bit, sizeof(terminator8bit));
+            output.write((char *) &terminator16bit, sizeof(terminator16bit));
         }
-    output.write((char *) &terminator8bit, sizeof(terminator8bit));
+    output.write((char *) &terminator16bit, sizeof(terminator16bit));
 
     chr = '_';
     output.write((char *)&chr, sizeof(chr));
