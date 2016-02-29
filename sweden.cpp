@@ -1073,8 +1073,8 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
         if (wayid == blacklistedWayIds[i]) return;
     /// In Sundsvall, there are a few 'regional roads' with numbers 5300-5399,
     /// not sure if that is a mistake, ignoring those.
-    if (roadNumber>=5300&&roadNumber<5400&&(roadType==LanUnknown||roadType=LanY))
-        retrun;
+    if (roadNumber >= 5300 && roadNumber < 5400 && (roadType == LanUnknown || roadType == LanY))
+        return;
 
     /// Check for invalid parameters
     if (wayid == 0 || roadType >= UnknownRoadType || roadNumber <= 0) {
