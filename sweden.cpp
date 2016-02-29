@@ -42,6 +42,8 @@ const double maxlat = 71.5; ///< declared in 'global.h'
 const double decimeterDegreeLongitude = 557999.790; ///< declared in 'global.h'
 const double decimeterDegreeLatitude = 1114122.402; ///< declared in 'global.h'
 
+const size_t reasonableLargeCount = 0x3fffff;
+
 #define STRING_BUFFER_SIZE     1024
 
 class Sweden::Private {
@@ -572,6 +574,8 @@ Sweden::Sweden(std::istream &input)
         for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
             size_t count;
             input.read((char *)&count, sizeof(count));
+            if (count > reasonableLargeCount)
+                Error::err("Count %ld looks unrealistically large", count);
             uint64_t wayid;
             for (size_t r = 0; r < count; ++r) {
                 input.read((char *)&wayid, sizeof(wayid));
@@ -590,6 +594,8 @@ Sweden::Sweden(std::istream &input)
         while (road != terminator16bit) {
             size_t count;
             input.read((char *)&count, sizeof(count));
+            if (count > reasonableLargeCount)
+                Error::err("Count %ld looks unrealistically large", count);
             uint64_t wayid;
             for (size_t r = 0; r < count; ++r) {
                 input.read((char *)&wayid, sizeof(wayid));
@@ -617,6 +623,8 @@ Sweden::Sweden(std::istream &input)
                     d->roads.regional[region][a][b] = new std::vector<uint64_t>();
                     size_t count;
                     input.read((char *)&count, sizeof(count));
+                    if (count > reasonableLargeCount)
+                        Error::err("Count %ld looks unrealistically large", count);
                     uint64_t wayid;
                     for (size_t r = 0; r < count; ++r) {
                         input.read((char *)&wayid, sizeof(wayid));
