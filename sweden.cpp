@@ -1322,7 +1322,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
                 for (int inner = 0; allNull && inner < 100; ++inner)
                     allNull &= d->roads.regional[unknownLanIdx][outer][inner] == NULL;
                 if (allNull) {
-                    delete d->roads.regional[unknownLanIdx][outer];
+                    free(d->roads.regional[unknownLanIdx][outer]);
                     d->roads.regional[unknownLanIdx][outer] = NULL;
                 }
             }
@@ -1331,7 +1331,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
         for (int outer = 0; allNull && outer < 100; ++outer)
             allNull &= d->roads.regional[unknownLanIdx][outer] == NULL;
         if (allNull) {
-            delete d->roads.regional[unknownLanIdx];
+            free(d->roads.regional[unknownLanIdx]);
             d->roads.regional[unknownLanIdx] = NULL;
         }
     }
