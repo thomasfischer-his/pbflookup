@@ -1053,6 +1053,16 @@ void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
 }
 
 void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber) {
+    /// Some way ids should be ignored, e.g. those right outside of Sweden
+    /// which just happend to be included in the map data.
+    static const uint64_t blacklistedWayIds[] = {23275365, 24040916, 24731243, 24786276, 29054792, 29054793, 34419027, 34419029, 38227481, 44141405, 44298775, 45329454, 46931166, 48386475, 51381476, 51385960, 59065373, 59065380, 59065382, 59065388, 61380105, 67171996, 69358305, 73854172, 80360747, 116831322, 180751968, 324044848, 324093732, 324492881, 324492887, 375573546, 375573548, 0};
+    for (int i = 0; blacklistedWayIds[i] > 0; ++i)
+        if (wayid == blacklistedWayIds[i]) return;
+    /// In Sundsvall, there are a few 'regional roads' with numbers 5300-5399,
+    /// not sure if that is a mistake, ignoring those.
+    if (roadNumber>=5300&&roadNumber<5400&&(roadType==LanUnknown||roadType=LanY))
+        retrun;
+
     /// Check for invalid parameters
     if (wayid == 0 || roadType >= UnknownRoadType || roadNumber <= 0) {
         Error::warn("Combination of way id %llu, road number %d, and road type %d (%s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str());
