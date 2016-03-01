@@ -42,7 +42,8 @@ const double maxlat = 71.5; ///< declared in 'global.h'
 const double decimeterDegreeLongitude = 557999.790; ///< declared in 'global.h'
 const double decimeterDegreeLatitude = 1114122.402; ///< declared in 'global.h'
 
-const size_t reasonableLargeCount = 0x3fffff;
+const size_t reasonableLargeSizeT = 0x3fffff;
+const uint16_t reasonableLargeUInt16 = 0x3fff;
 
 #define STRING_BUFFER_SIZE     1024
 
@@ -587,7 +588,7 @@ Sweden::Sweden(std::istream &input)
         for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
             size_t count;
             input.read((char *)&count, sizeof(count));
-            if (count > reasonableLargeCount)
+            if (count > reasonableLargeSizeT)
                 Error::err("Count %ld looks unrealistically large", count);
             uint64_t wayid;
             for (size_t r = 0; r < count; ++r) {
@@ -607,7 +608,7 @@ Sweden::Sweden(std::istream &input)
         while (road != terminator16bit) {
             size_t count;
             input.read((char *)&count, sizeof(count));
-            if (count > reasonableLargeCount)
+            if (count > reasonableLargeSizeT)
                 Error::err("Count %ld looks unrealistically large", count);
             uint64_t wayid;
             for (size_t r = 0; r < count; ++r) {
@@ -624,19 +625,25 @@ Sweden::Sweden(std::istream &input)
     if (chr == 'L') {
         size_t region;
         input.read((char *)&region, sizeof(region));
+        if (region > reasonableLargeSizeT)
+            Error::err("Region %ld looks unrealistically large", region);
         while (region != terminator16bit) {
             d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
             size_t a;
             input.read((char *)&a, sizeof(a));
+            if (a > reasonableLargeSizeT)
+                Error::err("Variable a=%ld looks unrealistically large", a);
             while (a != terminator16bit) {
                 d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
                 size_t b;
                 input.read((char *)&b, sizeof(b));
+                if (b > reasonableLargeSizeT)
+                    Error::err("Variable b=%ld looks unrealistically large", b);
                 while (b != terminator16bit) {
                     d->roads.regional[region][a][b] = new std::vector<uint64_t>();
                     size_t count;
                     input.read((char *)&count, sizeof(count));
-                    if (count > reasonableLargeCount)
+                    if (count > reasonableLargeSizeT)
                         Error::err("Count %ld looks unrealistically large", count);
                     uint64_t wayid;
                     for (size_t r = 0; r < count; ++r) {
