@@ -198,13 +198,14 @@ bool init_configuration(const char *configfilename) {
                         ts.lon = testsetSetting.lookup("longitude");
                         ts.text = testsetSetting.lookup("text").c_str();
                         /// "svgoutputfilename" is optional, so tolerate if it is not set
-                        testsetSetting.lookupValue("svgoutputfilename", ts.svgoutputfilename);///< ignore boolean return value
-                        // FIXME can we do better than converting std::string -> char* -> std::string ?
-                        static char filename[MAX_STRING_LEN];
-                        strncpy(filename, ts.svgoutputfilename.c_str(), MAX_STRING_LEN);
-                        replacetildehome(filename);
-                        replacevariablenames(filename);
-                        ts.svgoutputfilename = std::string(filename);
+                        if (testsetSetting.lookupValue("svgoutputfilename", ts.svgoutputfilename)) {
+                            // FIXME can we do better than converting std::string -> char* -> std::string ?
+                            static char filename[MAX_STRING_LEN];
+                            strncpy(filename, ts.svgoutputfilename.c_str(), MAX_STRING_LEN);
+                            replacetildehome(filename);
+                            replacevariablenames(filename);
+                            ts.svgoutputfilename = std::string(filename);
+                        }
                         Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.lat, ts.lon);
                         testsets.push_back(ts);
                     }
