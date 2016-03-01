@@ -17,6 +17,8 @@
 #include "svgwriter.h"
 
 #include <fstream>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 #include "error.h"
 #include "idtree.h"
@@ -24,19 +26,21 @@
 class SvgWriter::Private {
 private:
     SvgWriter *p;
+    std::ofstream svgGzFile;
 
 public:
-    std::ofstream output;
+    boost::iostreams::filtering_ostream output;
     const double zoom;
     SvgWriter::Group previousGroup;
 
     Private(const std::string &filename, double _zoom, SvgWriter *parent)
-        : p(parent), zoom(_zoom), previousGroup(SvgWriter::InvalidGroup) {
-        output.open(filename, std::ofstream::out | std::ofstream::trunc);
-        if (!output.is_open() || !output.good()) {
-            Error::err("Failed to open SVG file '%s'");
-            /// Program will fail here
+        : p(parent), svgGzFile(filename, std::ios_base::out), zoom(_zoom), previousGroup(SvgWriter::InvalidGroup) {
+        const size_t filename_len = filename.length();
+        if (filename[filename_len - 3] == '.' && filename[filename_len - 2] == 'g' && filename[filename_len - 1] == 'z') {
+            /// Do compress SVG file if filename ends with '.gz'
+            output.push(boost::iostreams::gzip_compressor());
         }
+        output.push(svgGzFile);
         output.setf(std::ofstream::fixed);
         output.precision(3);
 
@@ -49,8 +53,6 @@ public:
         if (previousGroup != SvgWriter::InvalidGroup)
             output << "  </g>" << std::endl;
         output << "</svg>" << std::endl << std::endl;
-
-        output.close();
     }
 
     static inline double normalizeX(const int &x) {
