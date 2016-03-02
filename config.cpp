@@ -96,26 +96,59 @@ bool init_configuration(const char *configfilename) {
     memset(inputextfilename, 0, MAX_STRING_LEN);
     memset(stopwordfilename, 0, MAX_STRING_LEN);
 
+    /**
+     * Modify given configuration filename:
+     * - Resolve '~/' into the user's home directory
+     * - Resolve a relative path into an absolute one
+     *   based on the current working directory
+     */
+    char internal_configfilename[MAX_STRING_LEN];
+    strncpy(internal_configfilename, configfilename, MAX_STRING_LEN - 1);
+    replacetildehome(internal_configfilename);
+    if (internal_configfilename[0] != '\0' && internal_configfilename[0] != '/') {
+        char cwd[MAX_STRING_LEN];
+        if (getcwd(cwd, MAX_STRING_LEN) != NULL) {
+            /// Insert current working directory in front of relative path
+            /// Requires some copying of strings ...
+            char *buffer = strndup(internal_configfilename, MAX_STRING_LEN);
+            strncpy(internal_configfilename, cwd, MAX_STRING_LEN);
+            size_t p = strlen(internal_configfilename);
+            p += snprintf(internal_configfilename + p, MAX_STRING_LEN - p, "/");
+            strncpy(internal_configfilename + p, buffer, MAX_STRING_LEN - p);
+            free(buffer);
+        }
+    }
+
 #ifdef DEBUG
-    Error::info("Loading configuration file '%s'", configfilename);
+    Error::info("Loading configuration file '%s'", internal_configfilename);
 #endif // DEBUG
 
     time(&current_time);///< get and memorize current time
 
     libconfig::Config config;
 
-    const char *lastslash = rindex(configfilename, '/');
+    /// Tell libconfig that the main configuration file's directory
+    /// should be used as base for '@include' statements with
+    /// relative paths.
+    const char *lastslash = rindex(internal_configfilename, '/');
     if (lastslash != NULL) {
         char temp[MAX_STRING_LEN];
-        memset(temp, 0, MAX_STRING_LEN);
-        strncpy(temp, configfilename, lastslash - configfilename + 1);
+        temp[0] = '\0';
+        strncpy(temp, internal_configfilename, lastslash - internal_configfilename);
+        if (temp[0] == '\0') {
+            /// Configuration file's location is / (very unusual)
+            temp[0] = '/'; temp[1] = '\0';
+        }
+        Error::debug("Including directory '%s' when searching for config files", temp);
+        /// For details see
+        /// http://www.hyperrealm.com/libconfig/libconfig_manual.html#index-setIncludeDir-on-Config
         config.setIncludeDir(temp);
     }
 
     try
     {
         const char *buffer;
-        config.readFile(configfilename);
+        config.readFile(internal_configfilename);
 
         if (config.lookupValue("tempdir", buffer))
             strncpy(tempdir, buffer, MAX_STRING_LEN - 1);
