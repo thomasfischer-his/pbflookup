@@ -165,6 +165,7 @@ bool init_configuration(const char *configfilename) {
             else
                 snprintf(tempdir, MAX_STRING_LEN - 1, "/tmp");
         }
+        replacetildehome(tempdir);
 #ifdef DEBUG
         Error::debug("  tempdir = '%s'", tempdir);
 #endif // DEBUG
