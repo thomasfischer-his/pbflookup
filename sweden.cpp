@@ -605,6 +605,8 @@ Sweden::Sweden(std::istream &input)
     if (chr == 'R') {
         uint16_t road;
         input.read((char *)&road, sizeof(road));
+        if (road >= Sweden::Private::national_len)
+            Error::err("Road number %d is larger than Sweden::Private::national_len=%d", road, Sweden::Private::national_len);
         while (road != terminator16bit) {
             size_t count;
             input.read((char *)&count, sizeof(count));
@@ -625,20 +627,20 @@ Sweden::Sweden(std::istream &input)
     if (chr == 'L') {
         size_t region;
         input.read((char *)&region, sizeof(region));
-        if (region > reasonableLargeSizeT)
-            Error::err("Region %ld looks unrealistically large", region);
+        if (region > reasonableLargeSizeT || region >= Sweden::Private::regional_len)
+            Error::err("Region %ld looks unrealistically large or is larger than Sweden::Private::regional_len=%d", region, Sweden::Private::regional_len);
         while (region != terminator16bit) {
             d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
             size_t a;
             input.read((char *)&a, sizeof(a));
-            if (a > reasonableLargeSizeT)
-                Error::err("Variable a=%ld looks unrealistically large", a);
+            if (a > reasonableLargeSizeT || a >= Sweden::Private::regional_outer_len)
+                Error::err("Variable a=%ld looks unrealistically large or is larger than Sweden::Private::regional_outer_len=%d", a, Sweden::Private::regional_outer_len);
             while (a != terminator16bit) {
                 d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
                 size_t b;
                 input.read((char *)&b, sizeof(b));
-                if (b > reasonableLargeSizeT)
-                    Error::err("Variable b=%ld looks unrealistically large", b);
+                if (b > reasonableLargeSizeT || b >= Sweden::Private::regional_inner_len)
+                    Error::err("Variable b=%ld looks unrealistically large or is larger than Sweden::Private::regional_inner_len=%d", b, Sweden::Private::regional_inner_len);
                 while (b != terminator16bit) {
                     d->roads.regional[region][a][b] = new std::vector<uint64_t>();
                     size_t count;
