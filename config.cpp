@@ -147,10 +147,16 @@ bool init_configuration(const char *configfilename) {
 
     try
     {
+        /// libconfig::lookupValue should, according to its documentation, simply
+        /// return 'false' if a key is not found, but it still throws an exception.
+        /// To cover for this case, first check if a key exists before attempting
+        /// to retrieve its value.
+#define configIfExistsLookup(config, key, variable) (config.exists(key) && config.lookupValue(key, variable))
+
         const char *buffer;
         config.readFile(internal_configfilename);
 
-        if (config.lookupValue("tempdir", buffer))
+        if (configIfExistsLookup(config, "tempdir", buffer))
             strncpy(tempdir, buffer, MAX_STRING_LEN - 1);
         else {
             const char *envtempdir = getenv("TEMPDIR");
@@ -163,7 +169,7 @@ bool init_configuration(const char *configfilename) {
         Error::debug("  tempdir = '%s'", tempdir);
 #endif // DEBUG
 
-        if (config.lookupValue("mapname", buffer))
+        if (configIfExistsLookup(config, "mapname", buffer))
             strncpy(mapname, buffer, MAX_STRING_LEN - 1);
         else
             snprintf(mapname, MAX_STRING_LEN - 1, "sweden");
@@ -172,7 +178,7 @@ bool init_configuration(const char *configfilename) {
 #endif // DEBUG
 
         static char logfilename[MAX_STRING_LEN];
-        if (config.lookupValue("logfile", buffer)) {
+        if (configIfExistsLookup(config, "logfile", buffer)) {
             strncpy(logfilename, buffer, MAX_STRING_LEN - 1);
             replacetildehome(logfilename);
             replacevariablenames(logfilename);
@@ -186,7 +192,7 @@ bool init_configuration(const char *configfilename) {
             /// TODO figure out how to close file at program termination
         }
 
-        if (config.lookupValue("osmpbffilename", buffer))
+        if (configIfExistsLookup(config, "osmpbffilename", buffer))
             strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
         else
             snprintf(osmpbffilename, MAX_STRING_LEN - 1, "${mapname}-latest.osm.pbf");
@@ -196,7 +202,7 @@ bool init_configuration(const char *configfilename) {
         Error::debug("  osmpbffilename = '%s'", osmpbffilename);
 #endif // DEBUG
 
-        if (config.lookupValue("inputextfilename", buffer))
+        if (configIfExistsLookup(config, "inputextfilename", buffer))
             strncpy(inputextfilename, buffer, MAX_STRING_LEN - 1);
         else
             /// If no 'inputextfilename' was defined, do not provide any default
@@ -207,7 +213,7 @@ bool init_configuration(const char *configfilename) {
         Error::debug("  inputextfilename = '%s'", inputextfilename);
 #endif // DEBUG
 
-        if (config.lookupValue("stopwordfilename", buffer))
+        if (configIfExistsLookup(config, "stopwordfilename", buffer))
             strncpy(stopwordfilename, buffer, MAX_STRING_LEN - 1);
         else
             snprintf(stopwordfilename, MAX_STRING_LEN - 1, "stopwords-${mapname}.txt");
@@ -231,7 +237,7 @@ bool init_configuration(const char *configfilename) {
                         ts.lon = testsetSetting.lookup("longitude");
                         ts.text = testsetSetting.lookup("text").c_str();
                         /// "svgoutputfilename" is optional, so tolerate if it is not set
-                        if (testsetSetting.lookupValue("svgoutputfilename", ts.svgoutputfilename)) {
+                        if (configIfExistsLookup(config, "svgoutputfilename", ts.svgoutputfilename)) {
                             // FIXME can we do better than converting std::string -> char* -> std::string ?
                             static char filename[MAX_STRING_LEN];
                             strncpy(filename, ts.svgoutputfilename.c_str(), MAX_STRING_LEN);
@@ -248,12 +254,17 @@ bool init_configuration(const char *configfilename) {
     }
     catch (libconfig::ParseException &pe)
     {
-        Error::err("ParseException: Parsing configuration file '%s' failed in line %i: %s", pe.getFile(), pe.getLine(), pe.getError());
+        Error::err("ParseException: Parsing configuration file '%s' failed in line %i: %s (%s)", pe.getFile(), pe.getLine(), pe.getError(), pe.what());
+        return false;
+    }
+    catch (libconfig::ConfigException &ce)
+    {
+        Error::err("ConfigException: Parsing configuration failed: %s", ce.what());
         return false;
     }
     catch (std::exception &e)
     {
-        Error::err("Parsing configuration file failed: %s", e.what());
+        Error::err("General exception: Parsing configuration file failed: %s", e.what());
         return false;
     }
 
