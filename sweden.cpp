@@ -979,6 +979,8 @@ void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
     const char *cur = refValue;
 
     while (*cur != '\0') {
+        while (*cur == ' ') ++cur; ///< Skip spaces
+
         RoadType roadType = National;
         if (cur[0] == 'E' && cur[1] == ' ' && cur[2] >= '1' && cur[2] <= '9') {
             roadType = Europe;///< or LanE, needs more testing further down
@@ -1064,11 +1066,13 @@ void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
             insertWayAsRoad(wayid, roadType, roadNumber);
         }
         cur = next;
-        if (*cur == ';')
+        if (*cur == ';' || *cur == ',')
+            /// Multiple road numbers may be separated by a semicolor
+            /// or komma (non-standard)
             ++cur;
         else if (*cur == '.') {
-            /// Trunk road like E4.04, record as 'E4' only
-            while (*cur == '.' || *cur == ';' || (*cur >= '0' && *cur <= '9')) ++cur;
+            /// Link road like E4.04, record as 'E4' only
+            while (*cur == '.' || *cur == ';' || *cur == ',' || *cur == ' ' || (*cur >= '0' && *cur <= '9')) ++cur;
         } else
             break;
     }
