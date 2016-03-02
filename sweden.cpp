@@ -64,6 +64,9 @@ private:
     std::map<int, Land> lands;
 
 public:
+    static const uint16_t terminator16bit;
+    static const size_t terminatorSizeT;
+
     struct Region {
         std::vector<std::deque<Coord> > polygons;
         int minx, miny, maxx, maxy;
@@ -535,6 +538,8 @@ public:
 };
 
 const int Sweden::Private::INT_RANGE = 0x3fffffff;
+const uint16_t Sweden::Private::terminator16bit = 0xfefe;
+const size_t Sweden::Private::terminatorSizeT = 0xcafebabe;
 const size_t Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
 const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
 const size_t Sweden::Private::european_len = 30;
@@ -599,15 +604,13 @@ Sweden::Sweden(std::istream &input)
     } else
         Error::warn("Expected 'E', got '0x%02x'", chr);
 
-    static const uint16_t terminator16bit = 0xfefe;
-
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'R') {
         uint16_t road;
         input.read((char *)&road, sizeof(road));
         if (road >= Sweden::Private::national_len)
             Error::err("Road number %d is larger than Sweden::Private::national_len=%d", road, Sweden::Private::national_len);
-        while (road != terminator16bit) {
+        while (road != Private::terminator16bit) {
             size_t count;
             input.read((char *)&count, sizeof(count));
             if (count > reasonableLargeSizeT)
@@ -627,21 +630,21 @@ Sweden::Sweden(std::istream &input)
     if (chr == 'L') {
         size_t region;
         input.read((char *)&region, sizeof(region));
-        if (region > reasonableLargeSizeT || region >= Sweden::Private::regional_len)
+        if (region != Private::terminatorSizeT && region >= Sweden::Private::regional_len)
             Error::err("Region %ld looks unrealistically large or is larger than Sweden::Private::regional_len=%d", region, Sweden::Private::regional_len);
-        while (region != terminator16bit) {
+        while (region != Private::terminatorSizeT) {
             d->roads.regional[region] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
             size_t a;
             input.read((char *)&a, sizeof(a));
-            if (a > reasonableLargeSizeT || a >= Sweden::Private::regional_outer_len)
+            if (a != Private::terminatorSizeT && a >= Sweden::Private::regional_outer_len)
                 Error::err("Variable a=%ld looks unrealistically large or is larger than Sweden::Private::regional_outer_len=%d", a, Sweden::Private::regional_outer_len);
-            while (a != terminator16bit) {
+            while (a != Private::terminatorSizeT) {
                 d->roads.regional[region][a] = (std::vector<uint64_t> **)calloc(Private::regional_inner_len, sizeof(std::vector<uint64_t> *));
                 size_t b;
                 input.read((char *)&b, sizeof(b));
-                if (b > reasonableLargeSizeT || b >= Sweden::Private::regional_inner_len)
+                if (b != Private::terminatorSizeT && b >= Sweden::Private::regional_inner_len)
                     Error::err("Variable b=%ld looks unrealistically large or is larger than Sweden::Private::regional_inner_len=%d", b, Sweden::Private::regional_inner_len);
-                while (b != terminator16bit) {
+                while (b != Private::terminatorSizeT) {
                     d->roads.regional[region][a][b] = new std::vector<uint64_t>();
                     size_t count;
                     input.read((char *)&count, sizeof(count));
@@ -654,12 +657,18 @@ Sweden::Sweden(std::istream &input)
                     }
 
                     input.read((char *)&b, sizeof(b));
+                    if (b != Private::terminatorSizeT && b >= Sweden::Private::regional_inner_len)
+                        Error::err("Variable b=%ld looks unrealistically large or is larger than Sweden::Private::regional_inner_len=%d", b, Sweden::Private::regional_inner_len);
                 }
 
                 input.read((char *)&a, sizeof(a));
+                if (a != Private::terminatorSizeT && a >= Sweden::Private::regional_outer_len)
+                    Error::err("Variable a=%ld looks unrealistically large or is larger than Sweden::Private::regional_outer_len=%d", a, Sweden::Private::regional_outer_len);
             }
 
             input.read((char *)&region, sizeof(region));
+            if (region != Private::terminatorSizeT && region >= Sweden::Private::regional_len)
+                Error::err("Region %ld looks unrealistically large or is larger than Sweden::Private::regional_len=%d", region, Sweden::Private::regional_len);
         }
     } else
         Error::warn("Expected 'L', got '0x%02x'", chr);
@@ -826,8 +835,6 @@ std::ostream &Sweden::write(std::ostream &output) {
         }
     }
 
-    static const uint16_t terminator16bit = 0xfefe;
-
     chr = 'R';
     output.write((char *)&chr, sizeof(chr));
     for (uint16_t i = 0; i < Private::national_len; ++i)
@@ -840,7 +847,7 @@ std::ostream &Sweden::write(std::ostream &output) {
                 output.write((char *) &d->roads.national[i][r], sizeof(uint64_t));
             }
         }
-    output.write((char *) &terminator16bit, sizeof(terminator16bit));
+    output.write((char *) &Private::terminator16bit, sizeof(Private::terminator16bit));
 
     chr = 'L';
     output.write((char *)&chr, sizeof(chr));
@@ -865,11 +872,11 @@ std::ostream &Sweden::write(std::ostream &output) {
                                 output.write((char *) &d->roads.regional[l][a][b]->at(r), sizeof(uint64_t));
                             }
                         }
-                    output.write((char *) &terminator16bit, sizeof(terminator16bit));
+                    output.write((char *) &Private::terminatorSizeT, sizeof(Private::terminatorSizeT));
                 }
-            output.write((char *) &terminator16bit, sizeof(terminator16bit));
+            output.write((char *) &Private::terminatorSizeT, sizeof(Private::terminatorSizeT));
         }
-    output.write((char *) &terminator16bit, sizeof(terminator16bit));
+    output.write((char *) &Private::terminatorSizeT, sizeof(Private::terminatorSizeT));
 
     chr = '_';
     output.write((char *)&chr, sizeof(chr));
