@@ -456,16 +456,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
 
-                        uint64_t memId = 0;
-                        for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
-                            memId += pg.relations(i).memids(k);
-                        }
-
                         if (admin_level > 0 && !name.empty() && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
                             sweden->insertAdministrativeRegion(name, admin_level, relId);
 
                         RelationMem rm(pg.relations(i).memids_size());
-                        memId = 0;
+                        uint64_t memId = 0;
                         for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
                             memId += pg.relations(i).memids(k);
                             uint16_t flags = 0;
