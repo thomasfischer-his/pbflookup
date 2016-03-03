@@ -58,6 +58,23 @@ public:
     void drawSCBareas(SvgWriter &svgWriter);
     void drawRoads(SvgWriter &svgWriter);
 
+    /**
+     * Insert an administrative region such as a county or a
+     * municipality as identified by its administrative level
+     * (numeric value), name, and relation id.
+     * @param admin_level administrative level as used in OSM data
+     */
+    void insertAdministrativeRegion(const std::string &name, int admin_level, uint64_t relationId);
+
+    /**
+     * Retrieve the relation id of an administrative region such
+     * as a county or a municipality by its name.
+     * @param name
+     * @param admin_level administrative level as used in OSM data
+     * @return
+     */
+    uint64_t retrieveAdministrativeRegion(const std::string &name, int *admin_level = NULL);
+
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
     std::vector<uint64_t> waysForRoad(RoadType roadType, uint16_t roadNumber);

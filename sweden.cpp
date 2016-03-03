@@ -47,6 +47,172 @@ const uint16_t reasonableLargeUInt16 = 0x3fff;
 
 #define STRING_BUFFER_SIZE     1024
 
+bool startsWith(const std::string &haystack, const std::string &needle) {
+    if (haystack.length() >= needle.length())
+        return haystack.compare(0, needle.length(), needle) == 0;
+    else
+        return false;
+}
+
+bool endsWith(const std::string &haystack, const std::string &needle) {
+    if (haystack.length() >= needle.length())
+        return haystack.compare(haystack.length() - needle.length(), needle.length(), needle) == 0;
+    else
+        return false;
+}
+
+class AdministrativeRegion {
+    static const std::string region_beginnings[];
+    static const std::string region_endings[];
+private:
+    struct Region {
+        std::string name;
+        int admin_level;
+        uint64_t relationId;
+
+        Region()
+            : admin_level(-1), relationId(0) {
+            /// nothing
+        }
+
+        Region(const std::string &_name, int _admin_level, uint64_t _relationId)
+            : name(_name), admin_level(_admin_level), relationId(_relationId) {
+            /// nothing
+        }
+    };
+
+    std::vector<Region> regions;
+    bool regions_sorted = false;
+
+    std::string normalizeAdministrativeRegionName(const std::string &name) const {
+        for (int i = 0; !region_beginnings[i].empty(); ++i)
+            if (startsWith(name, region_beginnings[i]))
+                return name.substr(region_beginnings[i].length(), name.length() - region_beginnings[i].length());
+
+        for (int i = 0; !region_endings[i].empty(); ++i)
+            if (endsWith(name, region_endings[i]))
+                return name.substr(0, name.length() - region_endings[i].length());
+
+        return name;
+    }
+
+    void sortRegions() {
+        std::sort(regions.begin(), regions.end(), [](struct AdministrativeRegion::Region & a, struct AdministrativeRegion::Region & b) {
+            const int cmp = a.name.compare(b.name);
+            if (cmp < 0) return true;
+            else if (cmp > 0) return false;
+            else { /** cmp == 0 */
+                /**
+                 * High level administrative organizations like counties
+                 * go before lower-level organizations. For example,
+                 * Uppsala county goes before Uppsala municipality
+                 * http://www.openstreetmap.org/relation/54220
+                 * http://www.openstreetmap.org/relation/305455
+                 */
+                return a.admin_level < b.admin_level;
+            }
+        });
+        regions_sorted = true;
+    }
+
+public:
+    explicit AdministrativeRegion()
+        : regions_sorted(false) {
+        /// nothing
+    }
+
+    std::istream &read(std::istream &input) {
+        regions.clear();
+        size_t count;
+        input.read((char *)&count, sizeof(count));
+        for (size_t i = 0; i < count; ++i) {
+            Region region;
+            input.read((char *)&region.relationId, sizeof(region.relationId));
+            input.read((char *)&region.admin_level, sizeof(region.admin_level));
+            size_t str_len;
+            input.read((char *)&str_len, sizeof(str_len));
+            static const size_t buffer_len = 8192;
+            static char buffer[buffer_len];
+            /// Assumption: str_len * sizeof(char) < 8192
+            input.read(buffer, str_len * sizeof(char));
+            buffer[str_len] = '\0';
+            region.name = std::string(buffer);
+            regions.push_back(region);
+        }
+
+        /// By convention, data was sorted before saving it
+        regions_sorted = true;
+
+        return input;
+    }
+
+    std::ostream &write(std::ostream &output) {
+        if (!regions_sorted)
+            sortRegions();
+
+        const size_t count = regions.size();
+        output.write((char *) &count, sizeof(count));
+        for (size_t i = 0; i < count; ++i) {
+            output.write((char *) &regions[i].relationId, sizeof(regions[i].relationId));
+            output.write((char *) &regions[i].admin_level, sizeof(regions[i].admin_level));
+            const char *buffer = regions[i].name.c_str();
+            const size_t buffer_len = strlen(buffer);
+            output.write((char *) &buffer_len, sizeof(buffer_len));
+            output.write(buffer, buffer_len * sizeof(char));
+        }
+
+        return output;
+    }
+
+    void insert(const std::string &name, int admin_level, uint64_t relationId) {
+        const std::string internal_name = normalizeAdministrativeRegionName(name);
+        Region region(internal_name, admin_level, relationId);
+        regions.push_back(region);
+        regions_sorted = false;
+    }
+
+    uint64_t retrieve(const std::string &name, int *admin_level = NULL) {
+        if (admin_level != NULL)
+            *admin_level = 0;
+        if (regions.empty()) return 0; ///< no administrative regions are known
+
+        if (!regions_sorted)
+            sortRegions();
+
+        const std::string normalized_name = normalizeAdministrativeRegionName(name);
+        int min = 0, max = regions.size() - 1, result = -1;
+        while (min < max) {
+            const int idx = (max - min) / 2 + min;
+            const int cmp = normalized_name.compare(regions[idx].name);
+            if (cmp > 0)
+                min = idx + 1;
+            else if (cmp < 0)
+                max = idx - 1;
+            else if (cmp == 0) {
+                result = idx;
+                break;
+            }
+        }
+
+        if (result >= 0) {
+            /// Select region of highest administrative level (e.g. county over municipality)
+            while (result > 0 && regions[result - 1].admin_level < regions[result].admin_level && normalized_name.compare(regions[result - 1].name) == 0)
+                --result;
+
+            if (admin_level != NULL)
+                *admin_level = regions[result].admin_level;
+            return regions[result].relationId;
+        } else
+            return 0;
+    }
+};
+
+const std::string AdministrativeRegion::region_beginnings[] = {"Landskapet ", "landskapet ", ""};
+/// Some names have a genitiv-s, some names simply have 's' as the last character.
+/// This wil lbe no problem for the purpose of matching known counties or municipality
+/// to queried text strings.
+const std::string AdministrativeRegion::region_endings[] = {"s l\xc3\xa4n", " l\xc3\xa4n", "s kommun", " kommun" , ""};
+
 class Sweden::Private {
 private:
     static const int INT_RANGE;
@@ -82,6 +248,8 @@ public:
     } roads;
     static const size_t regional_len;
     static const int EuropeanRoadNumbers[];
+
+    AdministrativeRegion administrativeRegion;
 
     explicit Private(Sweden *parent)
         : p(parent) {
@@ -674,6 +842,11 @@ Sweden::Sweden(std::istream &input)
         Error::warn("Expected 'L', got '0x%02x'", chr);
 
     input.read((char *)&chr, sizeof(chr));
+    if (chr != 'A')
+        Error::warn("Expected 'A', got '0x%02x'", chr);
+    d->administrativeRegion.read(input);
+
+    input.read((char *)&chr, sizeof(chr));
     if (chr != '_')
         Error::warn("Expected '_', got '0x%02x'", chr);
 }
@@ -877,6 +1050,10 @@ std::ostream &Sweden::write(std::ostream &output) {
             output.write((char *) &Private::terminatorSizeT, sizeof(Private::terminatorSizeT));
         }
     output.write((char *) &Private::terminatorSizeT, sizeof(Private::terminatorSizeT));
+
+    chr = 'A';
+    output.write((char *)&chr, sizeof(chr));
+    d->administrativeRegion.write(output);
 
     chr = '_';
     output.write((char *)&chr, sizeof(chr));
@@ -1452,4 +1629,20 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
 #endif
 
     return result;
+}
+
+void Sweden::insertAdministrativeRegion(const std::string &name, int admin_level, uint64_t relationId) {
+    if (admin_level >= 8) return; ///< Skip too low-level administrative boundaries
+
+    /// Some relation ids should be ignored, e.g. those right outside
+    /// of Sweden which just happend to be included in the map data.
+    static const uint64_t blacklistedRelIds[] = {38091, 50046, 52822, 54224, 404589, 406060, 406106, 406567, 406621, 407717, 408105, 412436, 1650407, 1724359, 1724456, 2000320, 2375170, 2375171, 2526815, 2541341, 2587236, 2978650, 4222805, 0};
+    for (int i = 0; blacklistedRelIds[i] > 0; ++i)
+        if (relationId == blacklistedRelIds[i]) return;
+
+    d->administrativeRegion.insert(name, admin_level, relationId);
+}
+
+uint64_t Sweden::retrieveAdministrativeRegion(const std::string &name, int *admin_level) {
+    return d->administrativeRegion.retrieve(name, admin_level);
 }

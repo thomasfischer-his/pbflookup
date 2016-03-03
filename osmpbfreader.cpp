@@ -431,7 +431,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                     for (int i = 0; i < maxrelations; ++i) {
                         const uint64_t relId = pg.relations(i).id();
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
-                        std::string name;
+                        std::string name, boundary;
+                        int admin_level = 0;
                         const int maxkv = pg.relations(i).keys_size();
                         for (int k = 0; k < maxkv; ++k) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
@@ -444,6 +445,13 @@ bool OsmPbfReader::parse(std::istream &input) {
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
                                 sweden->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), relId);
+                            } else if (strcmp("boundary", ckey) == 0) {
+                                /// Store 'boundary' string for later use
+                                boundary = primblock.stringtable().s(pg.relations(i).vals(k));
+                            } else if (strcmp("admin_level", ckey) == 0) {
+                                /// Store 'admin_level' string for later use
+                                std::stringstream ss(primblock.stringtable().s(pg.relations(i).vals(k)));
+                                ss >> admin_level;
                             }
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
@@ -452,6 +460,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                         for (int k = 0; k < pg.relations(i).memids_size(); ++k) {
                             memId += pg.relations(i).memids(k);
                         }
+
+                        if (admin_level > 0 && !name.empty() && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
+                            sweden->insertAdministrativeRegion(name, admin_level, relId);
 
                         RelationMem rm(pg.relations(i).memids_size());
                         memId = 0;
