@@ -512,8 +512,6 @@ bool OsmPbfReader::parse(std::istream &input) {
     /// Line break after series of dots
     std::cout << std::endl;
 
-    sweden->drawSCBareas("/tmp/sweden.svg");
-
     return true;
 }
 
