@@ -275,7 +275,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
 
 std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places) {
     std::vector<struct TokenProcessor::NearPlaceMatch> result;
-    if (places.empty()) return result;; /// No places known? Nothing to do -> return
+    if (places.empty()) return result; /// No places known? Nothing to do -> return
 
     /// Retrieve coordinates for all known places
     std::vector<std::pair<struct OSMElement, struct Coord> > placesToCoord;
