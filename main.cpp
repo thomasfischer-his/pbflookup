@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
             timer.start();
             Tokenizer tokenizer;
             std::vector<std::string> words, word_combinations;
-            tokenizer.read_words(it->text, words, Tokenizer::Unique);
+            tokenizer.read_words(it->text, words, Tokenizer::Duplicates);
             tokenizer.generate_word_combinations(words, word_combinations, 3 /** TODO configurable */, Tokenizer::Unique);
             timer.elapsed(&cputime, &walltime);
             Error::info("Spent CPU time to tokenize text in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
