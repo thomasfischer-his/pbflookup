@@ -184,8 +184,7 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
     }
 
     if (multiplicity == Unique && !known_combinations.empty() && combinations.empty())
-        for (auto it = known_combinations.cbegin(); it != known_combinations.cend(); ++it)
-            combinations.push_back(*it);
+        std::copy(known_combinations.cbegin(), known_combinations.cend(), std::back_inserter(combinations));
 
     return combinations.size();
 }
