@@ -281,7 +281,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                             }
                         }
 
-                        if (!name.empty()) {
+                        /// Consider only names of length 2 or longer
+                        if (name.length() > 1) {
                             const uint64_t id = pg.nodes(j).id();
                             node2Coord->increaseCounter(id);
                             const OSMElement element(id, OSMElement::Node, realworld_type);
@@ -347,7 +348,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                             }
                         }
 
-                        if (!name.empty()) {
+                        /// Consider only names of length 2 or longer
+                        if (name.length() > 1) {
                             node2Coord->increaseCounter(last_id);
                             const OSMElement element(last_id, OSMElement::Node, realworld_type);
                             const bool result = swedishTextTree->insert(name, element);
@@ -415,7 +417,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                             node2Coord->increaseCounter(simplifiedWay[k]);
                         wayNodes->insert(wayId, wn);
 
-                        if (!name.empty()) {
+                        /// Consider only names of length 2 or longer
+                        if (name.length() > 1) {
                             const OSMElement element(wayId, OSMElement::Way, realworld_type);
                             const bool result = swedishTextTree->insert(name, element);
                             if (!result)
@@ -456,7 +459,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
 
-                        if (admin_level > 0 && !name.empty() && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
+                        if (admin_level > 0 && name.length() > 1 && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
                             sweden->insertAdministrativeRegion(name, admin_level, relId);
 
                         RelationMem rm(pg.relations(i).memids_size());
@@ -482,7 +485,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
                         relMembers->insert(relId, rm);
 
-                        if (!name.empty()) {
+                        /// Consider only names of length 2 or longer
+                        if (name.length() > 1) {
                             const OSMElement element(relId, OSMElement::Relation, realworld_type);
                             const bool result = swedishTextTree->insert(name, element);
                             if (!result)
