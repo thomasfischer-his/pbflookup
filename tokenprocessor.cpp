@@ -127,10 +127,7 @@ public:
                     Coord cB;
                     if (node_id_array[a] < node_id_array[b] && node2Coord->retrieve(node_id_array[b], cB)) {
                         const int d = Coord::distanceLatLon(cA, cB);
-                        if (d > 2500000) ///< 2500 km
-                            Error::warn("Distance btwn node %llu and %llu is very large: %d", node_id_array[a], node_id_array[b], d);
-                        else
-                            distances.push_back(d);
+                        distances.push_back(d);
                         sumDistances += d;
                     }
                 }
@@ -146,7 +143,6 @@ public:
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
-        Error::debug("1.quartile= %i  median= %i  considered_nodes= %i  considered_distances= %i", distances[distances.size() / 4], distances[distances.size() / 2], considered_nodes, considered_distances);
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
