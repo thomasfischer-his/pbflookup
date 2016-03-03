@@ -297,38 +297,42 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
         auto bestPlace = placesToCoord.cend();
         uint64_t bestNode = 0;
         for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
-            uint64_t id = (*itN).id;
-            OSMElement::ElementType type = (*itN).type;
-
-            if (type == OSMElement::Way) {
-                /// If current element is a way, simply pick the
-                /// way's center node as a representative for this way
-                WayNodes wn;
-                if (wayNodes->retrieve(id, wn) && wn.num_nodes > 0) {
-                    id = wn.nodes[wn.num_nodes / 2];
-                    type = OSMElement::Node;
+            OSMElement element = *itN;
+            /// If the current element is a way or a relation, resolve it to
+            /// a node; a node is needed to retrieve a coordinate from it
+            while (element.type != OSMElement::Node) {
+                if (element.type == OSMElement::Relation) {
+                    RelationMem rm;
+                    if (relMembers->retrieve(element.id, rm) && rm.num_members > 0)
+                        element = rm.members[0];
+                    else
+                        break;
+                } else if (element.type == OSMElement::Way) {
+                    WayNodes wn;
+                    if (wayNodes->retrieve(element.id, wn) && wn.num_nodes > 0)
+                        element = OSMElement(wn.nodes[wn.num_nodes / 2], OSMElement::Node, OSMElement::UnknownRealWorldType); ///< take a node in the middle of the way
+                    else
+                        break;
                 }
             }
-
-            if (type != OSMElement::Node) {
-                /// Only nodes will be processed
+            if (element.type != OSMElement::Node)
+                /// Resolving relations or ways to a node failed
                 continue;
-            }
 
             Coord c;
-            const bool foundNode = node2Coord->retrieve(id, c);
+            const bool foundNode = node2Coord->retrieve(element.id, c);
             if (!foundNode) continue;
 
             for (auto itP = placesToCoord.cbegin(); itP != placesToCoord.cend(); ++itP) {
                 const struct OSMElement &place = itP->first;
                 const struct Coord &placeCoord = itP->second;
 
-                if (place.id == id) continue; ///< do not compare place with itself
+                if (place.id == element.id) continue; ///< do not compare place with itself
                 const int distance = Coord::distanceLatLon(c, placeCoord);
                 if (distance < minSqDistance) {
                     minSqDistance = distance;
                     bestPlace = itP;
-                    bestNode = id;
+                    bestNode = element.id;
                 }
             }
         }
