@@ -218,17 +218,6 @@ int main(int argc, char *argv[])
             }
             */
 
-            if (svgwriter != NULL) {
-                svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "green", "expected");
-                if (result.isValid())
-                    svgwriter->drawPoint(result.x, result.y, SvgWriter::ImportantPoiGroup, "red", "computed");
-                svgwriter->drawCaption(it->name);
-                svgwriter->drawDescription(it->text);
-
-                delete svgwriter; ///< destructor will finalize SVG file
-                svgwriter = NULL;
-            }
-
             if (!result.isValid() && !places.empty()) {
                 /// No good result found, but some places have been recognized in the process.
                 /// Pick one of the larger places as result.
@@ -264,6 +253,18 @@ int main(int argc, char *argv[])
                 }
             } else
                 Error::warn("Unable to determine a likely position");
+
+            if (svgwriter != NULL) {
+                svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "green", "expected");
+                if (result.isValid())
+                    svgwriter->drawPoint(result.x, result.y, SvgWriter::ImportantPoiGroup, "red", "computed");
+                svgwriter->drawCaption(it->name);
+                svgwriter->drawDescription(it->text);
+
+                delete svgwriter; ///< destructor will finalize SVG file
+                svgwriter = NULL;
+            }
+
             Error::info("======================================================");
         }
     } else
