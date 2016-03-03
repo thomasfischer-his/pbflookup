@@ -271,10 +271,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     realworld_type = OSMElement::PlaceMedium;
                                 else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
                                     realworld_type = OSMElement::PlaceSmall;
+                                else if (strcmp("island", cvalue) == 0)
+                                    realworld_type = OSMElement::PlaceMedium;
                                 else {
                                     /// Skipping other types of places:
                                     /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
-                                    /// * Neither continents nor islands may be very helpful
                                     /// * Very small places like farms or plots neither
                                 }
                             }
