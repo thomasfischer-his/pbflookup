@@ -63,8 +63,9 @@ public:
         return weight;
     }
 
-    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances) {
+    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances, uint64_t &mostCentralNodeId) {
         considered_nodes = considered_distances = 0;
+        mostCentralNodeId = 0;
 
         if (id_list.empty()) return 0; ///< too few elements as input
 
@@ -114,10 +115,13 @@ public:
         const int stepcount = min(7, node_ids.size() / 2 + 1);
         size_t step = node_ids.size() / stepcount + 1;
         while (node_ids.size() % step == 0) ++step;
+
+        int bestDistance = INT_MAX;
         for (size_t a = 0; a < node_ids.size(); ++a) {
             size_t b = a;
             Coord cA;
-            if (node2Coord->retrieve(node_id_array[a], cA))
+            if (node2Coord->retrieve(node_id_array[a], cA)) {
+                int sumDistances = 0;
                 for (int s = 0; s < stepcount; ++s) {
                     b = (b + step) % node_ids.size();
                     Coord cB;
@@ -127,8 +131,15 @@ public:
                             Error::warn("Distance btwn node %llu and %llu is very large: %d", node_id_array[a], node_id_array[b], d);
                         else
                             distances.push_back(d);
+                        sumDistances += d;
                     }
                 }
+
+                if (sumDistances < bestDistance) {
+                    bestDistance = sumDistances;
+                    mostCentralNodeId = node_id_array[a];
+                }
+            }
         }
         free(node_id_array);
         considered_distances = distances.size();
@@ -160,7 +171,8 @@ void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &wor
         else {
             Error::info("Got %i hits for word combination '%s'", id_list.size(), combined_cstr);
             unsigned int considered_nodes, considered_distances;
-            const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances);
+            uint64_t mostCentralNodeId;
+            const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, mostCentralNodeId);
             if (estDist > 10000) ///< 10 km
                 Error::info("Estimated distance (%i km) too large for word combination '%s' (hits=%i), skipping", (estDist + 500) / 1000, combined_cstr, id_list.size());
             else if (considered_nodes == 0)
@@ -343,6 +355,83 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
         Error::debug("Found node %llu (%s) near place %llu (%s) with distance %.1fkm", it->node, nodeName.c_str(), it->place.id, placeName.c_str(), it->distance / 1000.0);
     }
 #endif
+
+    return result;
+}
+
+std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const {
+    std::vector<struct TokenProcessor::UniqueMatch> result;
+
+    /// Go through all word combinations (usually 1 to 3 words combined)
+    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
+        const std::string &combined = *itW;
+        const char *combined_cstr = combined.c_str();
+
+        /// Retrieve all OSM elements matching a given word combination
+        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        /// Even 'unique' locations may consist of multiple nodes or ways,
+        /// such as the shape of a single building
+        if (id_list.size() > 0 && id_list.size() < 30 /** arbitrarily chosen value */) {
+            unsigned int considered_nodes = 0, considered_distances = 0;
+            uint64_t mostCentralId = 0;
+            int internodeDistanceMeter = 0;
+            if (id_list.size() == 1) {
+                /// For single id results, set inter-node distance to
+                /// 1m (distance==0 is interpreted as error)
+                internodeDistanceMeter = 1;
+                /// If the single id is a way or a relation, resolve it to
+                /// a node; a node is needed to retrieve a coordinate from it
+                OSMElement element = id_list.front();
+                while (element.type != OSMElement::Node) {
+                    if (element.type == OSMElement::Relation) {
+                        RelationMem rm;
+                        if (relMembers->retrieve(element.id, rm) && rm.num_members > 0)
+                            element = rm.members[0];
+                        else
+                            break;
+                    } else if (element.type == OSMElement::Way) {
+                        WayNodes wn;
+                        if (wayNodes->retrieve(element.id, wn) && wn.num_nodes > 0)
+                            element = OSMElement(wn.nodes[wn.num_nodes / 2], OSMElement::Node, OSMElement::UnknownRealWorldType); ///< take a node in the middle of the way
+                        else
+                            break;
+                    }
+                }
+                if (element.type == OSMElement::Node)
+                    /// Resolving relations or ways to a node succeeded
+                    mostCentralId = element.id;
+                else
+                    continue;
+            } else { /** id_list.size() > 1 */
+                /// Estimate the inter-node distance. For an 'unique' location,
+                /// all nodes must be close by as they are supposed to belong
+                /// together, e.g. the nodes that shape a building
+                internodeDistanceMeter = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, mostCentralId);
+            }
+
+            if (internodeDistanceMeter > 0 && internodeDistanceMeter < 1000) {
+                /// Estimated 1. quartile of inter-node distance is 1km
+                result.push_back(UniqueMatch(combined, mostCentralId));
+            }
+        }
+    }
+
+    std::sort(result.begin(), result.end(), [](struct UniqueMatch & a, struct UniqueMatch & b) {
+        /**
+         * Sort unique matches first by number of spaces (tells from
+         * how many words a word combination was composed from; it is
+         * assumed that more words in a combination make the combination
+         * more specific and as such a better hit), and as secondary
+         * criterion by names' length (weak assumption: longer names are
+         * more specific than shorter names).
+         */
+        const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
+        const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
+        if (countSpacesA < countSpacesB) return false;
+        else if (countSpacesA > countSpacesB) return true;
+        else /** countSpacesA == countSpacesB */
+            return a.name.length() > b.name.length();
+    });
 
     return result;
 }

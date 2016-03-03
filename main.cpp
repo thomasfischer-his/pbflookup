@@ -134,6 +134,21 @@ int main(int argc, char *argv[])
                 Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
             }
 
+            if (!result.isValid() /** no valid result found yet */) {
+                Error::info("=== Testing word combination occurring only once in OSM data ===");
+
+                timer.start();
+                std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor.evaluateUniqueMatches(word_combinations);
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+
+                if (!uniqueMatches.empty()) {
+                    if (!node2Coord->retrieve(uniqueMatches.front().id, result))
+                        result.invalidate();
+                }
+
+            }
+
             /*
             WeightedNodeSet wns;
             TokenProcessor tokenProcessor;

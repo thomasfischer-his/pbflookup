@@ -67,6 +67,18 @@ public:
      */
     std::vector<struct NearPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
 
+    struct UniqueMatch {
+        UniqueMatch(std::string _name, uint64_t _id)
+            : name(_name), id(_id) {
+            /// nothing
+        }
+
+        std::string name;
+        uint64_t id;
+    };
+
+    std::vector<struct UniqueMatch> evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const;
+
 private:
     class Private;
     Private *const d;
