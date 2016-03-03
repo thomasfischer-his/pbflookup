@@ -28,6 +28,7 @@
 #include <fstream>
 #include <deque>
 #include <algorithm>
+#include <vector>
 
 #include "error.h"
 #include "globalobjects.h"
