@@ -46,6 +46,8 @@ It is not necessary (and at the time of writing not supported) to *install* the 
 
 ## Running the Software
 
+During its execution PBFLookup has a peak memory (RAM) consumption of about 3.2GB. Herefore, 8GB is recommended as the minimum physical memory size available on the machine this software is running on.
+
 ### Downloading Map Data
 A requirement to run the software is a current snapshot of the OpenStreetMap data for Sweden. Such a snapshot is available at [Geofabrik](http://download.geofabrik.de/europe/sweden.html), a company providing services based on OpenStreetMap data.
 
