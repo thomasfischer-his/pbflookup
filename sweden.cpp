@@ -241,10 +241,11 @@ public:
     std::map<int, uint64_t> scbcode_to_relationid, nuts3code_to_relationid;
     std::map<uint64_t, Region> relationId_to_polygons;
 
-    static const size_t european_len, national_len, regional_outer_len, regional_inner_len;
+    static constexpr size_t european_len = 30, national_len = 500;
+    static const size_t regional_outer_len, regional_inner_len;
     struct {
-        std::vector<uint64_t> *european;
-        std::vector<uint64_t> *national;
+        std::array<std::vector<uint64_t>, european_len> european;
+        std::array<std::vector<uint64_t>, national_len> national;
         std::vector<uint64_t> ** **regional;
     } roads;
     static const size_t regional_len;
@@ -254,15 +255,10 @@ public:
 
     explicit Private(Sweden *parent)
         : p(parent) {
-        roads.european = (std::vector<uint64_t> *)calloc(european_len, sizeof(std::vector<uint64_t>));
-        roads.national = (std::vector<uint64_t> *)calloc(national_len, sizeof(std::vector<uint64_t>));
         roads.regional = (std::vector<uint64_t> ** **)calloc(regional_len, sizeof(std::vector<uint64_t> ** *));
     }
 
     ~Private() {
-        free(roads.european);
-        free(roads.national);
-
         for (size_t i = 0; i < regional_len; ++i)
             if (roads.regional[i] != NULL) {
                 for (size_t j = 0; j < regional_outer_len; ++j)
@@ -698,8 +694,6 @@ const uint16_t Sweden::Private::terminator16bit = 0xfefe;
 const size_t Sweden::Private::terminatorSizeT = 0xcafebabe;
 const size_t Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
 const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
-const size_t Sweden::Private::european_len = 30;
-const size_t Sweden::Private::national_len = 500;
 /// Assumption: no regional road number is larger or equal to regional_outer_len * regional_inner_len = 4096
 const size_t Sweden::Private::regional_outer_len = 64;
 const size_t Sweden::Private::regional_inner_len = 64;
