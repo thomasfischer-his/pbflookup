@@ -224,6 +224,10 @@ GlobalObjectManager::GlobalObjectManager() {
             Error::err("Loading .osm.pbf file failed");
     } else
         Error::err("Can neither load internal files from /tmp, nor .osm.pbf file");
+
+    /// Once loading from .osm.pbf file or own temporary files is done,
+    /// perform some consistency checks
+    sweden->test();
 }
 
 GlobalObjectManager::~GlobalObjectManager() {
