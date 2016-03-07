@@ -17,6 +17,8 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include <cstdint>
+
 struct OSMElement {
     enum ElementType {UnknownElementType = 0, Node, Way, Relation};
     enum RealWorldType { UnknownRealWorldType = 0, PlaceLargeArea = 100, PlaceLarge = 105, PlaceMedium = 110, PlaceSmall = 115, RoadMajor = 200, RoadMedium = 205, RoadMinor = 210};
