@@ -63,9 +63,10 @@ bool endsWith(const std::string &haystack, const std::string &needle) {
 }
 
 class AdministrativeRegion {
+private:
     static const std::string region_beginnings[];
     static const std::string region_endings[];
-private:
+
     struct Region {
         std::string name;
         int admin_level;
