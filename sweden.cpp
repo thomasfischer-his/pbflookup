@@ -748,7 +748,7 @@ Sweden::Sweden(std::istream &input)
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'E') {
-        for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+        for (size_t i = 0; Private::EuropeanRoadNumbers[i] > 0; ++i) {
             size_t count;
             input.read((char *)&count, sizeof(count));
             if (count > reasonableLargeSizeT)
@@ -989,7 +989,7 @@ std::ostream &Sweden::write(std::ostream &output) {
 
     chr = 'E';
     output.write((char *)&chr, sizeof(chr));
-    for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+    for (size_t i = 0; Private::EuropeanRoadNumbers[i] > 0; ++i) {
         const size_t count = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].size();
         output.write((char *) &count, sizeof(count));
         for (size_t r = 0; r < count; ++r) {
@@ -1126,7 +1126,7 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
     char buffer[STRING_BUFFER_SIZE];
 
     /// European roads
-    for (size_t i = 0; i < 20 && d->EuropeanRoadNumbers[i] > 0; ++i) {
+    for (size_t i = 0; Private::EuropeanRoadNumbers[i] > 0; ++i) {
         const size_t count = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].size();
         for (size_t r = 0; r < count; ++r) {
             x.clear();
