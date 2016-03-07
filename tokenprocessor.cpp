@@ -310,7 +310,7 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
                 const struct OSMElement &place = itP->first;
                 const struct Coord &placeCoord = itP->second;
 
-                if (place.id == element.id) continue; ///< do not compare place with itself
+                if (place.id == element.id || place.id == itN->id) continue; ///< do not compare place with itself
                 const int distance = Coord::distanceLatLon(c, placeCoord);
                 if (distance < minDistance) {
                     minDistance = distance;
