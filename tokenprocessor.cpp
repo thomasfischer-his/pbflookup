@@ -24,6 +24,7 @@
 #include "sweden.h"
 #include "swedishtexttree.h"
 #include "globalobjects.h"
+#include "helper.h"
 
 #define min(a,b) ((b)>(a)?(a):(b))
 
@@ -144,28 +145,6 @@ public:
         std::sort(distances.begin(), distances.end(), std::less<int>());
         if (distances.size() < 2) return 0; ///< too few distances computed
         return distances[distances.size() / 4]; ///< take first quartile
-    }
-
-    static OSMElement unfoldToNode(const OSMElement &element) {
-        OSMElement cur(element);
-        /// If the current element is a way or a relation, resolve it to
-        /// a node; a node is needed to retrieve a coordinate from it
-        while (cur.type != OSMElement::Node) {
-            if (cur.type == OSMElement::Relation) {
-                RelationMem rm;
-                if (relMembers->retrieve(cur.id, rm) && rm.num_members > 0)
-                    cur = rm.members[rm.num_members / 2];
-                else
-                    break;
-            } else if (cur.type == OSMElement::Way) {
-                WayNodes wn;
-                if (wayNodes->retrieve(cur.id, wn) && wn.num_nodes > 0)
-                    cur = OSMElement(wn.nodes[wn.num_nodes / 2], OSMElement::Node, OSMElement::UnknownRealWorldType); ///< take a node in the middle of the way
-                else
-                    break;
-            }
-        }
-        return cur;
     }
 };
 
@@ -318,7 +297,7 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
         auto bestPlace = placesToCoord.cend();
         uint64_t bestNode = 0;
         for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
-            const OSMElement element = itN->type == OSMElement::Node ? *itN : Private::unfoldToNode(*itN);
+            const OSMElement element = itN->type == OSMElement::Node ? *itN : getNodeInOSMElement(*itN);
             if (element.type != OSMElement::Node)
                 /// Resolving relations or ways to a node failed
                 continue;
@@ -385,7 +364,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                 internodeDistanceMeter = 1;
                 /// If the single id is a way or a relation, resolve it to
                 /// a node; a node is needed to retrieve a coordinate from it
-                const OSMElement element = id_list.front().type == OSMElement::Node ? id_list.front() : Private::unfoldToNode(id_list.front());
+                const OSMElement element = id_list.front().type == OSMElement::Node ? id_list.front() : getNodeInOSMElement(id_list.front());
                 if (element.type == OSMElement::Node)
                     /// Resolving relations or ways to a node succeeded
                     mostCentralId = element.id;
