@@ -78,6 +78,8 @@ public:
      */
     uint64_t retrieveAdministrativeRegion(const std::string &name, int *admin_level = NULL);
 
+    std::vector<uint64_t> identifyAdministrativeRegions(const std::vector<std::string> &word_combinations);
+
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
     std::vector<uint64_t> waysForRoad(RoadType roadType, uint16_t roadNumber);

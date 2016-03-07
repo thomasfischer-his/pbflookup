@@ -1652,3 +1652,17 @@ void Sweden::insertAdministrativeRegion(const std::string &name, int admin_level
 uint64_t Sweden::retrieveAdministrativeRegion(const std::string &name, int *admin_level) {
     return d->administrativeRegion.retrieve(name, admin_level);
 }
+
+std::vector<uint64_t> Sweden::identifyAdministrativeRegions(const std::vector<std::string> &word_combinations) {
+    std::vector<uint64_t> result;
+
+    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
+        const std::string &combined = *itW;
+        int admin_level = -1;
+        const uint64_t relationId = retrieveAdministrativeRegion(combined, &admin_level);
+        if (relationId > 0)
+            result.push_back(relationId);
+    }
+
+    return result;
+}
