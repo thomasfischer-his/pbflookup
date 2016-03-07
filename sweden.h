@@ -63,16 +63,18 @@ public:
      * Insert an administrative region such as a county or a
      * municipality as identified by its administrative level
      * (numeric value), name, and relation id.
+     * @param name name of the administrative region to insert
      * @param admin_level administrative level as used in OSM data
+     * @param relationId relation id of the administration region to add
      */
     void insertAdministrativeRegion(const std::string &name, int admin_level, uint64_t relationId);
 
     /**
      * Retrieve the relation id of an administrative region such
      * as a county or a municipality by its name.
-     * @param name
+     * @param name name of the administrative region to look up
      * @param admin_level administrative level as used in OSM data
-     * @return
+     * @return relation id of the administration region if found, else 0
      */
     uint64_t retrieveAdministrativeRegion(const std::string &name, int *admin_level = NULL);
 
