@@ -87,15 +87,22 @@ private:
     bool regions_sorted = false;
 
     std::string normalizeAdministrativeRegionName(const std::string &name) const {
+        std::string internal_name(name);
+
+        /// Convert to lower case, UTF-8-aware for Swedish characters
+        std::transform(internal_name.begin(), internal_name.end(), internal_name.begin(), [](unsigned char c) {
+            return (c >= 'A' && c <= 'Z') || (c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */) ? c |= 0x20 : c;
+        });
+
         for (int i = 0; !region_beginnings[i].empty(); ++i)
-            if (startsWith(name, region_beginnings[i]))
-                return name.substr(region_beginnings[i].length(), name.length() - region_beginnings[i].length());
+            if (startsWith(internal_name, region_beginnings[i]))
+                return internal_name.substr(region_beginnings[i].length(), internal_name.length() - region_beginnings[i].length());
 
         for (int i = 0; !region_endings[i].empty(); ++i)
-            if (endsWith(name, region_endings[i]))
-                return name.substr(0, name.length() - region_endings[i].length());
+            if (endsWith(internal_name, region_endings[i]))
+                return internal_name.substr(0, internal_name.length() - region_endings[i].length());
 
-        return name;
+        return internal_name;
     }
 
     void sortRegions() {
@@ -209,7 +216,7 @@ public:
     }
 };
 
-const std::string AdministrativeRegion::region_beginnings[] = {"Landskapet ", "landskapet ", ""};
+const std::string AdministrativeRegion::region_beginnings[] = {"landskapet ", ""};
 /// Some names have a genitiv-s, some names simply have 's' as the last character.
 /// This wil lbe no problem for the purpose of matching known counties or municipality
 /// to queried text strings.
