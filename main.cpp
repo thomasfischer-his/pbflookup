@@ -28,6 +28,7 @@
 #include "global.h"
 #include "globalobjects.h"
 #include "config.h"
+#include "helper.h"
 
 inline bool ends_with(std::string const &value, std::string const &ending)
 {
@@ -129,7 +130,20 @@ int main(int argc, char *argv[])
 
                 timer.start();
                 places = sweden->identifyPlaces(word_combinations);
-                tokenProcessor.evaluateNearPlaces(word_combinations, places);
+                if (!places.empty()) {
+                    const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
+                    for (auto it = ++places.cbegin(); it != places.cend();) {
+                        if (it->realworld_type != firstRwt)
+                            it = places.erase(it);
+                        else
+                            ++it;
+                    }
+                    const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
+                    if (!nearPlacesMatches.empty()) {
+                        if (!getCenterOfOSMElement(nearPlacesMatches.front().place, result))
+                            result.invalidate();
+                    }
+                }
                 timer.elapsed(&cputime, &walltime);
                 Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
             }
