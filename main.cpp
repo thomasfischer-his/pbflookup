@@ -124,6 +124,22 @@ int main(int argc, char *argv[])
                 }
             }
 
+            if (!result.isValid() /** no valid result found yet */) {
+                Error::info("=== Testing for places inside administrative boundaries ===");
+
+                timer.start();
+                const std::vector<uint64_t> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
+                if (!adminReg.empty()) {
+                    const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
+                    if (!adminRegionMatches.empty()) {
+                        if (!getCenterOfOSMElement(adminRegionMatches.front().match, result))
+                            result.invalidate();
+                    }
+                }
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to identify places inside administrative boundaries in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+            }
+
             std::vector<struct OSMElement> places;
             if (!result.isValid() /** no valid result found yet */) {
                 Error::info("=== Testing for local-scope places near global-scope places ===");
