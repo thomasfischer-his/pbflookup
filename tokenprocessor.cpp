@@ -293,7 +293,7 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        int64_t minSqDistance = INT64_MAX;
+        int64_t minDistance = INT64_MAX;
         auto bestPlace = placesToCoord.cend();
         uint64_t bestNode = 0;
         for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
@@ -312,16 +312,16 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
                 if (place.id == element.id) continue; ///< do not compare place with itself
                 const int distance = Coord::distanceLatLon(c, placeCoord);
-                if (distance < minSqDistance) {
-                    minSqDistance = distance;
+                if (distance < minDistance) {
+                    minDistance = distance;
                     bestPlace = itP;
                     bestNode = element.id;
                 }
             }
         }
 
-        if (minSqDistance < INT64_MAX && bestPlace != placesToCoord.cend() && bestNode > 0)
-            result.push_back(NearPlaceMatch(bestPlace->first, bestNode, minSqDistance));
+        if (minDistance < INT64_MAX && bestPlace != placesToCoord.cend() && bestNode > 0)
+            result.push_back(NearPlaceMatch(bestPlace->first, bestNode, minDistance));
     }
 
     /// Sort found places-word combinations using this lambda expression,
