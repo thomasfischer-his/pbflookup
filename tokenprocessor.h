@@ -79,6 +79,35 @@ public:
 
     std::vector<struct UniqueMatch> evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const;
 
+    struct AdminRegionMatch {
+        AdminRegionMatch(const std::string &_name, const OSMElement &_match, uint64_t _adminRegionId)
+            : name(_name), match(_match), adminRegionId(_adminRegionId) {
+            /// nothing
+        }
+
+        std::string name;
+        OSMElement match;
+        uint64_t adminRegionId;
+    };
+
+    /**
+     * Cross-referencing all known administrative regions
+     * (municipalities, counties, ...) and all matching
+     * nodes/ways/relations for each item taken from a list
+     * of word combinations (usually 1..3 words combined).
+     *
+     * The list of matches will be sorted by the number of
+     * spaces in the word combination that returned matches,
+     * where word combinations with more spaces are preferred
+     * (it is assumed that more words in a combination make
+     * the combination more specific and as such a better hit).
+     *
+     * @param adminRegions List of relation ids referring to administrative regions
+     * @param word_combinations List of word combinations
+     * @return Matches of admin region and word combination, sorted by as described above
+     */
+    std::vector<struct AdminRegionMatch> evaluateAdministrativeRegions(const std::vector<uint64_t> adminRegions, const std::vector<std::string> &word_combinations) const;
+
 private:
     class Private;
     Private *const d;

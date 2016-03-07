@@ -403,3 +403,45 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
 
     return result;
 }
+
+std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdministrativeRegions(const std::vector<uint64_t> adminRegions, const std::vector<std::string> &word_combinations) const {
+    std::vector<struct TokenProcessor::AdminRegionMatch> result;
+    if (adminRegions.empty() || word_combinations.empty()) return result; ///< Nothing to do
+
+    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
+        const std::string &combined = *itW;
+        const char *combined_cstr = combined.c_str();
+
+        /// Retrieve all OSM elements matching a given word combination
+        const std::vector<struct OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        for (auto itId = id_list.cbegin(); itId != id_list.cend(); ++itId) {
+            const OSMElement element = itId->type == OSMElement::Node ? *itId : getNodeInOSMElement(*itId);
+            if (element.type != OSMElement::Node) continue; ///< Not a node
+
+            for (auto itAR = adminRegions.cbegin(); itAR != adminRegions.cend(); ++itAR) {
+                uint64_t adminRegRelId = sweden->retrieveAdministrativeRegion(combined);
+                if (adminRegRelId > 0 && adminRegRelId != element.id && sweden->nodeInsideRelationRegion(element.id, adminRegRelId))
+                    result.push_back(AdminRegionMatch(combined, *itId, adminRegRelId));
+            }
+        }
+    }
+
+
+    std::sort(result.begin(), result.end(), [](struct AdminRegionMatch & a, struct AdminRegionMatch & b) {
+        /**
+         * Sort result first by number of spaces (tells from how many words
+         * a word combination was composed from; it is assumed that more words
+         * in a combination make the combination more specific and as such a
+         * better hit), and as secondary criterion by names' length (weak
+         * assumption: longer names are more specific than shorter names).
+         */
+        const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
+        const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
+        if (countSpacesA < countSpacesB) return false;
+        else if (countSpacesA > countSpacesB) return true;
+        else /** countSpacesA == countSpacesB */
+            return a.name.length() > b.name.length();
+    });
+
+    return result;
+}
