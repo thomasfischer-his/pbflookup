@@ -118,7 +118,9 @@ int main(int argc, char *argv[])
                     if (closestDistance < 10000) {
                         /// Closer than 10km
                         Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", closestRoadMatch.word_combination.c_str(), Sweden::roadTypeToString(closestRoadMatch.road.type).c_str(), closestRoadMatch.road.number, closestDistance / 1000.0, closestRoadMatch.bestRoadNode, closestRoadMatch.bestWordNode);
-                        if (!node2Coord->retrieve(closestRoadMatch.bestRoadNode, result))
+                        if (node2Coord->retrieve(closestRoadMatch.bestRoadNode, result))
+                            Error::info("Got a result!");
+                        else
                             result.invalidate();
                     }
                 }
@@ -132,7 +134,9 @@ int main(int argc, char *argv[])
                 if (!adminReg.empty()) {
                     const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
                     if (!adminRegionMatches.empty()) {
-                        if (!getCenterOfOSMElement(adminRegionMatches.front().match, result))
+                        if (getCenterOfOSMElement(adminRegionMatches.front().match, result))
+                            Error::info("Got a result for name: %s", adminRegionMatches.front().name.c_str());
+                        else
                             result.invalidate();
                     }
                 }
@@ -156,7 +160,9 @@ int main(int argc, char *argv[])
                     }
                     const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
                     if (!nearPlacesMatches.empty()) {
-                        if (!getCenterOfOSMElement(nearPlacesMatches.front().place, result))
+                        if (getCenterOfOSMElement(nearPlacesMatches.front().place, result))
+                            Error::info("Got a result for place %llu and local node %llu", nearPlacesMatches.front().place.id, nearPlacesMatches.front().node);
+                        else
                             result.invalidate();
                     }
                 }
@@ -173,7 +179,9 @@ int main(int argc, char *argv[])
                 Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
                 if (!uniqueMatches.empty()) {
-                    if (!node2Coord->retrieve(uniqueMatches.front().id, result))
+                    if (node2Coord->retrieve(uniqueMatches.front().id, result))
+                        Error::info("Got a result!");
+                    else
                         result.invalidate();
                 }
 
@@ -182,6 +190,7 @@ int main(int argc, char *argv[])
             if (!result.isValid() && !places.empty()) {
                 /// No good result found, but some places have been recognized in the process.
                 /// Pick one of the larger places as result.
+                Error::info("Several places are known, trying to pick a good one ...");
                 // FIXME picking the right place from the list is rather ugly. Can do better?
                 OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
                 for (auto it = places.cbegin(); it != places.cend(); ++it) {
@@ -199,6 +208,9 @@ int main(int argc, char *argv[])
                         rwt = it->realworld_type;
                     }
                 }
+
+                if (result.isValid())
+                    Error::info("Got a result!");
             }
 
             if (result.isValid()) {
