@@ -31,6 +31,14 @@ public:
     int read_words(const std::string &text, std::vector<std::string> &words, Multiplicity multiplicity);
     int read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity);
 
+    /**
+     * Check the list of words for nouns in definitive form.
+     * For each word in definitive form, use a heuristic to determine
+     * its indefinitive form and this form to the list of words as well.
+     * @param words List of words where indefinitive forms have to be added for definitive form words
+     */
+    void add_grammar_cases(std::vector<std::string> &words) const;
+
     int generate_word_combinations(const std::vector<std::string> &words, std::vector<std::string> &combinations, const size_t words_per_combination, const Multiplicity multiplicity);
 
     std::string input_text() const;

@@ -164,6 +164,29 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
     return words.size();
 }
 
+void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
+    for (auto it = words.cbegin(); it != words.cend(); ++it) {
+        const std::string &word = *it;
+        const size_t len = word.length();
+        if (len > 4) {
+            if ((word[len - 1] == 't' || word[len - 1] == 'n') && (word[len - 2] == 'a' || word[len - 2] == 'e')) {
+                /// This word is most likely a noun in definite form
+                /// Trying to determine indefinite form, then adding it to word list
+                // FIXME are there better rules to determine the indefinite form of a definitive noun?
+
+                /// Just remove the final 'n' or 't', for example for
+                /// 'travbanan' -> 'travbana'
+                std::string indefinite_form = word.substr(0, len - 1);
+                it = ++words.insert(it, indefinite_form);
+                /// Remove the vocal as well, for example for
+                /// 'biblioteket' -> 'bibliotek'
+                indefinite_form = word.substr(0, len - 2);
+                it = ++words.insert(it, indefinite_form);
+            }
+        }
+    }
+}
+
 int Tokenizer::generate_word_combinations(const std::vector<std::string> &words, std::vector<std::string> &combinations, const size_t words_per_combination, const Multiplicity multiplicity) {
     combinations.clear();
     std::unordered_set<std::string> known_combinations;
