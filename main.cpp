@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
             }
 
             if (!result.isValid() /** no valid result found yet */) {
-                Error::info("=== Testing word combination occurring only once in OSM data ===");
+                Error::info("=== Testing word combination occurring only once (unique) in OSM data ===");
 
                 timer.start();
                 std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor.evaluateUniqueMatches(word_combinations);
