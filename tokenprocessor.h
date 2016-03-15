@@ -80,14 +80,15 @@ public:
     std::vector<struct UniqueMatch> evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const;
 
     struct AdminRegionMatch {
-        AdminRegionMatch(const std::string &_name, const OSMElement &_match, uint64_t _adminRegionId)
-            : name(_name), match(_match), adminRegionId(_adminRegionId) {
+        AdminRegionMatch(const std::string &_name, const OSMElement &_match, uint64_t _adminRegionId, const std::string &_adminRegionName)
+            : name(_name), match(_match), adminRegionId(_adminRegionId), adminRegionName(_adminRegionName) {
             /// nothing
         }
 
         std::string name;
         OSMElement match;
         uint64_t adminRegionId;
+        std::string adminRegionName;
     };
 
     /**
@@ -106,7 +107,7 @@ public:
      * @param word_combinations List of word combinations
      * @return Matches of admin region and word combination, sorted by as described above
      */
-    std::vector<struct AdminRegionMatch> evaluateAdministrativeRegions(const std::vector<uint64_t> adminRegions, const std::vector<std::string> &word_combinations) const;
+    std::vector<struct AdminRegionMatch> evaluateAdministrativeRegions(const std::vector<struct Sweden::KnownAdministrativeRegion> adminRegions, const std::vector<std::string> &word_combinations) const;
 
 private:
     class Private;

@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
                 Error::info("=== Testing for places inside administrative boundaries ===");
 
                 timer.start();
-                const std::vector<uint64_t> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
+                const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
                 if (!adminReg.empty()) {
                     const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
                     if (!adminRegionMatches.empty()) {

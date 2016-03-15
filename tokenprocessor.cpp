@@ -404,7 +404,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
     return result;
 }
 
-std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdministrativeRegions(const std::vector<uint64_t> adminRegions, const std::vector<std::string> &word_combinations) const {
+std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdministrativeRegions(const std::vector<struct Sweden::KnownAdministrativeRegion> adminRegions, const std::vector<std::string> &word_combinations) const {
     std::vector<struct TokenProcessor::AdminRegionMatch> result;
     if (adminRegions.empty() || word_combinations.empty()) return result; ///< Nothing to do
 
@@ -419,9 +419,10 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
             if (element.type != OSMElement::Node) continue; ///< Not a node
 
             for (auto itAR = adminRegions.cbegin(); itAR != adminRegions.cend(); ++itAR) {
-                uint64_t adminRegRelId = sweden->retrieveAdministrativeRegion(combined);
+                const uint64_t adminRegRelId = itAR->relationId;
+                const std::string adminRegName = itAR->name;
                 if (adminRegRelId > 0 && adminRegRelId != element.id && sweden->nodeInsideRelationRegion(element.id, adminRegRelId))
-                    result.push_back(AdminRegionMatch(combined, *itId, adminRegRelId));
+                    result.push_back(AdminRegionMatch(combined, *itId, adminRegRelId, adminRegName));
             }
         }
     }
@@ -429,18 +430,36 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
 
     std::sort(result.begin(), result.end(), [](struct AdminRegionMatch & a, struct AdminRegionMatch & b) {
         /**
-         * Sort result first by number of spaces (tells from how many words
-         * a word combination was composed from; it is assumed that more words
-         * in a combination make the combination more specific and as such a
-         * better hit), and as secondary criterion by names' length (weak
-         * assumption: longer names are more specific than shorter names).
+         * The following sorting criteria will be apply, top down. If there
+         * is a tie, the next following criteria will be applied.
+         * 1. Matches which do not contain the admin region's name will
+         *    be preferred over matches which contain the admin region's
+         *    name towards its end which will be preferred over matches
+         *    which contain the admin region's at its beginning.
+         * 2. Matches with more spaces will be preferred over matches
+         *    with fewer spaces (tells from how many words a word combination
+         *    was composed from; it is assumed that more words in a
+         *    combination make the combination more specific and as such a
+         *    better hit).
+         * 3. Matches with longer names will be preferred over matches with
+         *    shorter names. Weak criteria, used only to break ties.
          */
-        const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
-        const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
-        if (countSpacesA < countSpacesB) return false;
-        else if (countSpacesA > countSpacesB) return true;
-        else /** countSpacesA == countSpacesB */
-            return a.name.length() > b.name.length();
+        /// std::string::find(..) will return the largest positive value for
+        /// std::string::size_type if the argument was not found (std::string::npos),
+        /// otherwise the position where found in the string (starting at 0).
+        const std::string::size_type findAdminInCombinedA = a.name.find(a.adminRegionName);
+        const std::string::size_type findAdminInCombinedB = b.name.find(b.adminRegionName);
+        /// Larger values findAdminInCombinedX, i.e. late or no hits for admin region preferred
+        if (findAdminInCombinedA < findAdminInCombinedB) return false;
+        else if (findAdminInCombinedA > findAdminInCombinedB) return true;
+        else { /** findAdminInCombinedA == findAdminInCombinedB */
+            const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
+            const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
+            if (countSpacesA < countSpacesB) return false;
+            else if (countSpacesA > countSpacesB) return true;
+            else /** countSpacesA == countSpacesB */
+                return a.name.length() > b.name.length();
+        }
     });
 
     return result;

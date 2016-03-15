@@ -78,7 +78,18 @@ public:
      */
     uint64_t retrieveAdministrativeRegion(const std::string &name, int *admin_level = NULL);
 
-    std::vector<uint64_t> identifyAdministrativeRegions(const std::vector<std::string> &word_combinations);
+    struct KnownAdministrativeRegion {
+        KnownAdministrativeRegion(uint64_t _relationId, const std::string &_name, int _admin_level)
+            : relationId(_relationId), name(_name), admin_level(_admin_level) {
+            /// nothing
+        }
+
+        uint64_t relationId;
+        std::string name;
+        int admin_level;
+    };
+
+    std::vector<struct KnownAdministrativeRegion> identifyAdministrativeRegions(const std::vector<std::string> &word_combinations);
 
     void insertWayAsRoad(uint64_t wayid, const char *refValue);
     void insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber);
