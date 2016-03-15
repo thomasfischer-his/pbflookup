@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 
                 if (!uniqueMatches.empty()) {
                     if (node2Coord->retrieve(uniqueMatches.front().id, result))
-                        Error::info("Got a result!");
+                        Error::info("Got a result for name '%s'!", uniqueMatches.front().name.c_str());
                     else
                         result.invalidate();
                 }
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
             if (!result.isValid() && !places.empty()) {
                 /// No good result found, but some places have been recognized in the process.
                 /// Pick one of the larger places as result.
-                Error::info("Several places are known, trying to pick a good one ...");
+                Error::info("=== Several places are known, trying to pick a good one ===");
                 // FIXME picking the right place from the list is rather ugly. Can do better?
                 OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
                 for (auto it = places.cbegin(); it != places.cend(); ++it) {
