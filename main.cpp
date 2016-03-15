@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
                     }
                     const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
                     if (!nearPlacesMatches.empty()) {
-                        if (getCenterOfOSMElement(nearPlacesMatches.front().place, result))
+                        if (node2Coord->retrieve(nearPlacesMatches.front().node, result))
                             Error::info("Got a result for place %llu and local node %llu", nearPlacesMatches.front().place.id, nearPlacesMatches.front().node);
                         else
                             result.invalidate();
