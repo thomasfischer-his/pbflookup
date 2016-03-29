@@ -119,6 +119,12 @@ testsets = (
     longitude = 13.5728
     text = "På travbanan i Axvall vill man samla alla hästutbildningar i regionen.",
     svgoutputfilename = "${tempdir}/testset-sweden-travbanan-axvall.svg.gz"
+  },
+  {
+    name = "Kulturskolor",
+    latitude = [57.1652, 56.4591, 56.4121],
+    longitude = [16.0263, 13.5928, 16.0033],
+    text = "Tre kommuner i Kalmar och Kronobergs län har ingen kulturskola alls. Det är Högsby, Markaryd och Torsås. Övriga kommuner erbjuder lektioner på sina musik- eller kulturskolor, men det är stora skillnader i utbudet av kurser."
   }
 )
 ```
@@ -126,7 +132,7 @@ testsets = (
 A map for a testset may contain the following key-value pairs:
 
 * `name` is a short, human-readable description for just this test set
-* `latitude` and `longitude` are the expected result position for this testset. Both values have to be expressed with decimal fractions, i.e. `23.4583` instead of `23° 27' 30"`.
+* `latitude` and `longitude` are the expected result position for this testset. Both values have to be expressed with decimal fractions, i.e. `23.4583` instead of `23° 27' 30"`. If a test has multiple coordinates like the "Kulturskolor" example above, coordinates have to be written as an array, i.e. in square brackets, values are separated by commas.
 * `text` is the text in Swedish to be analyzed. Regular Swedish text including common punctuation may be provided, but certain character may be problematic. For example, as the text is terminated by a double quotation character (`"`), such a character may occur in the text.
 * `svgoutputfilename` is the only optional parameter, providing a filename where a SVG file with a map of Sweden and the result of the analysis shall be written into. If the filename ends with `.gz`, the SVG file will get gzip-compressed.
 
