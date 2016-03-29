@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
             Coord result;
             Error::info("Test set: %s", it->name.c_str());
-            const Coord expected = Coord::fromLonLat(it->lon, it->lat);
+            const std::vector<Coord> &expected = it->coord;
 
             SvgWriter *svgwriter = NULL;
             if (!it->svgoutputfilename.empty()) {
@@ -229,7 +229,8 @@ int main(int argc, char *argv[])
                 Error::warn("Unable to determine a likely position");
 
             if (svgwriter != NULL) {
-                svgwriter->drawPoint(expected.x, expected.y, SvgWriter::ImportantPoiGroup, "green", "expected");
+                for (const Coord &exp : expected)
+                    svgwriter->drawPoint(exp.x, exp.y, SvgWriter::ImportantPoiGroup, "green", "expected");
                 if (result.isValid())
                     svgwriter->drawPoint(result.x, result.y, SvgWriter::ImportantPoiGroup, "red", "computed");
                 svgwriter->drawCaption(it->name);

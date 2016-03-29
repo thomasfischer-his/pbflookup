@@ -263,6 +263,17 @@ struct Coord {
         this->y = y;
     }
 
+    /**
+     * Create a new coordinate, initialized with given values
+     * for lat and lon.
+     * @param lon Initial longitude
+     * @param lat Initial latitude
+     */
+    Coord(double lon, double lat) {
+        this->x = fromLongitude(lon);
+        this->y = fromLatitude(lat);
+    }
+
     Coord(std::istream &input) {
         input.read((char *)&x, sizeof(x));
         if (!input)
