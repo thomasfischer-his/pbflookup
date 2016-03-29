@@ -29,13 +29,13 @@ OSMElement getNodeInOSMElement(const OSMElement &element) {
         if (cur.type == OSMElement::Relation) {
             RelationMem rm;
             if (relMembers->retrieve(cur.id, rm) && rm.num_members > 0)
-                cur = rm.members[rm.num_members / 2];
+                cur = rm.members[rm.num_members / 2]; ///< take a OSMElement in the middle of list of relation members
             else
                 break;
         } else if (cur.type == OSMElement::Way) {
             WayNodes wn;
             if (wayNodes->retrieve(cur.id, wn) && wn.num_nodes > 0)
-                cur = OSMElement(wn.nodes[wn.num_nodes / 2], OSMElement::Node, OSMElement::UnknownRealWorldType); ///< take a node in the middle of the way
+                cur = OSMElement(wn.nodes[wn.num_nodes / 2], OSMElement::Node, element.realworld_type); ///< take a node in the middle of the way
             else
                 break;
         }
