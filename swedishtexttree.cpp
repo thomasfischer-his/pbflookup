@@ -17,6 +17,7 @@
 #include "swedishtexttree.h"
 
 #include "error.h"
+#include "helper.h"
 
 const int SwedishTextTree::num_codes = 48;
 const unsigned int SwedishTextTree::default_num_indices = 8;
@@ -282,13 +283,6 @@ int SwedishTextTree::separate_words(const std::string &input, std::vector<std::s
     }
 
     return words.size();
-}
-
-unsigned char SwedishTextTree::utf8tolower(const unsigned char &prev_c, unsigned char c) const {
-    if ((c >= 'A' && c <= 'Z') ||
-            (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */))
-        c |= 0x20;
-    return c;
 }
 
 std::vector<unsigned int> SwedishTextTree::code_word(const char *word)  const {

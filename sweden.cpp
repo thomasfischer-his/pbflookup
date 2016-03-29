@@ -33,6 +33,7 @@
 #include "error.h"
 #include "globalobjects.h"
 #include "svgwriter.h"
+#include "helper.h"
 
 const double minlon = 4.4; ///< declared in 'global.h'
 const double minlat = 53.8; ///< declared in 'global.h'

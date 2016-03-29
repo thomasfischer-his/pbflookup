@@ -98,3 +98,19 @@ bool getCenterOfOSMElement(const OSMElement &element, Coord &coord) {
     } else
         return false;
 }
+
+unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c) {
+    if ((c >= 'A' && c <= 'Z') ||
+            (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */))
+        c |= 0x20;
+    return c;
+}
+
+std::string &utf8tolower(std::string &text) {
+    unsigned char prev_c = 0;
+    for (size_t i = 0; i < text.length(); ++i) {
+        const unsigned char c = text[i];
+        prev_c = text[i] = utf8tolower(prev_c, c);
+    }
+    return text;
+}

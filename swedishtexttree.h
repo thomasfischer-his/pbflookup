@@ -53,7 +53,6 @@ private:
     bool internal_insert(const char *word, const OSMElement &element);
 
     int separate_words(const std::string &input, std::vector<std::string> &words) const;
-    unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c) const;
     std::vector<unsigned int> code_word(const char *word) const;
     unsigned int code_char(const unsigned char &prev_c, const unsigned char &c) const;
 };

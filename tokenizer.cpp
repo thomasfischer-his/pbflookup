@@ -24,6 +24,7 @@
 
 #include "error.h"
 #include "config.h"
+#include "helper.h"
 
 #define min(a,b) ((b)>(a)?(a):(b))
 
@@ -81,14 +82,6 @@ public:
         }
         return cmp == 0;
     }
-
-    static unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c) {
-        if ((c >= 'A' && c <= 'Z') ||
-                (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */))
-            c |= 0x20;
-        return c;
-    }
-
 };
 
 Tokenizer::Tokenizer()
@@ -123,7 +116,7 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
             if (gap.find(*it) == std::string::npos) {
                 /// Character is not a 'gap' character
                 /// First, convert character to lower case
-                const unsigned char c = Private::utf8tolower(prev_c, *it);
+                const unsigned char c = utf8tolower(prev_c, *it);
                 /// Second, add character to current word
                 lastword.append((char *)(&c), 1);
                 prev_c = c;

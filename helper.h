@@ -14,7 +14,12 @@
  *   along with this program; if not, see <http://www.gnu.org/licenses/>.  *
  ***************************************************************************/
 
+#include <string>
+
 #include "types.h"
 
 OSMElement getNodeInOSMElement(const OSMElement &element);
 bool getCenterOfOSMElement(const OSMElement &element, struct Coord &coord);
+
+unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c);
+std::string &utf8tolower(std::string &text);
