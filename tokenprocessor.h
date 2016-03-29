@@ -43,14 +43,15 @@ public:
     std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads);
 
     struct NearPlaceMatch {
-        NearPlaceMatch(struct OSMElement _place, uint64_t _node, int64_t _distance)
-            : place(_place), node(_node), distance(_distance) {
+        NearPlaceMatch(const std::string &_word_combination, const struct OSMElement &_global, const struct OSMElement &_local, int _distance)
+            : word_combination(_word_combination), global(_global), local(_local), distance(_distance) {
             /// nothing
         }
 
-        struct OSMElement place;
-        uint64_t node;
-        int64_t distance; ///< in meter
+        std::string word_combination;
+        struct OSMElement global;
+        struct OSMElement local;
+        int distance; ///< in meter
     };
 
     /**

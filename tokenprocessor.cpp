@@ -292,15 +292,14 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        int64_t minDistance = INT64_MAX;
-        auto bestPlace = placesToCoord.cend();
-        uint64_t bestNode = 0;
         for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
             const OSMElement element = itN->type == OSMElement::Node ? *itN : getNodeInOSMElement(*itN);
             if (element.type != OSMElement::Node)
                 /// Resolving relations or ways to a node failed
                 continue;
 
+            int minDistance = INT_MAX;
+            auto bestPlace = placesToCoord.cend();
             Coord c;
             const bool foundNode = node2Coord->retrieve(element.id, c);
             if (!foundNode) continue;
@@ -314,27 +313,58 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
                 if (distance < minDistance) {
                     minDistance = distance;
                     bestPlace = itP;
-                    bestNode = element.id;
                 }
             }
-        }
 
-        if (minDistance < INT64_MAX && bestPlace != placesToCoord.cend() && bestNode > 0)
-            result.push_back(NearPlaceMatch(bestPlace->first, bestNode, minDistance));
+            static const int limitDistance = 20000; ///< 20km
+            if (minDistance <= limitDistance && bestPlace != placesToCoord.cend())
+                result.push_back(NearPlaceMatch(combined, bestPlace->first /** struct OSMElement */, *itN, minDistance));
+        }
     }
 
-    /// Sort found places-word combinations using this lambda expression,
-    /// closests distances go first
+    /// Sort results using this lambda expression
     std::sort(result.begin(), result.end(), [](struct TokenProcessor::NearPlaceMatch & a, struct TokenProcessor::NearPlaceMatch & b) {
-        return a.distance < b.distance;
+        /**
+         * The following sorting criteria will be apply, top down. If there
+         * is a tie, the next following criteria will be applied.
+         * 1. Matches (i.e. local places) which do not contain the global
+         *    places's name will be preferred over matches which contain
+         *    the global places's name towards its end which will be
+         *    preferred over matches which contain the global places's name
+         *    at its beginning.
+         * 2. Prefer local places that are closer to their global places'
+         *    location.
+         */
+        WriteableString globalNameA, globalNameB;
+        nodeNames->retrieve(a.global.id, globalNameA);
+        utf8tolower(globalNameA);
+        if (a.global.id == b.global.id)
+            /// Avoid looking up same id twice
+            globalNameB = globalNameA;
+        else {
+            nodeNames->retrieve(b.global.id, globalNameB);
+            utf8tolower(globalNameB);
+        }
+        /// std::string::find(..) will return the largest positive value for
+        /// std::string::size_type if the argument was not found (std::string::npos),
+        /// otherwise the position where found in the string (starting at 0).
+        const std::string::size_type findGlobalNameInCombinedA = a.word_combination.find(globalNameA);
+        const std::string::size_type findGlobalNameInCombinedB = b.word_combination.find(globalNameB);
+        /// Larger values findGlobalNameInCombinedX, i.e. late or no hits for global name preferred
+        if (findGlobalNameInCombinedA < findGlobalNameInCombinedB) return false;
+        else if (findGlobalNameInCombinedA > findGlobalNameInCombinedB) return true;
+        else {
+            /// Prefer local places to be near its global place
+            return a.distance < b.distance;
+        }
     });
 
 #ifdef DEBUG
     for (auto it = result.cbegin(); it != result.cend(); ++it) {
-        WriteableString nodeName, placeName;
-        nodeNames->retrieve(it->node, nodeName);
-        nodeNames->retrieve(it->place.id, placeName);
-        Error::debug("Found node %llu (%s) near place %llu (%s) with distance %.1fkm", it->node, nodeName.c_str(), it->place.id, placeName.c_str(), it->distance / 1000.0);
+        WriteableString localName, globalName;
+        nodeNames->retrieve(it->local.id, localName);
+        nodeNames->retrieve(it->global.id, globalName);
+        Error::debug("Found node %llu (%s) near place %llu (%s) with distance %.1fkm", it->local.id, localName.c_str(), it->global.id, globalName.c_str(), it->distance / 1000.0);
     }
 #endif
 
