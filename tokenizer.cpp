@@ -159,7 +159,7 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
 
 void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
     for (auto it = words.cbegin(); it != words.cend(); ++it) {
-        const std::string &word = *it;
+        const std::string word = *it;
         const size_t len = word.length();
         if (len > 4) {
             if ((word[len - 1] == 't' || word[len - 1] == 'n') && (word[len - 2] == 'a' || word[len - 2] == 'e')) {
