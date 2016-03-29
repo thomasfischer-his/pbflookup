@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         int setNr = 0;
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
-            Coord result;
+            std::vector<Coord> results;
             Error::info("Test set: %s", it->name.c_str());
             const std::vector<Coord> &expected = it->coord;
 
@@ -97,133 +97,134 @@ int main(int argc, char *argv[])
 
             TokenProcessor tokenProcessor;
 
-            if (!result.isValid() /** no valid result found yet */) {
-                /// ===================================================================================
-                /// Check if the test input contains road labels (e.g. 'E 20') and city/town names.
-                /// Then determine the clostest distance between any city/town and any identified road.
-                /// If distance is below an acceptable threshold, assume location on road closest to
-                /// town as resulting position.
-                /// -----------------------------------------------------------------------------------
-                Error::info("=== Testing for roads close to cities/towns ===");
+            /// ===================================================================================
+            /// Check if the test input contains road labels (e.g. 'E 20') and city/town names.
+            /// Then determine the clostest distance between any city/town and any identified road.
+            /// If distance is below an acceptable threshold, assume location on road closest to
+            /// town as resulting position.
+            /// -----------------------------------------------------------------------------------
+            Error::info("=== Testing for roads close to cities/towns ===");
 
-                timer.start();
-                std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
-                std::vector<struct TokenProcessor::RoadMatch> roadMatch = tokenProcessor.evaluteRoads(word_combinations, identifiedRoads);
-                timer.elapsed(&cputime, &walltime);
-                Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+            timer.start();
+            std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
+            std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor.evaluteRoads(word_combinations, identifiedRoads);
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
-                if (!roadMatch.empty()) {
-                    const TokenProcessor::RoadMatch &closestRoadMatch = roadMatch.front();
-                    const int64_t closestDistance = closestRoadMatch.distance;
+            for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
+                const int64_t distance = roadMatch.distance;
 
-                    if (closestDistance < 10000) {
-                        /// Closer than 10km
-                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", closestRoadMatch.word_combination.c_str(), Sweden::roadTypeToString(closestRoadMatch.road.type).c_str(), closestRoadMatch.road.number, closestDistance / 1000.0, closestRoadMatch.bestRoadNode, closestRoadMatch.bestWordNode);
-                        if (node2Coord->retrieve(closestRoadMatch.bestRoadNode, result))
-                            Error::info("Got a result!");
-                        else
-                            result.invalidate();
+                if (distance < 10000) {
+                    /// Closer than 10km
+                    Coord c;
+                    if (node2Coord->retrieve(roadMatch.bestRoadNode, c)) {
+                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), Sweden::roadTypeToString(roadMatch.road.type).c_str(), roadMatch.road.number, distance / 1000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
+                        results.push_back(c);
                     }
                 }
             }
 
-            if (!result.isValid() /** no valid result found yet */) {
-                Error::info("=== Testing for places inside administrative boundaries ===");
 
-                timer.start();
-                const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
-                if (!adminReg.empty()) {
-                    const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
-                    if (!adminRegionMatches.empty()) {
-                        if (getCenterOfOSMElement(adminRegionMatches.front().match, result))
-                            Error::info("Got a result for name: %s", adminRegionMatches.front().name.c_str());
-                        else
-                            result.invalidate();
+            Error::info("=== Testing for places inside administrative boundaries ===");
+
+            timer.start();
+            const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
+            if (!adminReg.empty()) {
+                const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
+                for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
+                    Coord c;
+                    if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
+                        Error::info("TODO");
+                        results.push_back(c);
                     }
                 }
-                timer.elapsed(&cputime, &walltime);
-                Error::info("Spent CPU time to identify places inside administrative boundaries in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
             }
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to identify places inside administrative boundaries in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+
 
             std::vector<struct OSMElement> places;
-            if (!result.isValid() /** no valid result found yet */) {
-                Error::info("=== Testing for local-scope places near global-scope places ===");
+            Error::info("=== Testing for local-scope places near global-scope places ===");
 
-                timer.start();
-                places = sweden->identifyPlaces(word_combinations);
-                if (!places.empty()) {
-                    const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
-                    for (auto it = ++places.cbegin(); it != places.cend();) {
-                        if (it->realworld_type != firstRwt)
-                            it = places.erase(it);
-                        else
-                            ++it;
-                    }
-                    const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
-                    if (!nearPlacesMatches.empty()) {
-                        if (node2Coord->retrieve(nearPlacesMatches.front().node, result))
-                            Error::info("Got a result for place %llu and local node %llu", nearPlacesMatches.front().place.id, nearPlacesMatches.front().node);
-                        else
-                            result.invalidate();
-                    }
-                }
-                timer.elapsed(&cputime, &walltime);
-                Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
-            }
-
-            if (!result.isValid() /** no valid result found yet */) {
-                Error::info("=== Testing word combination occurring only once (unique) in OSM data ===");
-
-                timer.start();
-                std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor.evaluateUniqueMatches(word_combinations);
-                timer.elapsed(&cputime, &walltime);
-                Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
-
-                if (!uniqueMatches.empty()) {
-                    if (node2Coord->retrieve(uniqueMatches.front().id, result))
-                        Error::info("Got a result for name '%s'!", uniqueMatches.front().name.c_str());
+            timer.start();
+            places = sweden->identifyPlaces(word_combinations);
+            if (!places.empty()) {
+                const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
+                for (auto it = ++places.cbegin(); it != places.cend();) {
+                    if (it->realworld_type != firstRwt)
+                        it = places.erase(it);
                     else
-                        result.invalidate();
+                        ++it;
                 }
+                const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
+                for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
+                    Coord c;
+                    if (node2Coord->retrieve(nearPlacesMatch.local.id, c)) {
+                        Error::info("Got a result for place %llu and local node %llu", nearPlacesMatch.global.id, nearPlacesMatch.local.id);
+                        results.push_back(c);
+                    }
+                }
+            }
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
+
+            Error::info("=== Testing word combination occurring only once (unique) in OSM data ===");
+
+            timer.start();
+            std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor.evaluateUniqueMatches(word_combinations);
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to identify nearby places in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+
+            for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
+                Coord c;
+                if (node2Coord->retrieve(uniqueMatch.id, c)) {
+                    Error::info("Got a result for name '%s'!", uniqueMatch.name.c_str());
+                    results.push_back(c);
+                }
             }
 
-            if (!result.isValid() && !places.empty()) {
+            if (results.empty()) {
                 /// No good result found, but some places have been recognized in the process.
                 /// Pick one of the larger places as result.
                 Error::info("=== Several places are known, trying to pick a good one ===");
                 // FIXME picking the right place from the list is rather ugly. Can do better?
                 OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
+                Coord c;
                 for (auto it = places.cbegin(); it != places.cend(); ++it) {
                     if (it->realworld_type == OSMElement::PlaceMedium && rwt >= OSMElement::PlaceSmall) {
-                        node2Coord->retrieve(it->id, result);
+                        node2Coord->retrieve(it->id, c);
                         rwt = it->realworld_type;
                     } else if (it->realworld_type < OSMElement::PlaceMedium && rwt >= OSMElement::PlaceMedium) {
-                        node2Coord->retrieve(it->id, result);
+                        node2Coord->retrieve(it->id, c);
                         rwt = it->realworld_type;
                     } else if (rwt != OSMElement::PlaceLarge && it->realworld_type == OSMElement::PlaceLargeArea) {
-                        node2Coord->retrieve(it->id, result);
+                        node2Coord->retrieve(it->id, c);
                         rwt = it->realworld_type;
                     } else if (rwt == OSMElement::PlaceLargeArea && it->realworld_type == OSMElement::PlaceLarge) {
-                        node2Coord->retrieve(it->id, result);
+                        node2Coord->retrieve(it->id, c);
                         rwt = it->realworld_type;
                     }
                 }
 
-                if (result.isValid())
-                    Error::info("Got a result!");
+                if (c.isValid())
+                    results.push_back(c);
             }
 
-            if (result.isValid()) {
-                const double lon = Coord::toLongitude(result.x);
-                const double lat = Coord::toLatitude(result.y);
-                Error::info("Able to determine a likely position: lon=%.5f lat=%.5f", lon, lat);
-                Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
-                if (expected.isValid()) {
-                    Error::info("Distance to expected result: %.1fkm", expected.distanceLatLon(result) / 1000.0);
-                    const double lon = Coord::toLongitude(expected.x);
-                    const double lat = Coord::toLatitude(expected.y);
+            if (!results.empty()) {
+                Error::info("Found %d many possible results:", results.size());
+                for (const Coord &coord : results) {
+                    const double lon = Coord::toLongitude(coord.x);
+                    const double lat = Coord::toLatitude(coord.y);
+                    Error::info("Able to determine a likely position: lon=%.5f lat=%.5f", lon, lat);
                     Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
+                    for (const Coord &exp : expected)
+                        if (exp.isValid()) {
+                            Error::info("Distance to expected result: %.1fkm", exp.distanceLatLon(coord) / 1000.0);
+                            const double lon = Coord::toLongitude(exp.x);
+                            const double lat = Coord::toLatitude(exp.y);
+                            Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
+                        }
                 }
             } else
                 Error::warn("Unable to determine a likely position");
@@ -231,8 +232,8 @@ int main(int argc, char *argv[])
             if (svgwriter != NULL) {
                 for (const Coord &exp : expected)
                     svgwriter->drawPoint(exp.x, exp.y, SvgWriter::ImportantPoiGroup, "green", "expected");
-                if (result.isValid())
-                    svgwriter->drawPoint(result.x, result.y, SvgWriter::ImportantPoiGroup, "red", "computed");
+                for (const Coord &coord : results)
+                    svgwriter->drawPoint(coord.x, coord.y, SvgWriter::ImportantPoiGroup, "red", "computed");
                 svgwriter->drawCaption(it->name);
                 svgwriter->drawDescription(it->text);
 
