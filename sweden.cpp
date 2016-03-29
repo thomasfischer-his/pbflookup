@@ -1631,7 +1631,7 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
         nodeNames->retrieve(it->id, placeName);
         p += snprintf(p, maxlen - (p - id_str), " %lu (%s)", it->id, placeName.c_str());
     }
-    Error::debug("Num elements: %d  List of ids:%s", result.size(), id_str);
+    Error::debug("Num of places: %d  List of node ids:%s", result.size(), id_str);
 #endif
 
     return result;
