@@ -1608,13 +1608,12 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
 
         /// Retrieve all OSM elements matching a given word combination
         const std::vector<struct OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        if (!id_list.empty())
-            for (auto itE = id_list.cbegin(); itE != id_list.cend(); ++itE) {
-                const struct OSMElement &element = *itE;
-                if (element.type != OSMElement::Node) continue; /// only nodes considered
-                if (element.realworld_type == OSMElement::PlaceLargeArea || element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
-                    result.push_back(element);
-            }
+        for (auto itE = id_list.cbegin(); itE != id_list.cend(); ++itE) {
+            const struct OSMElement &element = itE->type == OSMElement::Node ? *itE : getNodeInOSMElement(*itE);
+            if (element.type != OSMElement::Node) continue; /// resolving to OSMElement of type Node failed
+            if (element.realworld_type == OSMElement::PlaceLargeArea || element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
+                result.push_back(element);
+        }
     }
 
     /// Sort found places using this lambda expression,
@@ -1628,7 +1627,7 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
     char id_str[maxlen + 256];
     char *p = id_str;
     for (auto it = result.cbegin(); it != result.cend() && (size_t)(p - id_str) < maxlen; ++it) {
-        WriteableString placeName;
+        static WriteableString placeName;
         nodeNames->retrieve(it->id, placeName);
         p += snprintf(p, maxlen - (p - id_str), " %lu (%s)", it->id, placeName.c_str());
     }

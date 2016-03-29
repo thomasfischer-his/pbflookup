@@ -287,8 +287,7 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
     }
 
     /// Go through all word combinations (usually 1 to 3 words combined)
-    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
-        const std::string &combined = *itW;
+    for (const std::string &combined : word_combinations) {
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
