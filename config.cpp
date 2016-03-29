@@ -24,6 +24,7 @@
 #include <libconfig.h++>
 
 #include "error.h"
+#include "idtree.h"
 
 #define MAX_STRING_LEN 1024
 
@@ -234,8 +235,15 @@ bool init_configuration(const char *configfilename) {
                     if (testsetSetting.isGroup()) {
                         struct testset ts;
                         ts.name = testsetSetting.lookup("name").c_str();
-                        ts.lat = testsetSetting.lookup("latitude");
-                        ts.lon = testsetSetting.lookup("longitude");
+                        const libconfig::Setting &lat = testsetSetting.lookup("latitude");
+                        const libconfig::Setting &lon = testsetSetting.lookup("longitude");
+                        if (lat.isScalar() && lon.isScalar())
+                            ts.coord.push_back(Coord((double)lon, (double)lat));
+                        else if (lat.isArray() && lon.isArray())
+                            for (auto itLat = lat.begin(), itLon = lon.begin(); itLat != lat.end() && itLon != lon.end(); ++itLat, ++itLon)
+                                ts.coord.push_back(Coord((double)*itLon, (double)*itLat));
+                        else
+                            throw libconfig::SettingTypeException(testsetSetting, "Latitude and/or longitude given in wrong format (need to be both scalar or both array)");
                         ts.text = testsetSetting.lookup("text").c_str();
                         /// "svgoutputfilename" is optional, so tolerate if it is not set
                         if (configIfExistsLookup(config, "svgoutputfilename", ts.svgoutputfilename)) {
@@ -246,7 +254,7 @@ bool init_configuration(const char *configfilename) {
                             replacevariablenames(filename);
                             ts.svgoutputfilename = std::string(filename);
                         }
-                        Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.lat, ts.lon);
+                        Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
                         testsets.push_back(ts);
                     }
                 }
@@ -256,6 +264,11 @@ bool init_configuration(const char *configfilename) {
     catch (libconfig::ParseException &pe)
     {
         Error::err("ParseException: Parsing configuration file '%s' failed in line %i: %s (%s)", pe.getFile(), pe.getLine(), pe.getError(), pe.what());
+        return false;
+    }
+    catch (libconfig::SettingTypeException &ste)
+    {
+        Error::err("SettingTypeException: Parsing configuration failed: %s", ste.what());
         return false;
     }
     catch (libconfig::ConfigException &ce)

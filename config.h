@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+struct Coord;
+
 extern char tempdir[];
 extern char mapname[];
 extern char osmpbffilename[];
@@ -30,7 +32,7 @@ extern FILE *logfile; ///< defined in 'error.cpp'
 
 struct testset {
     std::string name;
-    double lat, lon;
+    std::vector<Coord> coord;
     std::string text;
     std::string svgoutputfilename;
 };
