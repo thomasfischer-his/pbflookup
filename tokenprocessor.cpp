@@ -275,7 +275,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
     ///   1 km or less -> 1.0
     ///  10 km         -> 0.5
     /// 100 km or more -> 0.0
-    /// quality = 1 - (log10(d)-3)/2
+    /// quality = 1 - (log10(d) - 3) / 2
     for (struct TokenProcessor::RoadMatch &roadMatch : result) {
         roadMatch.quality = 1.0 - (log10(roadMatch.distance) - 3) / 2.0;
         /// Normalize into range 0.0..1.0
@@ -362,6 +362,23 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
         /// otherwise the position where found in the string (starting at 0).
         const std::string::size_type findGlobalNameInCombinedA = a.word_combination.find(globalNameA);
         const std::string::size_type findGlobalNameInCombinedB = b.word_combination.find(globalNameB);
+
+        /// Set quality during sorting if not already set for match a
+        if (a.quality < 0.0) {
+            /**
+             * Quality is set to 1.0 if the global name does not occur in a's word combination.
+             * Quality is set to 0.0 if the global name occurs at the first position in a's word
+             * combination (includes case where global name is equal to a's word combination).
+             * If the global name occurs in later positions in a's word combination, the
+             * quality value linearly increases towards 1.0.
+             */
+            a.quality = findGlobalNameInCombinedA > a.word_combination.length() ? 1.0 : findGlobalNameInCombinedA / (double)(a.word_combination.length() - findGlobalNameInCombinedA + 1);
+        }
+        /// Set quality during sorting if not already set for match b
+        if (b.quality < 0.0) {
+            b.quality = findGlobalNameInCombinedB > b.word_combination.length() ? 1.0 : findGlobalNameInCombinedB / (double)(b.word_combination.length() - findGlobalNameInCombinedB + 1);
+        }
+
         /// Larger values findGlobalNameInCombinedX, i.e. late or no hits for global name preferred
         if (findGlobalNameInCombinedA < findGlobalNameInCombinedB) return false;
         else if (findGlobalNameInCombinedA > findGlobalNameInCombinedB) return true;
@@ -436,6 +453,22 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
          */
         const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
         const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
+
+        /// Set quality during sorting if not already set for match a
+        if (a.quality < 0.0) {
+            if (countSpacesA >= 3) a.quality = 1.0;
+            else if (countSpacesA == 2) a.quality = 0.9;
+            else if (countSpacesA == 1) a.quality = 0.75;
+            else /** countSpacesA == 0 */ a.quality = 0.5;
+        }
+        /// Set quality during sorting if not already set for match b
+        if (b.quality < 0.0) {
+            if (countSpacesB >= 3) b.quality = 1.0;
+            else if (countSpacesB == 2) b.quality = 0.9;
+            else if (countSpacesB == 1) b.quality = 0.75;
+            else /** countSpacesB == 0 */ b.quality = 0.5;
+        }
+
         if (countSpacesA < countSpacesB) return false;
         else if (countSpacesA > countSpacesB) return true;
         else /** countSpacesA == countSpacesB */
@@ -490,6 +523,23 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
         /// otherwise the position where found in the string (starting at 0).
         const std::string::size_type findAdminInCombinedA = a.name.find(a.adminRegionName);
         const std::string::size_type findAdminInCombinedB = b.name.find(b.adminRegionName);
+
+        /// Set quality during sorting if not already set for match a
+        if (a.quality < 0.0) {
+            /**
+             * Quality is set to 1.0 if the admin region's name does not occur in a's name.
+             * Quality is set to 0.0 if the admin region's name occurs at the first position
+             *  in a'sname (includes case where admin region's name is equal to a's name).
+             * If the admin region's name occurs in later positions in a's name, the
+             * quality value linearly increases towards 1.0.
+             */
+            a.quality = findAdminInCombinedA > a.name.length() ? 1.0 : findAdminInCombinedA / (double)(a.name.length() - findAdminInCombinedA + 1);
+        }
+        /// Set quality during sorting if not already set for match b
+        if (b.quality < 0.0) {
+            b.quality = findAdminInCombinedB > b.name.length() ? 1.0 : findAdminInCombinedB / (double)(b.name.length() - findAdminInCombinedB + 1);
+        }
+
         /// Larger values findAdminInCombinedX, i.e. late or no hits for admin region preferred
         if (findAdminInCombinedA < findAdminInCombinedB) return false;
         else if (findAdminInCombinedA > findAdminInCombinedB) return true;
