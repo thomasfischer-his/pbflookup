@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
                 for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
                     Coord c;
                     if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
-                        Error::info("TODO");
+                        Error::info("Found place %lld (%s) inside admin region %d (%s)", adminRegionMatch.match.id, adminRegionMatch.name.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.adminRegionName.c_str());
                         results.push_back(std::pair<Coord, double>(c, adminRegionMatch.quality * .95));
                     }
                 }
