@@ -1438,7 +1438,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
             bestNode = 0;
     }
 
-    if (road.type == LanUnknown) {
+    if (road.type == LanUnknown && bestNodeIndex > -1) {
         if (wayIds != NULL) delete wayIds;
         for (size_t i = 0; i < Private::regional_len; ++i)
             if (lanStartingIndex[i] <= bestNodeIndex && (i == Private::regional_len - 1 || lanStartingIndex[i + 1] > bestNodeIndex))
