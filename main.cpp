@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
             Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
             for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
-                const int64_t distance = roadMatch.distance;
+                const int distance = roadMatch.distance;
 
                 if (distance < 10000) {
                     /// Closer than 10km

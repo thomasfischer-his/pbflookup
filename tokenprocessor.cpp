@@ -225,7 +225,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
             for (auto itR = knownRoads.begin(); itR != knownRoads.end(); ++itR) {
                 /// For a particular road, find shortest distance to any OSM element
                 uint64_t bestRoadNode = 0, bestWordNode = 0;
-                int64_t minDistance = INT64_MAX;
+                int minDistance = INT_MAX;
                 /// Go through all OSM elements
                 for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
                     const uint64_t id = (*itN).id;
@@ -241,7 +241,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                     Coord c;
                     if ((realworld_type == OSMElement::PlaceLargeArea || realworld_type == OSMElement::PlaceLarge || realworld_type == OSMElement::PlaceMedium || realworld_type == OSMElement::PlaceSmall) && node2Coord->retrieve(id, c)) {
                         uint64_t node = 0;
-                        int64_t distance = INT64_MAX;
+                        int distance = INT_MAX;
                         /// Given x/y coordinates and a road to process,
                         /// a node and its distance to the coordinates (in decimeter-square)
                         /// will be returned
@@ -257,7 +257,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                     }
                 }
 
-                if (minDistance < (INT64_MAX >> 1)) {
+                if (minDistance < (INT_MAX >> 1)) {
                     Error::debug("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", combined_cstr, Sweden::roadTypeToString(itR->type).c_str(), itR->number, minDistance / 1000.0, bestRoadNode, bestWordNode);
                     result.push_back(RoadMatch(combined, *itR, bestRoadNode, bestWordNode, minDistance));
                 }

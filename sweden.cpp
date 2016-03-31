@@ -1377,7 +1377,10 @@ Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
     return LanE;
 }
 
-Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &distance) const {
+Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int &distance) const {
+    distance = INT_MAX;
+    bestNode = 0;
+
     std::vector<uint64_t> *wayIds = NULL;
     int lanStartingIndex[Private::regional_len];
 
@@ -1414,9 +1417,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
 
     int bestNodeIndex = -1;
     if (wayIds != NULL) {
-        bestNode = 0;
         bestNodeIndex = 0;
-        distance = INT64_MAX;
         int64_t minSqDistance = INT64_MAX;
         int i = 0;
         for (auto it = wayIds->cbegin(); it != wayIds->cend(); ++it, ++i) {
