@@ -29,22 +29,30 @@ public:
     void evaluteWordCombinations(const std::vector<std::string> &word_combinations, WeightedNodeSet &wns) const;
 
     struct RoadMatch {
-        RoadMatch(const std::string &_word_combination, const Sweden::Road &_road, uint64_t _bestRoadNode, uint64_t _bestWordNode, int64_t _distance)
-            : word_combination(_word_combination), road(_road), bestRoadNode(_bestRoadNode), bestWordNode(_bestWordNode), distance(_distance) {
+        RoadMatch(const std::string &_word_combination, const Sweden::Road &_road, uint64_t _bestRoadNode, uint64_t _bestWordNode, int _distance, double _quality = -1.0)
+            : word_combination(_word_combination), road(_road), bestRoadNode(_bestRoadNode), bestWordNode(_bestWordNode), distance(_distance), quality(_quality) {
             /// nothing
         }
 
         std::string word_combination;
         Sweden::Road road;
         uint64_t bestRoadNode, bestWordNode;
-        int64_t distance; ///< in meter
+        int distance; ///< Distance in meters as measured on decimeter grid
+
+        /** Assessment on match's quality, ranging from
+         *    1.0  -> very good
+         *  to
+         *    0.0  -> very poor
+         *  Negative value means quality not set.
+         */
+        double quality;
     };
 
     std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads);
 
     struct NearPlaceMatch {
-        NearPlaceMatch(const std::string &_word_combination, const struct OSMElement &_global, const struct OSMElement &_local, int _distance)
-            : word_combination(_word_combination), global(_global), local(_local), distance(_distance) {
+        NearPlaceMatch(const std::string &_word_combination, const struct OSMElement &_global, const struct OSMElement &_local, int _distance, double _quality = -1.0)
+            : word_combination(_word_combination), global(_global), local(_local), distance(_distance), quality(_quality) {
             /// nothing
         }
 
@@ -52,6 +60,14 @@ public:
         struct OSMElement global;
         struct OSMElement local;
         int distance; ///< in meter
+
+        /** Assessment on match's quality, ranging from
+         *    1.0  -> very good
+         *  to
+         *    0.0  -> very poor
+         *  Negative value means quality not set.
+         */
+        double quality;
     };
 
     /**
@@ -69,20 +85,28 @@ public:
     std::vector<struct NearPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
 
     struct UniqueMatch {
-        UniqueMatch(std::string _name, uint64_t _id)
-            : name(_name), id(_id) {
+        UniqueMatch(std::string _name, uint64_t _id, double _quality = -1.0)
+            : name(_name), id(_id), quality(_quality) {
             /// nothing
         }
 
         std::string name;
         uint64_t id;
+
+        /** Assessment on match's quality, ranging from
+         *    1.0  -> very good
+         *  to
+         *    0.0  -> very poor
+         *  Negative value means quality not set.
+         */
+        double quality;
     };
 
     std::vector<struct UniqueMatch> evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const;
 
     struct AdminRegionMatch {
-        AdminRegionMatch(const std::string &_name, const OSMElement &_match, uint64_t _adminRegionId, const std::string &_adminRegionName)
-            : name(_name), match(_match), adminRegionId(_adminRegionId), adminRegionName(_adminRegionName) {
+        AdminRegionMatch(const std::string &_name, const OSMElement &_match, uint64_t _adminRegionId, const std::string &_adminRegionName, double _quality = -1.0)
+            : name(_name), match(_match), adminRegionId(_adminRegionId), adminRegionName(_adminRegionName), quality(_quality) {
             /// nothing
         }
 
@@ -90,6 +114,14 @@ public:
         OSMElement match;
         uint64_t adminRegionId;
         std::string adminRegionName;
+
+        /** Assessment on match's quality, ranging from
+         *    1.0  -> very good
+         *  to
+         *    0.0  -> very poor
+         *  Negative value means quality not set.
+         */
+        double quality;
     };
 
     /**

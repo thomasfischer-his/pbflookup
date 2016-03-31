@@ -271,6 +271,18 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
         return a.distance < b.distance;
     });
 
+    /// Set quality for results as follows based on distance:
+    ///   1 km or less -> 1.0
+    ///  10 km         -> 0.5
+    /// 100 km or more -> 0.0
+    /// quality = 1 - (log10(d)-3)/2
+    for (struct TokenProcessor::RoadMatch &roadMatch : result) {
+        roadMatch.quality = 1.0 - (log10(roadMatch.distance) - 3) / 2.0;
+        /// Normalize into range 0.0..1.0
+        if (roadMatch.quality < 0.0) roadMatch.quality = 0.0;
+        else if (roadMatch.quality > 1.0) roadMatch.quality = 1.0;
+    }
+
     return result;
 }
 
