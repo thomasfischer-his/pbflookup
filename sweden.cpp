@@ -1454,6 +1454,8 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
     static const std::string swedishWordTheWay("v\xc3\xa4gen");
     static const std::string swedishWordNationalWay("riksv\xc3\xa4g");
     static const std::string swedishWordTheNationalWay("riksv\xc3\xa4gen");
+    static const std::string swedishWordCountyWay("l\xc3\xa4nsv\xc3\xa4g");
+    static const std::string swedishWordTheCountyWay("l\xc3\xa4nsv\xc3\xa4gen");
     static const uint16_t invalidRoadNumber = 0;
 
     std::vector<struct Sweden::Road> result;
@@ -1510,7 +1512,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
         }
         /// If current word looks like word describing a national road in Swedish and
         /// following word starts with digit 1 to 9 ...
-        else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+        else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0 || swedishWordCountyWay.compare(words[i]) == 0 || swedishWordTheCountyWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
             char *next;
             const char *cur = words[i + 1].c_str();
             roadNumber = (uint16_t)strtol(cur, &next, 10);
