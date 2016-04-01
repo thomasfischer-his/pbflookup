@@ -51,6 +51,7 @@ OsmPbfReader::~OsmPbfReader()
 }
 
 bool OsmPbfReader::parse(std::istream &input) {
+    std::vector<std::pair<uint64_t, std::string> > roadsWithoutRef;
     swedishTextTree = NULL;
     node2Coord = NULL;
     nodeNames = NULL;
@@ -447,6 +448,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                             node2Coord->increaseCounter(simplifiedWay[k]);
                         wayNodes->insert(wayId, wn);
 
+                        if (wn.num_nodes > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
+                            roadsWithoutRef.push_back(std::pair<uint64_t, std::string>(wayId, std::string(buffer_highway)));
+
                         /// Consider only names of length 2 or longer
                         if (name.length() > 1) {
                             const OSMElement element(wayId, OSMElement::Way, realworld_type);
@@ -541,6 +545,15 @@ bool OsmPbfReader::parse(std::istream &input) {
 
     /// Line break after series of dots
     std::cout << std::endl;
+
+    for (const std::pair<uint64_t, std::string> &pair : roadsWithoutRef) {
+        WayNodes wn;
+        if (wayNodes->retrieve(pair.first, wn)) {
+            std::vector<int> scbareas = sweden->insideSCBarea(wn.nodes[wn.num_nodes / 2]);
+            const int region = scbareas.empty() ? 0 : scbareas.front();
+            Error::debug("Way %llu (SCB region %d %d) is a highway of type %s, but has no ref", pair.first, region / 100, region % 100, pair.second.c_str());
+        }
+    }
 
     return true;
 }
