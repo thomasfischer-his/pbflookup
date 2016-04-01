@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         int setNr = 0;
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
-            std::vector<Coord> results;
+            std::vector<std::pair<Coord, double> > results;
             Error::info("Test set: %s", it->name.c_str());
             const std::vector<Coord> &expected = it->coord;
 
@@ -112,14 +112,14 @@ int main(int argc, char *argv[])
             Error::info("Spent CPU time to identify roads in testset '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", it->name.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 
             for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
-                const int64_t distance = roadMatch.distance;
+                const int distance = roadMatch.distance;
 
                 if (distance < 10000) {
                     /// Closer than 10km
                     Coord c;
                     if (node2Coord->retrieve(roadMatch.bestRoadNode, c)) {
                         Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), Sweden::roadTypeToString(roadMatch.road.type).c_str(), roadMatch.road.number, distance / 1000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
-                        results.push_back(c);
+                        results.push_back(std::pair<Coord, double>(c, roadMatch.quality));
                     }
                 }
             }
@@ -134,8 +134,8 @@ int main(int argc, char *argv[])
                 for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
                     Coord c;
                     if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
-                        Error::info("TODO");
-                        results.push_back(c);
+                        Error::info("Found place %lld (%s) inside admin region %d (%s)", adminRegionMatch.match.id, adminRegionMatch.name.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.adminRegionName.c_str());
+                        results.push_back(std::pair<Coord, double>(c, adminRegionMatch.quality * .95));
                     }
                 }
             }
@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
                     Coord c;
                     if (node2Coord->retrieve(nearPlacesMatch.local.id, c)) {
                         Error::info("Got a result for place %llu and local node %llu", nearPlacesMatch.global.id, nearPlacesMatch.local.id);
-                        results.push_back(c);
+                        results.push_back(std::pair<Coord, double>(c, nearPlacesMatch.quality * .75));
                     }
                 }
             }
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
                 Coord c;
                 if (node2Coord->retrieve(uniqueMatch.id, c)) {
                     Error::info("Got a result for name '%s'!", uniqueMatch.name.c_str());
-                    results.push_back(c);
+                    results.push_back(std::pair<Coord, double>(c, uniqueMatch.quality * .8));
                 }
             }
 
@@ -207,16 +207,25 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                if (c.isValid())
-                    results.push_back(c);
+                if (c.isValid()) {
+                    const double quality = rwt == OSMElement::PlaceLarge ? 1.0 : (rwt == OSMElement::PlaceMedium?.9 : (rwt == OSMElement::PlaceLargeArea?.6 : (rwt == OSMElement::PlaceSmall?.8 : .5)));
+                    results.push_back(std::pair<Coord, double>(c, quality * .5));
+                }
             }
 
             if (!results.empty()) {
+                std::sort(results.begin(), results.end(), [](std::pair<Coord, double> &a, std::pair<Coord, double> &b) {
+                    return a.second > b.second;
+                });
+
+
                 Error::info("Found %d many possible results:", results.size());
-                for (const Coord &coord : results) {
+                for (const std::pair<Coord, double> p : results) {
+                    const Coord &coord = p.first;
+                    const double quality = p.second;
                     const double lon = Coord::toLongitude(coord.x);
                     const double lat = Coord::toLatitude(coord.y);
-                    Error::info("Able to determine a likely position: lon=%.5f lat=%.5f", lon, lat);
+                    Error::info("Able to determine a likely position with quality %.5lf: lon=%.5f lat=%.5f", quality, lon, lat);
                     Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
                     for (const Coord &exp : expected)
                         if (exp.isValid()) {
@@ -232,8 +241,8 @@ int main(int argc, char *argv[])
             if (svgwriter != NULL) {
                 for (const Coord &exp : expected)
                     svgwriter->drawPoint(exp.x, exp.y, SvgWriter::ImportantPoiGroup, "green", "expected");
-                for (const Coord &coord : results)
-                    svgwriter->drawPoint(coord.x, coord.y, SvgWriter::ImportantPoiGroup, "red", "computed");
+                for (const std::pair<Coord, double> p : results)
+                    svgwriter->drawPoint(p.first.x, p.first.y, SvgWriter::ImportantPoiGroup, "red", "computed");
                 svgwriter->drawCaption(it->name);
                 svgwriter->drawDescription(it->text);
 

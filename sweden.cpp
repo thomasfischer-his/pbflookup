@@ -1377,7 +1377,10 @@ Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
     return LanE;
 }
 
-Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &distance) const {
+Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int &distance) const {
+    distance = INT_MAX;
+    bestNode = 0;
+
     std::vector<uint64_t> *wayIds = NULL;
     int lanStartingIndex[Private::regional_len];
 
@@ -1414,9 +1417,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
 
     int bestNodeIndex = -1;
     if (wayIds != NULL) {
-        bestNode = 0;
         bestNodeIndex = 0;
-        distance = INT64_MAX;
         int64_t minSqDistance = INT64_MAX;
         int i = 0;
         for (auto it = wayIds->cbegin(); it != wayIds->cend(); ++it, ++i) {
@@ -1437,7 +1438,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
             bestNode = 0;
     }
 
-    if (road.type == LanUnknown) {
+    if (road.type == LanUnknown && bestNodeIndex > -1) {
         if (wayIds != NULL) delete wayIds;
         for (size_t i = 0; i < Private::regional_len; ++i)
             if (lanStartingIndex[i] <= bestNodeIndex && (i == Private::regional_len - 1 || lanStartingIndex[i + 1] > bestNodeIndex))
@@ -1453,6 +1454,8 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
     static const std::string swedishWordTheWay("v\xc3\xa4gen");
     static const std::string swedishWordNationalWay("riksv\xc3\xa4g");
     static const std::string swedishWordTheNationalWay("riksv\xc3\xa4gen");
+    static const std::string swedishWordCountyWay("l\xc3\xa4nsv\xc3\xa4g");
+    static const std::string swedishWordTheCountyWay("l\xc3\xa4nsv\xc3\xa4gen");
     static const uint16_t invalidRoadNumber = 0;
 
     std::vector<struct Sweden::Road> result;
@@ -1509,7 +1512,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
         }
         /// If current word looks like word describing a national road in Swedish and
         /// following word starts with digit 1 to 9 ...
-        else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+        else if (i < words.size() - 1 && (swedishWordRv.compare(words[i]) == 0 || swedishWordWay.compare(words[i]) == 0 || swedishWordTheWay.compare(words[i]) == 0 || swedishWordNationalWay.compare(words[i]) == 0 || swedishWordTheNationalWay.compare(words[i]) == 0 || swedishWordCountyWay.compare(words[i]) == 0 || swedishWordTheCountyWay.compare(words[i]) == 0) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
             char *next;
             const char *cur = words[i + 1].c_str();
             roadNumber = (uint16_t)strtol(cur, &next, 10);

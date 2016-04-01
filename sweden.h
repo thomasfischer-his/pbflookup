@@ -117,9 +117,9 @@ public:
      * @param y
      * @param road
      * @param bestNode
-     * @param distance
+     * @param distance Distance in meters as measured on decimeter grid
      */
-    Sweden::RoadType closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int64_t &distance) const;
+    Sweden::RoadType closestRoadNodeToCoord(int x, int y, const Sweden::Road &road, uint64_t &bestNode, int &distance) const;
 
     /**
      * Process the provided list of words and see if there is
