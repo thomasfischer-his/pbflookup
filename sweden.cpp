@@ -1127,30 +1127,30 @@ Sweden::RoadType Sweden::roadTypeForSCBarea(int scbarea) {
     }
 }
 
-std::string Sweden::nameOfSCBarea(int scbarea){
-    switch(scbarea){
+std::string Sweden::nameOfSCBarea(int scbarea) {
+    switch (scbarea) {
     /** Regional codes */
-    case  1: return " AB";
-    case  3: return " C";
-    case  4: return " D";
-    case  5: return " E";
-    case  6: return " F";
-    case  7: return " G";
-    case  8: return " H";
-    case  9: return " I";
-    case 10: return " K";
-    case 12: return " M";
-    case 13: return " N";
-    case 14: return " O";
-    case 17: return " S";
-    case 18: return " T";
-    case 19: return " U";
-    case 20: return " W";
-    case 21: return " X";
-    case 22: return " Y";
-    case 23: return " Z";
-    case 24: return " AC";
-    case 25: return " BD";
+    case  1: return "Stockholm L\xc3\xa4n";
+    case  3: return "Uppsala L\xc3\xa4n";
+    case  4: return "S\xc3\xb6""dermanlands L\xc3\xa4n";
+    case  5: return "\xc3\xb6sterg\xc3\xb6tlands L\xc3\xa4n";
+    case  6: return "J\xc3\xb6nk\xc3\xb6pings L\xc3\xa4n";
+    case  7: return "Kronobergs L\xc3\xa4n";
+    case  8: return "Kalmar L\xc3\xa4n";
+    case  9: return "Gotlands L\xc3\xa4n";
+    case 10: return "Blekinge L\xc3\xa4n";
+    case 12: return "Sk\xc3\xa5ne L\xc3\xa4n";
+    case 13: return "Hallands L\xc3\xa4n";
+    case 14: return "V\xc3\xa4stra G\xc3\xb6talands L\xc3\xa4n";
+    case 17: return "V\xc3\xa4rmlands L\xc3\xa4n";
+    case 18: return "\xc3\xb6rebro L\xc3\xa4n";
+    case 19: return "V\xc3\xa4stmanlands L\xc3\xa4n";
+    case 20: return "Dalarnas L\xc3\xa4n";
+    case 21: return "G\xc3\xa4vleborgs L\xc3\xa4n";
+    case 22: return "V\xc3\xa4sternorrlands L\xc3\xa4n";
+    case 23: return "J\xc3\xa4mtlands L\xc3\xa4n";
+    case 24: return "V\xc3\xa4sterbottens L\xc3\xa4n";
+    case 25: return "Norrbottens L\xc3\xa4n";
     /** Municipality codes */
     case 1440: return "Ale";
     case 1489: return "Alings\xc3\xa5s";
@@ -1442,7 +1442,7 @@ std::string Sweden::nameOfSCBarea(int scbarea){
     case 1256: return "\xc3\x96stra G\xc3\xb6inge";
     case 2513: return "\xc3\x96verkalix";
     case 2518: return "\xc3\x96vertorne\xc3\xa5";
-}
+    }
 
     return std::string();
 }
