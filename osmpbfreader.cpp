@@ -551,7 +551,7 @@ bool OsmPbfReader::parse(std::istream &input) {
         if (wayNodes->retrieve(pair.first, wn)) {
             std::vector<int> scbareas = sweden->insideSCBarea(wn.nodes[wn.num_nodes / 2]);
             const int region = scbareas.empty() ? 0 : scbareas.front();
-            Error::debug("Way %llu (SCB region %d %d) is a highway of type %s, but has no ref", pair.first, region / 100, region % 100, pair.second.c_str());
+            Error::debug("Way %llu (%s) is a highway of type %s, but has no ref", pair.first, Sweden::nameOfSCBarea(region).c_str(), pair.second.c_str());
         }
     }
 
