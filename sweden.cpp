@@ -527,35 +527,40 @@ public:
         }
     }
 
-    bool nodeInsideRelationRegion(uint64_t nodeid, uint64_t relationId) {
+    bool nodeInsideRelationRegion(const Coord &coord, uint64_t relationId) {
         buildPolygonForRelation(relationId);
         const Region &region = relationId_to_polygons.at(relationId);
 
-        Coord coord;
-        if (node2Coord->retrieve(nodeid, coord)) {
-            /// Quick check if node is outside rectangle that encloses all polygons,
-            /// avoids costly operations further below
-            if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) return false;
+        /// Quick check if node is outside rectangle that encloses all polygons,
+        /// avoids costly operations further below
+        if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) return false;
 
-            for (std::vector<std::deque<Coord> >::const_iterator itB = region.polygons.cbegin(); itB != region.polygons.cend(); ++itB) {
-                const std::deque<Coord> &polygon = *itB;
-                /// For a good explanation, see here: http://alienryderflex.com/polygon/
-                const int polyCorners = polygon.size();
-                int j = polyCorners - 1;
-                bool oddNodes = false;
+        for (std::vector<std::deque<Coord> >::const_iterator itB = region.polygons.cbegin(); itB != region.polygons.cend(); ++itB) {
+            const std::deque<Coord> &polygon = *itB;
+            /// For a good explanation, see here: http://alienryderflex.com/polygon/
+            const int polyCorners = polygon.size();
+            int j = polyCorners - 1;
+            bool oddNodes = false;
 
-                for (int i = 0; i < polyCorners; ++i) {
-                    if (((polygon[i].y < coord.y && polygon[j].y >= coord.y) || (polygon[j].y < coord.y && polygon[i].y >= coord.y)) && (polygon[i].x <= coord.x || polygon[j].x <= coord.x)) {
-                        const int intermediate = polygon[i].x + (coord.y - polygon[i].y) * (polygon[j].x - polygon[i].x) / (polygon[j].y - polygon[i].y);
-                        oddNodes ^= intermediate < coord.x;
-                    }
-                    j = i;
+            for (int i = 0; i < polyCorners; ++i) {
+                if (((polygon[i].y < coord.y && polygon[j].y >= coord.y) || (polygon[j].y < coord.y && polygon[i].y >= coord.y)) && (polygon[i].x <= coord.x || polygon[j].x <= coord.x)) {
+                    const int intermediate = polygon[i].x + (coord.y - polygon[i].y) * (polygon[j].x - polygon[i].x) / (polygon[j].y - polygon[i].y);
+                    oddNodes ^= intermediate < coord.x;
                 }
-
-                if (oddNodes)
-                    return true;
+                j = i;
             }
+
+            if (oddNodes)
+                return true;
         }
+
+        return false;
+    }
+
+    bool nodeInsideRelationRegion(uint64_t nodeid, uint64_t relationId) {
+        Coord coord;
+        if (node2Coord->retrieve(nodeid, coord))
+            return nodeInsideRelationRegion(coord, relationId);
 
         return false;
     }
@@ -1087,6 +1092,16 @@ bool Sweden::nodeInsideRelationRegion(uint64_t nodeId, uint64_t relationId) {
 
 void Sweden::insertSCBarea(const int code, uint64_t relid) {
     d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
+}
+
+std::vector<int> Sweden::insideSCBarea(const Coord &coord) {
+    std::vector<int> result;
+    for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
+        if (d->nodeInsideRelationRegion(coord, it->second))
+            result.push_back(it->first);
+    }
+
+    return result;
 }
 
 std::vector<int> Sweden::insideSCBarea(uint64_t nodeid) {
