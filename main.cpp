@@ -74,7 +74,17 @@ int main(int argc, char *argv[])
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         int setNr = 0;
         for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
-            std::vector<std::pair<Coord, double> > results;
+            struct Result {
+                Result(const Coord &_coord, double _quality, const std::string &_origin)
+                    : coord(_coord), quality(_quality), origin(_origin) {
+                    /** nothing */
+                }
+
+                Coord coord;
+                double quality;
+                std::string origin;
+            };
+            std::vector<Result> results;
             Error::info("Test set: %s", it->name.c_str());
             const std::vector<Coord> &expected = it->coord;
 
@@ -134,8 +144,8 @@ int main(int argc, char *argv[])
                 for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
                     Coord c;
                     if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
-                        Error::info("Found place %lld (%s) inside admin region %d (%s)", adminRegionMatch.match.id, adminRegionMatch.name.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.adminRegionName.c_str());
-                        results.push_back(std::pair<Coord, double>(c, adminRegionMatch.quality * .95));
+                        Error::debug("Found place %lld (%s) inside admin region %d (%s)", adminRegionMatch.match.id, adminRegionMatch.name.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.adminRegionName.c_str());
+                        results.push_back(Result(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegionName + " > " + adminRegionMatch.name));
                     }
                 }
             }
@@ -160,8 +170,11 @@ int main(int argc, char *argv[])
                 for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
                     Coord c;
                     if (node2Coord->retrieve(nearPlacesMatch.local.id, c)) {
-                        Error::info("Got a result for place %llu and local node %llu", nearPlacesMatch.global.id, nearPlacesMatch.local.id);
-                        results.push_back(std::pair<Coord, double>(c, nearPlacesMatch.quality * .75));
+                        Error::debug("Got a result for place %llu and local node %llu", nearPlacesMatch.global.id, nearPlacesMatch.local.id);
+                        WriteableString globalName, localName;
+                        nodeNames->retrieve(nearPlacesMatch.global.id, globalName);
+                        nodeNames->retrieve(nearPlacesMatch.local.id, localName);
+                        results.push_back(Result(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + std::to_string(nearPlacesMatch.global.id) + " (" + globalName.c_str() + ") > " + std::to_string(nearPlacesMatch.local.id) + " (" + localName.c_str() + ")"));
                     }
                 }
             }
@@ -179,8 +192,8 @@ int main(int argc, char *argv[])
             for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
                 Coord c;
                 if (node2Coord->retrieve(uniqueMatch.element.id, c)) {
-                    Error::info("Got a result for name '%s'!", uniqueMatch.name.c_str());
-                    results.push_back(std::pair<Coord, double>(c, uniqueMatch.quality * .8));
+                    Error::debug("Got a result for name '%s'!", uniqueMatch.name.c_str());
+                    results.push_back(Result(c, uniqueMatch.quality * .8, std::string("Unique name: ") + uniqueMatch.name));
                 }
             }
 
@@ -191,41 +204,46 @@ int main(int argc, char *argv[])
                 // FIXME picking the right place from the list is rather ugly. Can do better?
                 OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
                 Coord c;
+                uint64_t bestId = 0;
                 for (auto it = places.cbegin(); it != places.cend(); ++it) {
                     if (it->realworld_type == OSMElement::PlaceMedium && rwt >= OSMElement::PlaceSmall) {
-                        node2Coord->retrieve(it->id, c);
+                        bestId = it->id;
+                        node2Coord->retrieve(bestId, c);
                         rwt = it->realworld_type;
                     } else if (it->realworld_type < OSMElement::PlaceMedium && rwt >= OSMElement::PlaceMedium) {
-                        node2Coord->retrieve(it->id, c);
+                        bestId = it->id;
+                        node2Coord->retrieve(bestId, c);
                         rwt = it->realworld_type;
                     } else if (rwt != OSMElement::PlaceLarge && it->realworld_type == OSMElement::PlaceLargeArea) {
-                        node2Coord->retrieve(it->id, c);
+                        bestId = it->id;
+                        node2Coord->retrieve(bestId, c);
                         rwt = it->realworld_type;
                     } else if (rwt == OSMElement::PlaceLargeArea && it->realworld_type == OSMElement::PlaceLarge) {
-                        node2Coord->retrieve(it->id, c);
+                        bestId = it->id;
+                        node2Coord->retrieve(bestId, c);
                         rwt = it->realworld_type;
                     }
                 }
 
                 if (c.isValid()) {
                     const double quality = rwt == OSMElement::PlaceLarge ? 1.0 : (rwt == OSMElement::PlaceMedium?.9 : (rwt == OSMElement::PlaceLargeArea?.6 : (rwt == OSMElement::PlaceSmall?.8 : .5)));
-                    results.push_back(std::pair<Coord, double>(c, quality * .5));
+                    WriteableString placeName;
+                    nodeNames->retrieve(bestId, placeName);
+                    results.push_back(Result(c, quality * .5, std::string("Large place: ") + placeName));
                 }
             }
 
             if (!results.empty()) {
-                std::sort(results.begin(), results.end(), [](std::pair<Coord, double> &a, std::pair<Coord, double> &b) {
-                    return a.second > b.second;
+                /// Sort results by quality (highest first)
+                std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
+                    return a.quality > b.quality;
                 });
 
-
-                Error::info("Found %d many possible results:", results.size());
-                for (const std::pair<Coord, double> p : results) {
-                    const Coord &coord = p.first;
-                    const double quality = p.second;
-                    const double lon = Coord::toLongitude(coord.x);
-                    const double lat = Coord::toLatitude(coord.y);
-                    Error::info("Able to determine a likely position with quality %.5lf: lon=%.5f lat=%.5f", quality, lon, lat);
+                Error::info("Found %d many possible results for testset '%s':", results.size(), it->name.c_str());
+                for (const Result &result : results) {
+                    const double lon = Coord::toLongitude(result.coord.x);
+                    const double lat = Coord::toLatitude(result.coord.y);
+                    Error::info("Able to determine a likely position with quality %.5lf: lon=%.5f lat=%.5f", result.quality, lon, lat);
                     Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
                     for (const Coord &exp : expected)
                         if (exp.isValid()) {
@@ -241,8 +259,8 @@ int main(int argc, char *argv[])
             if (svgwriter != NULL) {
                 for (const Coord &exp : expected)
                     svgwriter->drawPoint(exp.x, exp.y, SvgWriter::ImportantPoiGroup, "green", "expected");
-                for (const std::pair<Coord, double> p : results)
-                    svgwriter->drawPoint(p.first.x, p.first.y, SvgWriter::ImportantPoiGroup, "red", "computed");
+                for (const Result &result : results)
+                    svgwriter->drawPoint(result.coord.x, result.coord.y, SvgWriter::ImportantPoiGroup, "red", "computed");
                 svgwriter->drawCaption(it->name);
                 svgwriter->drawDescription(it->text);
 
