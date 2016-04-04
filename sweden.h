@@ -52,6 +52,7 @@ public:
     void insertSCBarea(const int code, uint64_t relid);
     std::vector<int> insideSCBarea(uint64_t nodeid);
     static Sweden::RoadType roadTypeForSCBarea(int scbarea);
+    static std::string nameOfSCBarea(int scbarea);
     void insertNUTS3area(const int code, uint64_t relid);
     std::vector<int> insideNUTS3area(uint64_t nodeid);
 
