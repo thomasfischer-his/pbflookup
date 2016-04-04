@@ -414,7 +414,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         /// such as the shape of a single building
         if (id_list.size() > 0 && id_list.size() < 30 /** arbitrarily chosen value */) {
             unsigned int considered_nodes = 0, considered_distances = 0;
-            uint64_t mostCentralId = 0;
+            OSMElement mostCentralElement;
             int internodeDistanceMeter = 0;
             if (id_list.size() == 1) {
                 /// For single id results, set inter-node distance to
@@ -425,19 +425,19 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                 const OSMElement element = id_list.front().type == OSMElement::Node ? id_list.front() : getNodeInOSMElement(id_list.front());
                 if (element.type == OSMElement::Node)
                     /// Resolving relations or ways to a node succeeded
-                    mostCentralId = element.id;
+                    mostCentralElement = element;
                 else
                     continue;
             } else { /** id_list.size() > 1 */
                 /// Estimate the inter-node distance. For an 'unique' location,
                 /// all nodes must be close by as they are supposed to belong
                 /// together, e.g. the nodes that shape a building
-                internodeDistanceMeter = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, mostCentralId);
+                internodeDistanceMeter = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, mostCentralElement.id);
             }
 
             if (internodeDistanceMeter > 0 && internodeDistanceMeter < 1000) {
                 /// Estimated 1. quartile of inter-node distance is 1km
-                result.push_back(UniqueMatch(combined, mostCentralId));
+                result.push_back(UniqueMatch(combined, mostCentralElement));
             }
         }
     }
@@ -456,17 +456,33 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
 
         /// Set quality during sorting if not already set for match a
         if (a.quality < 0.0) {
-            if (countSpacesA >= 3) a.quality = 1.0;
-            else if (countSpacesA == 2) a.quality = 0.9;
-            else if (countSpacesA == 1) a.quality = 0.75;
-            else /** countSpacesA == 0 */ a.quality = 0.5;
+            switch (a.element.realworld_type) {
+            case OSMElement::RealWorldType::PlaceLargeArea: a.quality = 0.8; break;
+            case OSMElement::RealWorldType::PlaceLarge: a.quality = 1.0; break;
+            case OSMElement::RealWorldType::PlaceMedium: a.quality = .85; break;
+            case OSMElement::RealWorldType::PlaceSmall: a.quality = .7; break;
+            default: a.quality = 0.5;
+            }
+
+            if (countSpacesA >= 3) a.quality *= 1.0;
+            else if (countSpacesA == 2) a.quality *= 0.9;
+            else if (countSpacesA == 1) a.quality *= 0.75;
+            else /** countSpacesA == 0 */ a.quality *= 0.5;
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
-            if (countSpacesB >= 3) b.quality = 1.0;
-            else if (countSpacesB == 2) b.quality = 0.9;
-            else if (countSpacesB == 1) b.quality = 0.75;
-            else /** countSpacesB == 0 */ b.quality = 0.5;
+            switch (b.element.realworld_type) {
+            case OSMElement::RealWorldType::PlaceLargeArea: b.quality = 0.8; break;
+            case OSMElement::RealWorldType::PlaceLarge: b.quality = 1.0; break;
+            case OSMElement::RealWorldType::PlaceMedium: b.quality = .85; break;
+            case OSMElement::RealWorldType::PlaceSmall: b.quality = .7; break;
+            default: b.quality = 0.5;
+            }
+
+            if (countSpacesB >= 3) b.quality *= 1.0;
+            else if (countSpacesB == 2) b.quality *= 0.9;
+            else if (countSpacesB == 1) b.quality *= 0.75;
+            else /** countSpacesB == 0 */ b.quality *= 0.5;
         }
 
         if (countSpacesA < countSpacesB) return false;

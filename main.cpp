@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 
             for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
                 Coord c;
-                if (node2Coord->retrieve(uniqueMatch.id, c)) {
+                if (node2Coord->retrieve(uniqueMatch.element.id, c)) {
                     Error::info("Got a result for name '%s'!", uniqueMatch.name.c_str());
                     results.push_back(std::pair<Coord, double>(c, uniqueMatch.quality * .8));
                 }
