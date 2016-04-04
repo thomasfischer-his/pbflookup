@@ -16,6 +16,7 @@
 
 #include "swedishtexttree.h"
 
+#include "tokenizer.h"
 #include "error.h"
 #include "helper.h"
 
@@ -130,7 +131,7 @@ std::ostream &SwedishTextTree::write(std::ostream &output) {
 bool SwedishTextTree::insert(const std::string &input, const OSMElement &element) {
     bool result = true;
     std::vector<std::string> words;
-    const int num_components = separate_words(input, words);
+    const int num_components = Tokenizer::tokenize_line(input, words, Tokenizer::Duplicates);
     if (num_components > 0) {
         static const int buffer_len = 1024;
         char buffer[buffer_len];
@@ -257,32 +258,6 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
 
 size_t SwedishTextTree::size() const {
     return _size;
-}
-
-int SwedishTextTree::separate_words(const std::string &input, std::vector<std::string> &words) const {
-    std::string lastword;
-    static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
-
-    words.clear();
-
-    unsigned char prev_c = 0;
-    for (std::string::const_iterator it = input.begin(); it != input.end(); ++it) {
-        if (gap.find(*it) == std::string::npos) {
-            unsigned char c = utf8tolower(prev_c, *it);
-            lastword.append((char *)(&c), 1);
-            prev_c = c;
-        } else if (!lastword.empty()) {
-            words.push_back(lastword);
-            lastword.clear();
-            prev_c = 0;
-        }
-    }
-    if (!lastword.empty()) {
-        words.push_back(lastword);
-        lastword.clear();
-    }
-
-    return words.size();
 }
 
 std::vector<unsigned int> SwedishTextTree::code_word(const char *word)  const {
