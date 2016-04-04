@@ -9,10 +9,10 @@ The software makes use of a number of libraries, including:
 * [Protocol Buffers](https://developers.google.com/protocol-buffers/) -- Google's data interchange format. Most Linux distributions offer packages for this library under the name `protobuf`. Any recent version should be sufficient.
 * [zlib](http://www.zlib.net/) -- a standard (de)compression library. Often already installed as numerous programs make use of this library. Any recent version should be sufficient.
 * [Boost](http://www.boost.org/) -- a versatile collection of C++ libraries. Like zlib, this library is often installed due to its widespread use. Any recent version should be sufficient.
-* [libconfig](http://www.hyperrealm.com/libconfig/) -- a library for 	processing of structured configuration files. Version 1.6.1 (yet to be released, alternatively use `master` from [project's Git repository](https://github.com/hyperrealm/libconfig)) is required. Some distributions provide outdated packages (e.g. version 1.5), so please the distribution packages maintainers for an update.
+* [libconfig](http://www.hyperrealm.com/libconfig/) -- a library for 	processing of structured configuration files. Version 1.6.1 (yet to be released, alternatively use `master` from [project's Git repository](https://github.com/hyperrealm/libconfig)) is required. Some distributions provide outdated packages (e.g. version 1.5), so please ask the distribution packages maintainers for an update.
 * [OSMPBF](https://github.com/scrosby/OSM-binary) -- a Java/C library to read and write OpenStreetMap PBF files. Unfortunately, there is no stable, official release which contains the changes/features required by PBFLookup. Please use the master branch at [Thomas Fischer's fork](https://github.com/thomasfischer-his/OSM-binary) for the time being. At the time of writing, distributions do not ship packages for this library.
 
-In addition to above libraries, to configure the software before the actual compilation, [CMake](https://cmake.org/) is required. Due to the tool's popularity, virtually all distributions ship packages.
+In addition to above libraries, to configure the software before the actual compilation, [CMake](https://cmake.org/) is required.
 
 ### Configuration
 
@@ -22,7 +22,7 @@ Once the required libraries and tools are installed, the software can be configu
 cmake
 ```
 
-On Linux, if successful, a `Makefile` will be generated used in the actual compilation.
+On Linux, if successful, a `Makefile` will be generated for use in the actual compilation.
 
 Out-of-source build is supported. For example, create directory `/tmp/pbflookup-build`, go to this directory and launch from there
 
@@ -95,7 +95,7 @@ During execution, temporary files of about 500MB will be written to the temporar
 
 PBFLookup can also be configured to write SVG drawings of Sweden including markers about results. If the specified output filename ends with `.gz`, the SVG file will get gzip-compressed (file size up to 3MB), otherwise the file will stay uncompressed (plain SVG, file size about 10MB).
 
-Log messages printed during execution will be written as well to a log file. Unless configured differently, this file will be placed in the temporary directory as well.
+Log messages printed during execution will be written to a log file. Unless configured differently, this file will be placed in the temporary directory as well.
 
 ## Testset Configuration File
 
