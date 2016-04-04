@@ -1602,7 +1602,7 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
         return;
 
     /// Check for invalid parameters
-    if (wayid == 0 || roadType >= UnknownRoadType || roadNumber <= 0) {
+    if (wayid == 0 || roadType >= UnknownRoadType || roadNumber > 9999) {
         Error::warn("Combination of way id %llu, road number %d, and road type %d (%s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str());
         return;
     }
