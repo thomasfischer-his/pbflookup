@@ -145,11 +145,36 @@ void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
 }
 
 int Tokenizer::generate_word_combinations(const std::vector<std::string> &words, std::vector<std::string> &combinations, const size_t words_per_combination, const Multiplicity multiplicity) {
+    /// There are words that are often part of a valid name, but by itself
+    /// are rather meaningless, i.e. cause too many false hits:
+    static const std::unordered_set<std::string> blacklistedSingleWords = {
+        "nya", "gamla",
+        "v\xc3\xa4stra", "\xc3\xb6stra", "norra", "s\xc3\xb6""dra",
+        /** The following list has been manually assembled, based on existing testsets.
+          * This is most likely the clostest point where this software is fine-tuned to
+          * perform well for the testset.
+          * The list needs to be generalized
+          */
+        "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "b\xc3\xa5""de",
+        "dahl" /** such as in 'Dahl Sverige' */,
+        "g\xc3\xa5rd", "g\xc3\xb6ta",
+        "hamn", "hitta", "hos", "hus",
+        "km", "kommun",
+        "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
+        "sp\xc3\xa5r", "svea", "sverige",
+        "tillfällig",
+        "\xc3\xa5r" /** 'år' */,
+        "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
+    };
+
     combinations.clear();
     std::unordered_set<std::string> known_combinations;
 
     for (int s = min(words_per_combination, words.size()); s >= 1; --s) {
         for (size_t i = 0; i <= words.size() - s; ++i) {
+            /// Single words that may be misleading, such as 'nya'
+            if (s == 1 && blacklistedSingleWords.find(words[i]) != blacklistedSingleWords.end()) continue;
+
             std::string combined_word;
             for (int k = 0; k < s; ++k) {
                 if (k > 0)
