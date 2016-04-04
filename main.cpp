@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
                 }
             }
 
-            if (results.empty()) {
+            if (!places.empty()) {
                 /// No good result found, but some places have been recognized in the process.
                 /// Pick one of the larger places as result.
                 Error::info("=== Several places are known, trying to pick a good one ===");
