@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
                     /// Closer than 10km
                     Coord c;
                     if (node2Coord->retrieve(roadMatch.bestRoadNode, c)) {
-                        Error::info("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), Sweden::roadTypeToString(roadMatch.road.type).c_str(), roadMatch.road.number, distance / 1000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
-                        results.push_back(std::pair<Coord, double>(c, roadMatch.quality));
+                        Error::debug("Distance between '%s' and road %s: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), roadMatch.road.operator std::string().c_str(), distance / 1000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
+                        results.push_back(Result(c, roadMatch.quality, std::string("roadMatch: ") + roadMatch.word_combination + " road:" + static_cast<std::string>(roadMatch.road)));
                     }
                 }
             }

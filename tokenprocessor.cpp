@@ -258,7 +258,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                 }
 
                 if (minDistance < (INT_MAX >> 1)) {
-                    Error::debug("Distance between '%s' and road %s %d: %.1f km (between road node %llu and word's node %llu)", combined_cstr, Sweden::roadTypeToString(itR->type).c_str(), itR->number, minDistance / 1000.0, bestRoadNode, bestWordNode);
+                    Error::debug("Distance between '%s' and road %s: %.1f km (between road node %llu and word's node %llu)", combined_cstr, itR->operator std::string().c_str(), minDistance / 1000.0, bestRoadNode, bestWordNode);
                     result.push_back(RoadMatch(combined, *itR, bestRoadNode, bestWordNode, minDistance));
                 }
             }
