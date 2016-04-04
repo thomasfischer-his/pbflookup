@@ -359,7 +359,7 @@ struct Coord {
 
     /**
      * An object-variant (non-static) of distanceXY(const Coord &,const Coord &).
-     * @return
+     * @return Distance between two coordinates in meter
      */
     inline int distanceXY(const Coord &other) const {
         return Coord::distanceXY(*this, other);
@@ -367,7 +367,7 @@ struct Coord {
 
     /**
      * An object-variant (non-static) of distanceLatLon(const Coord &,const Coord &).
-     * @return
+     * @return Distance between two coordinates in meter
      */
     inline int distanceLatLon(const Coord &other) const {
         return Coord::distanceLatLon(*this, other);
