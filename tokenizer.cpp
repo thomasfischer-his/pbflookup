@@ -213,3 +213,81 @@ std::string Tokenizer::input_text() const {
     }
     return result;
 }
+
+size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity) {
+    static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
+
+    std::unordered_set<std::string> known_words;
+    unsigned char prev_c = '\0';
+    std::string lastword;
+    for (std::string::const_iterator it = line.cbegin(); it != line.cend(); ++it) {
+        const unsigned char &c = *it;
+
+        if ((c & 224) == 224) {
+            /// UTF-8 sequence of three or more bytes starting,
+            /// detected by as the three most significant bits are set
+            unsigned char utf8char[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
+            size_t utf8char_pos = 0;
+            while (it != line.cend() && ((*it) & 128) == 128 && utf8char_pos < 7) {
+                utf8char[utf8char_pos++] = *it;
+                ++it;
+            }
+            uint32_t unicode = 0;
+            if ((c & 240) == 224) ///< Three-byte sequence
+                unicode = (utf8char[0] & 15) << 12 | (utf8char[1] & 63) << 6 | (utf8char[2] & 63);
+            --it; ///< One step back, as for-loop will step for forward again
+            Error::warn("Skipping UTF-8 sequence of three or more bytes, but not supported: %s (U+%04X)", utf8char, unicode);
+            prev_c = 0; ///< Do not remember this UTF-8 sequence
+            continue; ///< Continue with next character
+        } else if ((prev_c & 224) == 192) {
+            /// Inside a two-byte UTF-8 sequence,
+            /// i.e. previous char started two-byte UTF-8 sequence
+            if (prev_c != 0xc3 || c < 0x80 || c > 0xbf) {
+                /// Warn about two-byte UTF-8 sequences that are not known letters (e.g. Yen symbol)
+                unsigned char utf8char[] = {prev_c, c, '\0'};
+                Error::warn("Skipping unsupported UTF-8 character: %s (%02x %02x = U+%04X)", utf8char, utf8char[0], utf8char[1], (utf8char[0] & 31) << 6 | (utf8char[0] & 63));
+                lastword.pop_back(); ///< Start of sequence already in word, remove it
+                prev_c = 0; ///< Do not remember this UTF-8 sequence
+                continue; ///< Continue with next character
+            }
+        }
+
+        if ((prev_c & 224) == 192 /** Inside an UTF-8 sequence cannot be a gap */
+                || gap.find(c) == std::string::npos) {
+            /// Character is not a 'gap' character
+            /// First, convert character to lower case
+            const unsigned char lower_c = utf8tolower(prev_c, c);
+            /// Second, add character to current word
+            lastword.append((char *)(&lower_c), 1);
+            prev_c = lower_c;
+        } else if (!lastword.empty()) {
+            /// Character is a 'gap' character and the current word is not empty
+            /// Current word is not a stop word
+            if (multiplicity == Duplicates)
+                /// If duplicates are allowed, memorize word
+                words.push_back(lastword);
+            else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                /// If no duplicates are allowed and word is not yet know, memorize it
+                words.push_back(lastword);
+                known_words.insert(lastword);
+            }
+
+            /// Reset current word
+            lastword.clear();
+            prev_c = 0;
+        }
+    }
+    if (!lastword.empty()) {
+        /// Very last word in line is not empty
+        if (multiplicity == Duplicates)
+            /// If duplicates are allowed, memorize word
+            words.push_back(lastword);
+        else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+            /// If no duplicates are allowed and word is not yet know, memorize it
+            words.push_back(lastword);
+            known_words.insert(lastword);
+        }
+    }
+
+    return words.size();
+}
