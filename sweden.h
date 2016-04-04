@@ -35,6 +35,8 @@ public:
             /// nothing
         }
 
+        operator std::string() const; ///< implemented in 'sweden.cpp'
+
         Sweden::RoadType type;
         int number;
     };

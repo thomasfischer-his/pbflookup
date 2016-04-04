@@ -707,6 +707,35 @@ const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20
 const size_t Sweden::Private::regional_outer_len = 64;
 const size_t Sweden::Private::regional_inner_len = 64;
 
+Sweden::Road::operator std::string() const {
+    switch (type) {
+    case RoadType::Europe: return "Eu" + std::to_string(number);
+    case RoadType::National: return "Rik" + std::to_string(number);
+    case RoadType::LanAB: return "AB" + std::to_string(number);
+    case RoadType::LanAC: return "AC" + std::to_string(number);
+    case RoadType::LanBD: return "BD" + std::to_string(number);
+    case RoadType::LanC: return "C" + std::to_string(number);
+    case RoadType::LanD: return "D" + std::to_string(number);
+    case RoadType::LanE: return "E" + std::to_string(number);
+    case RoadType::LanF: return "F" + std::to_string(number);
+    case RoadType::LanG: return "G" + std::to_string(number);
+    case RoadType::LanH: return "H" + std::to_string(number);
+    case RoadType::LanI: return "I" + std::to_string(number);
+    case RoadType::LanK: return "K" + std::to_string(number);
+    case RoadType::LanM: return "M" + std::to_string(number);
+    case RoadType::LanN: return "N" + std::to_string(number);
+    case RoadType::LanO: return "O" + std::to_string(number);
+    case RoadType::LanS: return "S" + std::to_string(number);
+    case RoadType::LanT: return "T" + std::to_string(number);
+    case RoadType::LanU: return "U" + std::to_string(number);
+    case RoadType::LanW: return "W" + std::to_string(number);
+    case RoadType::LanX: return "X" + std::to_string(number);
+    case RoadType::LanY: return "Y" + std::to_string(number);
+    case RoadType::LanZ: return "Z" + std::to_string(number);
+    default: return "?" + std::to_string(number);
+    }
+}
+
 Sweden::Sweden()
     : d(new Sweden::Private(this))
 {
