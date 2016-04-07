@@ -175,7 +175,7 @@ void HTTPServer::run() {
                             /// Closer than 10km
                             Coord c;
                             if (node2Coord->retrieve(roadMatch.bestRoadNode, c)) {
-                                results.push_back(Result(c, roadMatch.quality, std::string("roadMatch: ") + roadMatch.word_combination + " road:" + static_cast<std::string>(roadMatch.road)));
+                                results.push_back(Result(c, roadMatch.quality, std::string("roadMatch: road:") + static_cast<std::string>(roadMatch.road) + " near " + roadMatch.word_combination));
                             }
                         }
                     }
@@ -289,7 +289,7 @@ void HTTPServer::run() {
 
                         dprintf(slaveSocket, "<h2>Found Locations</h2>\n");
                         dprintf(slaveSocket, "<p>Number of results: %lu</p>\n", results.size());
-                        dprintf(slaveSocket, "<table>\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th></th></thead>\n<tbody>\n");
+                        dprintf(slaveSocket, "<table>\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
                         for (const Result &result : results) {
                             const double lon = Coord::toLongitude(result.coord.x);
                             const double lat = Coord::toLatitude(result.coord.y);
@@ -302,7 +302,7 @@ void HTTPServer::run() {
                             dprintf(slaveSocket, "<img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
                             dprintf(slaveSocket, "<img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
                             dprintf(slaveSocket, "<img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" />", zoom, tileX - 1, tileY + 1, zoom, tileX, tileY + 1, zoom, tileX + 1, tileY + 1);
-                            dprintf(slaveSocket, "</a></td></tr>\n");
+                            dprintf(slaveSocket, "</a></td><td>%s</td></tr>\n", result.origin.c_str());
                         }
                         dprintf(slaveSocket, "</tbody></table>\n");
 

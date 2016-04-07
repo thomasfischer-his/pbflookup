@@ -86,7 +86,7 @@ void Testset::run() {
                 Coord c;
                 if (node2Coord->retrieve(roadMatch.bestRoadNode, c)) {
                     Error::debug("Distance between '%s' and road %s: %.1f km (between road node %llu and word's node %llu)", roadMatch.word_combination.c_str(), roadMatch.road.operator std::string().c_str(), distance / 1000.0, roadMatch.bestRoadNode, roadMatch.bestWordNode);
-                    results.push_back(Result(c, roadMatch.quality, std::string("roadMatch: ") + roadMatch.word_combination + " road:" + static_cast<std::string>(roadMatch.road)));
+                    results.push_back(Result(c, roadMatch.quality, std::string("roadMatch: road:") + static_cast<std::string>(roadMatch.road) + " near " + roadMatch.word_combination));
                 }
             }
         }
