@@ -231,6 +231,8 @@ GlobalObjectManager::GlobalObjectManager() {
 }
 
 GlobalObjectManager::~GlobalObjectManager() {
+    Error::debug("Going to shut down, free'ing memory");
+
     Timer timer;
     timer.start();
     if (swedishTextTree != NULL)
