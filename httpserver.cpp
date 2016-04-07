@@ -294,7 +294,7 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
                         dprintf(slaveSocket, "<html><head><title>Results</title></head>\n<body>\n");
                         dprintf(slaveSocket, "<h1>Results</h1><p>For the following input, results were located:</p>\n");
-                        dprintf(slaveSocket, "<pre>%s</pre>\n", text);
+                        dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
                         dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
 
                         dprintf(slaveSocket, "<h2>Found Locations</h2>\n");
@@ -324,7 +324,8 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
                         dprintf(slaveSocket, "<html><head><title>Results</title></head>\n<body>\n");
                         dprintf(slaveSocket, "<h1>Results</h1><p>Sorry, no results could be found for the following input:</p>\n");
-                        dprintf(slaveSocket, "<pre>%s</pre>\n", text);
+                        dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
+                        dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
                         dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
                         dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputime / 1000.0);
                         dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
