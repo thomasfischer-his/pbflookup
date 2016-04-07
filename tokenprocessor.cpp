@@ -225,6 +225,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
             for (auto itR = knownRoads.begin(); itR != knownRoads.end(); ++itR) {
                 /// For a particular road, find shortest distance to any OSM element
                 uint64_t bestRoadNode = 0, bestWordNode = 0;
+                Sweden::Road bestRoad(*itR);
                 int minDistance = INT_MAX;
                 /// Go through all OSM elements
                 for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
@@ -247,19 +248,20 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                         /// will be returned
                         /// Function closestRoadNodeToCoord() may even correct a road's type
                         /// (e.g. if it was unknown due to missing information)
-                        sweden->closestRoadNodeToCoord(c.x, c.y, *itR, node, distance);
+                        Sweden::RoadType roadType = sweden->closestRoadNodeToCoord(c.x, c.y, *itR, node, distance);
 
                         if (distance < minDistance) {
                             bestRoadNode = node;
                             bestWordNode = id;
                             minDistance = distance;
+                            bestRoad.type = roadType;
                         }
                     }
                 }
 
                 if (minDistance < (INT_MAX >> 1)) {
                     Error::debug("Distance between '%s' and road %s: %.1f km (between road node %llu and word's node %llu)", combined_cstr, itR->operator std::string().c_str(), minDistance / 1000.0, bestRoadNode, bestWordNode);
-                    result.push_back(RoadMatch(combined, *itR, bestRoadNode, bestWordNode, minDistance));
+                    result.push_back(RoadMatch(combined, bestRoad, bestRoadNode, bestWordNode, minDistance));
                 }
             }
         }

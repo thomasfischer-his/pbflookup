@@ -35,6 +35,11 @@ public:
             /// nothing
         }
 
+        Road(const Sweden::Road &other)
+            : type(other.type), number(other.number) {
+            /// nothing
+        }
+
         operator std::string() const; ///< implemented in 'sweden.cpp'
 
         Sweden::RoadType type;
