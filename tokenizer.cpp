@@ -160,9 +160,11 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
         "g\xc3\xa5rd", "g\xc3\xb6ta",
         "hamn", "hitta", "hos", "hus",
         "km", "kommun",
+        "plats", "platsen",
         "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
         "sp\xc3\xa5r", "svea", "sverige",
-        "tillfällig",
+        "tillf\xc3\xa4llig",
+        "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
         "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
     };
