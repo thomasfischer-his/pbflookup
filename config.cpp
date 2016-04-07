@@ -137,7 +137,9 @@ bool init_configuration(const char *configfilename) {
     if (lastslash != NULL) {
         char temp[MAX_STRING_LEN];
         temp[0] = '\0';
-        strncpy(temp, internal_configfilename, lastslash - internal_configfilename);
+        size_t len = lastslash - internal_configfilename;
+        if (len > MAX_STRING_LEN - 2) len = MAX_STRING_LEN - 2; ///< Prevent exceeding 'temp's size
+        strncpy(temp, internal_configfilename, len);
         if (temp[0] == '\0') {
             /// Configuration file's location is / (very unusual)
             temp[0] = '/'; temp[1] = '\0';
