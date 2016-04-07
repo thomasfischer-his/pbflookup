@@ -230,40 +230,42 @@ bool init_configuration(const char *configfilename) {
 #endif // DEBUG
 
         testsets.clear();
-        if (config.exists("testsets")) {
-            libconfig::Setting &setting = config.lookup("testsets");
-            if (setting.isList()) {
-                Error::info("Testsets: %i in total", setting.getLength());
-                for (auto it = setting.begin(); it != setting.end(); ++it) {
-                    const libconfig::Setting &testsetSetting = *it;
-                    if (testsetSetting.isGroup()) {
-                        struct testset ts;
-                        ts.name = testsetSetting.lookup("name").c_str();
-                        const libconfig::Setting &lat = testsetSetting.lookup("latitude");
-                        const libconfig::Setting &lon = testsetSetting.lookup("longitude");
-                        if (lat.isScalar() && lon.isScalar())
-                            ts.coord.push_back(Coord((double)lon, (double)lat));
-                        else if (lat.isArray() && lon.isArray())
-                            for (auto itLat = lat.begin(), itLon = lon.begin(); itLat != lat.end() && itLon != lon.end(); ++itLat, ++itLon)
-                                ts.coord.push_back(Coord((double)*itLon, (double)*itLat));
-                        else
-                            throw libconfig::SettingTypeException(testsetSetting, "Latitude and/or longitude given in wrong format (need to be both scalar or both array)");
-                        ts.text = testsetSetting.lookup("text").c_str();
-                        /// "svgoutputfilename" is optional, so tolerate if it is not set
-                        if (configIfExistsLookup(config, "svgoutputfilename", ts.svgoutputfilename)) {
-                            // FIXME can we do better than converting std::string -> char* -> std::string ?
-                            static char filename[MAX_STRING_LEN];
-                            strncpy(filename, ts.svgoutputfilename.c_str(), MAX_STRING_LEN);
-                            replacetildehome(filename);
-                            replacevariablenames(filename);
-                            ts.svgoutputfilename = std::string(filename);
+        static const std::vector<std::string> testsetKeySuffixes = {"", "1", "2", "3", "4", "5", "6", "A", "B", "C", "D", "E", "F"};
+        for (const std::string &testsetKeySuffix : testsetKeySuffixes)
+            if (config.exists("testsets" + testsetKeySuffix)) {
+                libconfig::Setting &setting = config.lookup("testsets" + testsetKeySuffix);
+                if (setting.isList()) {
+                    for (auto it = setting.begin(); it != setting.end(); ++it) {
+                        const libconfig::Setting &testsetSetting = *it;
+                        if (testsetSetting.isGroup()) {
+                            struct testset ts;
+                            ts.name = testsetSetting.lookup("name").c_str();
+                            const libconfig::Setting &lat = testsetSetting.lookup("latitude");
+                            const libconfig::Setting &lon = testsetSetting.lookup("longitude");
+                            if (lat.isScalar() && lon.isScalar())
+                                ts.coord.push_back(Coord((double)lon, (double)lat));
+                            else if (lat.isArray() && lon.isArray())
+                                for (auto itLat = lat.begin(), itLon = lon.begin(); itLat != lat.end() && itLon != lon.end(); ++itLat, ++itLon)
+                                    ts.coord.push_back(Coord((double)*itLon, (double)*itLat));
+                            else
+                                throw libconfig::SettingTypeException(testsetSetting, "Latitude and/or longitude given in wrong format (need to be both scalar or both array)");
+                            ts.text = testsetSetting.lookup("text").c_str();
+                            /// "svgoutputfilename" is optional, so tolerate if it is not set
+                            if (configIfExistsLookup(config, "svgoutputfilename", ts.svgoutputfilename)) {
+                                // FIXME can we do better than converting std::string -> char* -> std::string ?
+                                static char filename[MAX_STRING_LEN];
+                                strncpy(filename, ts.svgoutputfilename.c_str(), MAX_STRING_LEN);
+                                replacetildehome(filename);
+                                replacevariablenames(filename);
+                                ts.svgoutputfilename = std::string(filename);
+                            }
+                            Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
+                            testsets.push_back(ts);
                         }
-                        Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
-                        testsets.push_back(ts);
                     }
                 }
             }
-        }
+        Error::info("Testsets: %i in total", testsets.size());
 
         serverSocket = -1;
         if (config.exists("http_port")) {
