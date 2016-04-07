@@ -33,6 +33,7 @@ char mapname[MAX_STRING_LEN];
 char osmpbffilename[MAX_STRING_LEN];
 char inputextfilename[MAX_STRING_LEN];
 char stopwordfilename[MAX_STRING_LEN];
+unsigned int http_port;
 
 std::vector<struct testset> testsets;
 
@@ -96,6 +97,7 @@ bool init_configuration(const char *configfilename) {
     memset(osmpbffilename, 0, MAX_STRING_LEN);
     memset(inputextfilename, 0, MAX_STRING_LEN);
     memset(stopwordfilename, 0, MAX_STRING_LEN);
+    http_port = 0;
 
     /**
      * Modify given configuration filename:
@@ -259,6 +261,19 @@ bool init_configuration(const char *configfilename) {
                     }
                 }
             }
+        }
+
+        serverSocket = -1;
+        if (config.exists("http_port")) {
+            http_port = config.lookup("http_port");
+#ifdef DEBUG
+            Error::debug("  http_port = %d", http_port);
+#endif // DEBUG
+        } else {
+            http_port = 0;
+#ifdef DEBUG
+            Error::debug("  http_port = DISABLED");
+#endif // DEBUG
         }
     }
     catch (libconfig::ParseException &pe)

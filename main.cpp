@@ -17,9 +17,13 @@
 #include <cstdlib>
 #include <fstream>
 
+#include <sys/socket.h>
+#include <netinet/ip.h>
+
 #include "global.h"
 #include "globalobjects.h"
 #include "config.h"
+#include "httpserver.h"
 #include "testset.h"
 
 inline bool ends_with(std::string const &value, std::string const &ending)
@@ -61,7 +65,12 @@ int main(int argc, char *argv[])
     std::unique_ptr<GlobalObjectManager> gom(GlobalObjectManager::instance());
 
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
-        if (!testsets.empty()) {
+        serverSocket = http_port < 1024 ? -1 : socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (serverSocket >= 0) {
+            HTTPServer httpServer;
+            httpServer.run();
+            close(serverSocket);
+        } else if (!testsets.empty()) {
             Testset testsetRunner;
             testsetRunner.run();
         }

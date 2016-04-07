@@ -24,4 +24,6 @@ extern const double maxlon, maxlat; ///< defined in 'sweden.cpp'
 /// Decimeter per degree longitude and latitude at N 60 (north of Uppsala)
 extern const double decimeterDegreeLongitude, decimeterDegreeLatitude; ///< defined in 'sweden.cpp'
 
+extern int serverSocket; ///< defined in http_server.cpp
+
 #endif // GLOBAL_H
