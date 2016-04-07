@@ -23,7 +23,6 @@
 #include "tokenprocessor.h"
 #include "tokenizer.h"
 #include "timer.h"
-#include "timer.h"
 #include "helper.h"
 
 void Testset::run() {

@@ -44,8 +44,7 @@ void init_rand() {
     srand(seed);
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 #ifdef DEBUG
     Error::debug("DEBUG flag enabled");
 #endif // DEBUG
