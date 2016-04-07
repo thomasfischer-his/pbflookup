@@ -274,18 +274,20 @@ void HTTPServer::run() {
                             return a.quality > b.quality;
                         });
                         /// Remove results close to even better results
-                        unsigned int outerIdx = 0;
-                        for (auto outer = results.begin(); outerIdx < results.size() && outer != results.end(); ++outerIdx) {
-                            for (unsigned int inner = 0; inner < outerIdx; ++inner) {
-                                const Result &outerR = *outer;
-                                const Result &innerR = results[inner];
-                                if (outerR.coord.distanceLatLon(innerR.coord) < 2000) {
-                                    /// Less than 2km away? Remove this result;
+                        for (auto outer = results.begin(); outer != results.end();) {
+                            bool removedOuter = false;
+                            const Result &outerR = *outer;
+                            for (auto inner = results.begin(); !removedOuter && inner != outer && inner != results.end(); ++inner) {
+                                const Result &innerR = *inner;
+                                const auto d = outerR.coord.distanceLatLon(innerR.coord);
+                                if (d < 1000) {
+                                    /// Less than 1km away? Remove this result;
                                     outer = results.erase(outer);
-                                    continue;
+                                    removedOuter = true;
                                 }
                             }
-                            ++outer;
+                            if (!removedOuter)
+                                ++outer;
                         }
 
                         dprintf(slaveSocket, "Cache-Control: private, max-age=0, no-cache, no-store\n");
