@@ -281,6 +281,7 @@ void HTTPServer::run() {
                             ++outer;
                         }
 
+                        dprintf(slaveSocket, "Cache-Control: private, max-age=0, no-cache, no-store\n");
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
                         dprintf(slaveSocket, "<html><head><title>Results</title></head>\n<body>\n");
                         dprintf(slaveSocket, "<h1>Results</h1><p>For the following input, results were located:</p>\n");
