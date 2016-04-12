@@ -90,11 +90,7 @@ private:
 
     std::string normalizeAdministrativeRegionName(const std::string &name) const {
         std::string internal_name(name);
-
-        /// Convert to lower case, UTF-8-aware for Swedish characters
-        std::transform(internal_name.begin(), internal_name.end(), internal_name.begin(), [](unsigned char c) {
-            return (c >= 'A' && c <= 'Z') || (c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */) ? c |= 0x20 : c;
-        });
+        utf8tolower(internal_name);
 
         for (int i = 0; !region_beginnings[i].empty(); ++i)
             if (startsWith(internal_name, region_beginnings[i]))
