@@ -29,6 +29,7 @@
 #include <deque>
 #include <algorithm>
 #include <vector>
+#include <unordered_set>
 
 #include "error.h"
 #include "globalobjects.h"
@@ -100,8 +101,15 @@ private:
                 return internal_name.substr(region_beginnings[i].length(), internal_name.length() - region_beginnings[i].length());
 
         for (int i = 0; !region_endings[i].empty(); ++i)
-            if (endsWith(internal_name, region_endings[i]))
-                return internal_name.substr(0, internal_name.length() - region_endings[i].length());
+            if (endsWith(internal_name, region_endings[i])) {
+                internal_name = internal_name.substr(0, internal_name.length() - region_endings[i].length());
+
+                static const std::unordered_set<std::string> municipalitiesMissingS = {"alings\xc3\xa5", "bengtsfor", "bolln\xc3\xa4", "degerfor", "grum", "hagfor", "hofor", "h\xc3\xa4llefor", "h\xc3\xb6gan\xc3\xa4", "kramfor", "munkfor", "m\xc3\xb6nster\xc3\xa5", "robertsfor", "soten\xc3\xa4", "storfor", "str\xc3\xa4ngn\xc3\xa4", "tors\xc3\xa5", "tran\xc3\xa5", "v\xc3\xa4nn\xc3\xa4", "bor\xc3\xa5", "v\xc3\xa4ster\xc3\xa5"};
+                if (municipalitiesMissingS.count(internal_name) > 0)
+                    internal_name += "s";
+
+                return internal_name;
+            }
 
         return internal_name;
     }
