@@ -25,8 +25,10 @@
 
 #include "error.h"
 #include "idtree.h"
+#include "helper.h"
 
 #define MAX_STRING_LEN 1024
+#define MAX_BUFFER_LEN 16384
 
 char tempdir[MAX_STRING_LEN];
 char mapname[MAX_STRING_LEN];
@@ -34,6 +36,8 @@ char osmpbffilename[MAX_STRING_LEN];
 char inputextfilename[MAX_STRING_LEN];
 char stopwordfilename[MAX_STRING_LEN];
 unsigned int http_port;
+char http_interface[MAX_STRING_LEN];
+char css_data[MAX_BUFFER_LEN];
 
 std::vector<struct testset> testsets;
 
@@ -98,6 +102,8 @@ bool init_configuration(const char *configfilename) {
     memset(inputextfilename, 0, MAX_STRING_LEN);
     memset(stopwordfilename, 0, MAX_STRING_LEN);
     http_port = 0;
+    memset(http_interface, 0, MAX_STRING_LEN);
+    memset(css_data, 0, MAX_BUFFER_LEN);
 
     /**
      * Modify given configuration filename:
@@ -270,8 +276,31 @@ bool init_configuration(const char *configfilename) {
         serverSocket = -1;
         if (config.exists("http_port")) {
             http_port = config.lookup("http_port");
+
+            if (configIfExistsLookup(config, "http_interface", buffer))
+                strncpy(http_interface, buffer, MAX_STRING_LEN - 1);
+            else
+                snprintf(http_interface, MAX_STRING_LEN - 1, "ANY");
+            utf8toupper_chars(http_interface, MAX_STRING_LEN - 1);
+
+            if (configIfExistsLookup(config, "css_filename", buffer)) {
+                FILE *f = fopen(buffer, "r");
+                if (f != NULL) {
+                    char *cur = css_data;
+                    size_t remaining = MAX_BUFFER_LEN - 1;
+                    size_t len = fread(cur, remaining, 1, f);
+                    while (len > 0) {
+                        remaining -= len;
+                        cur += len;
+                        len = fread(cur, remaining, 1, f);
+                    }
+                }
+            }
+
 #ifdef DEBUG
             Error::debug("  http_port = %d", http_port);
+            Error::debug("  http_interface = %s", http_interface);
+            Error::debug("  css_data = %s", css_data);
 #endif // DEBUG
         } else {
             http_port = 0;
