@@ -326,7 +326,11 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "<h2>Found Locations</h2>\n");
                         dprintf(slaveSocket, "<p>Number of results: %lu</p>\n", results.size());
                         dprintf(slaveSocket, "<table>\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
+                        static const size_t maxCountResults = 20;
+                        size_t resultCounter = maxCountResults;
                         for (const Result &result : results) {
+                            if (--resultCounter <= 0) break; ///< Limit number of results
+
                             const double lon = Coord::toLongitude(result.coord.x);
                             const double lat = Coord::toLatitude(result.coord.y);
                             const std::vector<int> m = sweden->insideSCBarea(result.coord);
