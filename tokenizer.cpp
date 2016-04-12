@@ -148,23 +148,24 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
     /// There are words that are often part of a valid name, but by itself
     /// are rather meaningless, i.e. cause too many false hits:
     static const std::unordered_set<std::string> blacklistedSingleWords = {
-        "nya", "gamla",
+        "nya", "nytt", "gamla", "gammalt",
         "v\xc3\xa4stra", "\xc3\xb6stra", "norra", "s\xc3\xb6""dra",
         /** The following list has been manually assembled, based on existing testsets.
           * This is most likely the clostest point where this software is fine-tuned to
           * perform well for the testset.
           * The list needs to be generalized
           */
-        "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "b\xc3\xa5""de",
+        "bil", "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "b\xc3\xa5""de",
+        "center", "city",
         "dahl" /** such as in 'Dahl Sverige' */,
         "g\xc3\xa5rd", "g\xc3\xb6ta",
         "hamn", "halv", "hitta", "hos", "hus",
         "km", "kommun",
         "plats", "platsen",
-        "region","regionens","runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
+        "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
         "sp\xc3\xa5r", "svea", "sverige",
-        "tillf\xc3\xa4llig",
-        "v\xc3\xa4g", "v\xc3\xa4gen",
+        "tillf\xc3\xa4llig", "torg", "torget",
+        "via", "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
         "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
     };
