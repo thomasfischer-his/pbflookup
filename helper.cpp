@@ -101,8 +101,23 @@ bool getCenterOfOSMElement(const OSMElement &element, Coord &coord) {
 
 unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c) {
     if ((c >= 'A' && c <= 'Z') ||
-            (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e /** poor man's Latin-1 Supplement lower case */))
-        c |= 0x20;
+            (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e && c != 0x97 /** poor man's Latin-1 Supplement lower case */))
+        c |= 0x20; ///< set bit 0x20
+    else if (prev_c == 0xc4 && c >= 0x80 && c <= 0xb7)
+        c |= 0x01;
+    else if (prev_c == 0xc5 && c >= 0x8a && c <= 0xbe)
+        c |= 0x01;
+    return c;
+}
+
+unsigned char utf8toupper(const unsigned char &prev_c, unsigned char c) {
+    if ((c >= 'a' && c <= 'z') ||
+            (prev_c == 0xc3 && c >= 0xa0 && c <= 0xbe && c != 0xb7 /** poor man's Latin-1 Supplement upper case */))
+        c &= 0xdf; ///< remove bit 0x20
+    else if (prev_c == 0xc4 && c >= 0x80 && c <= 0xb7)
+        c &= 0xfe;
+    else if (prev_c == 0xc5 && c >= 0x8a && c <= 0xbe)
+        c &= 0xfe;
     return c;
 }
 
@@ -111,6 +126,15 @@ std::string &utf8tolower(std::string &text) {
     for (size_t i = 0; i < text.length(); ++i) {
         const unsigned char c = text[i];
         prev_c = text[i] = utf8tolower(prev_c, c);
+    }
+    return text;
+}
+
+char *utf8toupper_chars(char *text, size_t len) {
+    unsigned char prev_c = 0;
+    for (size_t i = 0; text[i] != '\0' && i < len; ++i) {
+        const unsigned char c = text[i];
+        prev_c = text[i] = utf8toupper(prev_c, c);
     }
     return text;
 }
