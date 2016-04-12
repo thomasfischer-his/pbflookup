@@ -96,6 +96,10 @@ void HTTPServer::run() {
 
     Error::info("Enter 'quit' to quit HTTP server");
     while (!doexitserver) {
+        Timer timerServer;
+        int64_t cputimeServer, walltimeServer;
+        timerServer.start();
+
         FD_ZERO(&readfds);
         FD_SET(serverSocket, &readfds);
         FD_SET(0, &readfds);
@@ -164,8 +168,8 @@ void HTTPServer::run() {
                 } else if (readbuffer[0] == 'P' && readbuffer[1] == 'O' && readbuffer[2] == 'S' && readbuffer[3] == 'T' && readbuffer[4] == ' ') {
                     strncpy(text, strstr(readbuffer, "\ntext=") + 6, readbuffer_size);
 
-                    Timer timer;
-                    int64_t cputime, walltime;
+                    Timer timerSearch;
+                    int64_t cputimeSearch, walltimeSearch;
 
                     struct Result {
                         Result(const Coord &_coord, double _quality, const std::string &_origin)
@@ -179,7 +183,7 @@ void HTTPServer::run() {
                     };
                     std::vector<Result> results;
 
-                    timer.start();
+                    timerSearch.start();
 
                     Tokenizer tokenizer;
                     TokenProcessor tokenProcessor;
@@ -282,7 +286,7 @@ void HTTPServer::run() {
                             results.push_back(Result(c, quality * .5, std::string("Large place: ") + placeName));
                         }
                     }
-                    timer.elapsed(&cputime, &walltime);
+                    timerSearch.elapsed(&cputimeSearch, &walltimeSearch);
 
                     dprintf(slaveSocket, "HTTP/1.1 200 OK\n");
                     if (!results.empty()) {
@@ -332,24 +336,35 @@ void HTTPServer::run() {
                             dprintf(slaveSocket, "</a></td><td>%s</td></tr>\n", result.origin.c_str());
                         }
                         dprintf(slaveSocket, "</tbody></table>\n");
-
-                        dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
-                        dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputime / 1000.0);
-                        dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
-                        dprintf(slaveSocket, "</body></html>\n\n\n");
                     } else {
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
                         dprintf(slaveSocket, "<html><head><title>Results</title></head>\n<body>\n");
                         dprintf(slaveSocket, "<h1>Results</h1><p>Sorry, no results could be found for the following input:</p>\n");
                         dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
                         dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
-                        dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
-                        dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputime / 1000.0);
-                        dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
-                        dprintf(slaveSocket, "</body></html>\n\n\n");
                     }
-                } else
-                    dprintf(slaveSocket, "HTTP/1.1 400 Bad Request\n\n");
+                    dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
+                    dprintf(slaveSocket, "<h3>Search</h3>\n");
+                    dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputimeSearch / 1000.0);
+                    dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", cputimeSearch / 1000.0);
+                    dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
+                    timerServer.elapsed(&cputimeServer, &walltimeServer);
+                    dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputimeServer / 1000.0);
+                    dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
+                    dprintf(slaveSocket, "</body></html>\n\n\n");
+                } else {
+                    dprintf(slaveSocket, "HTTP/1.1 400 Bad Request\n");
+                    dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
+                    dprintf(slaveSocket, "<html><head><title>PBFLookup: Bad Request</title>\n");
+                    dprintf(slaveSocket, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
+                    dprintf(slaveSocket, "<h1>Bad Request</h1>\n");
+                    dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
+                    dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
+                    timerServer.elapsed(&cputimeServer, &walltimeServer);
+                    dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputimeServer / 1000.0);
+                    dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
+                    dprintf(slaveSocket, "</body></html>\n\n\n");
+                }
 
                 close(slaveSocket);
                 exit(0);
