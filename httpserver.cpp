@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/ip.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 
 #include "global.h"
@@ -63,7 +64,16 @@ void HTTPServer::run() {
     memset(&serverName, 0, sizeof(serverName));
     serverName.sin_family = AF_INET;
     serverName.sin_port = htons(http_port);
-    serverName.sin_addr.s_addr = INADDR_ANY;
+    if (http_interface[0] == 'L' && http_interface[1] == 'O' && http_interface[2] == 'C' && http_interface[3] == 'A' && http_interface[4] == 'L')
+        serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    else if (http_interface[0] == 'A' && http_interface[1] == 'N' && http_interface[2] == 'Y')
+        serverName.sin_addr.s_addr = htonl(INADDR_ANY);
+    else {
+        if (inet_aton(http_interface, &serverName.sin_addr) == 0) {
+            Error::warn("Provided http_interface '%s' is invalid, using local loopback instead", http_interface);
+            serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+        }
+    }
     /// 'my_addr.sin_zero' set to zeros by above memset command
 
     status = bind(serverSocket, (struct sockaddr *) &serverName, sizeof(serverName));
@@ -77,6 +87,13 @@ void HTTPServer::run() {
     bool doexitserver = false;
     fd_set readfds;
     Error::info("HTTP Server awaits connection attempts on port %d", http_port);
+    /// Extract four bytes for IPv4 address; for ANY use '127.0.0.1'
+    const unsigned char a = serverName.sin_addr.s_addr == 0x0 ? 127 : serverName.sin_addr.s_addr & 255;
+    const unsigned char b = serverName.sin_addr.s_addr == 0x0 ? 0 : (serverName.sin_addr.s_addr >> 8) & 255;
+    const unsigned char c = serverName.sin_addr.s_addr == 0x0 ? 0 : (serverName.sin_addr.s_addr >> 16) & 255;
+    const unsigned char d = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
+    Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a, b, c, d, htons(serverName.sin_port));
+
     Error::info("Enter 'quit' to quit HTTP server");
     while (!doexitserver) {
         FD_ZERO(&readfds);
