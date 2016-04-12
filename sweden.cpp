@@ -207,6 +207,8 @@ public:
                 break;
             }
         }
+        if (min == max && normalized_name.compare(regions[min].name) == 0)
+            result = min;
 
         if (result >= 0) {
             /// Select region of highest administrative level (e.g. county over municipality)
