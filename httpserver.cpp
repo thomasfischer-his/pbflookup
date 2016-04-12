@@ -146,25 +146,30 @@ void HTTPServer::run() {
 
                 if (readbuffer[0] == 'G' && readbuffer[1] == 'E' && readbuffer[2] == 'T' && readbuffer[3] == ' ') {
                     dprintf(slaveSocket, "HTTP/1.1 200 OK\n");
-                    dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
-                    dprintf(slaveSocket, "\n<html><head>\n");
-                    dprintf(slaveSocket, "<title>Search for Locations described in Swedish Text</title>\n");
-                    dprintf(slaveSocket, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n</script>\n");
-                    dprintf(slaveSocket, "</head>\n");
-                    dprintf(slaveSocket, "<body>\n");
-                    dprintf(slaveSocket, "<h1>Search for Locations described in Swedish Text</h1>\n");
-                    dprintf(slaveSocket, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\">\n");
-                    if (!testsets.empty()) {
-                        dprintf(slaveSocket, "<p>Either select a pre-configured text from this list: <select onchange=\"testsetChanged(this)\" id=\"testsets\">\n");
-                        dprintf(slaveSocket, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
-                        for (const struct testset &t : testsets)
-                            dprintf(slaveSocket, "<option value=\"%s\">%s</option>", t.text.c_str(), t.name.c_str());
-                        dprintf(slaveSocket, "</select> or &hellip;</p>\n");
+                    if (css_data[0] != '\0' && strncmp(readbuffer + 4, "/default.css", 12) == 0) {
+                        dprintf(slaveSocket, "Content-Type: text/css; charset=utf-8\n");
+                        dprintf(slaveSocket, "\n%s\n\n", css_data);
+                    } else {
+                        dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
+                        dprintf(slaveSocket, "\n<html><head>\n");
+                        dprintf(slaveSocket, "<title>Search for Locations described in Swedish Text</title>\n");
+                        dprintf(slaveSocket, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n</script>\n");
+                        dprintf(slaveSocket, "</head>\n");
+                        dprintf(slaveSocket, "<body>\n");
+                        dprintf(slaveSocket, "<h1>Search for Locations described in Swedish Text</h1>\n");
+                        dprintf(slaveSocket, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\">\n");
+                        if (!testsets.empty()) {
+                            dprintf(slaveSocket, "<p>Either select a pre-configured text from this list: <select onchange=\"testsetChanged(this)\" id=\"testsets\">\n");
+                            dprintf(slaveSocket, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
+                            for (const struct testset &t : testsets)
+                                dprintf(slaveSocket, "<option value=\"%s\">%s</option>", t.text.c_str(), t.name.c_str());
+                            dprintf(slaveSocket, "</select> or &hellip;</p>\n");
+                        }
+                        dprintf(slaveSocket, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
+                        dprintf(slaveSocket, "<p><input type=\"submit\" value=\"Find location for text\"></p>\n");
+                        dprintf(slaveSocket, "</form>\n");
+                        dprintf(slaveSocket, "</body></html>\n\n\n");
                     }
-                    dprintf(slaveSocket, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
-                    dprintf(slaveSocket, "<p><input type=\"submit\" value=\"Find location for text\"></p>\n");
-                    dprintf(slaveSocket, "</form>\n");
-                    dprintf(slaveSocket, "</body></html>\n\n\n");
                 } else if (readbuffer[0] == 'P' && readbuffer[1] == 'O' && readbuffer[2] == 'S' && readbuffer[3] == 'T' && readbuffer[4] == ' ') {
                     strncpy(text, strstr(readbuffer, "\ntext=") + 6, readbuffer_size);
 
