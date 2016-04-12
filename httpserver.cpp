@@ -151,8 +151,8 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "\n%s\n\n", css_data);
                     } else {
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
-                        dprintf(slaveSocket, "\n<html><head>\n");
-                        dprintf(slaveSocket, "<title>Search for Locations described in Swedish Text</title>\n");
+                        dprintf(slaveSocket, "\n<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
+                        dprintf(slaveSocket, "<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
                         dprintf(slaveSocket, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n</script>\n");
                         dprintf(slaveSocket, "</head>\n");
                         dprintf(slaveSocket, "<body>\n");
@@ -318,7 +318,8 @@ void HTTPServer::run() {
 
                         dprintf(slaveSocket, "Cache-Control: private, max-age=0, no-cache, no-store\n");
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
-                        dprintf(slaveSocket, "<html><head><title>Results</title></head>\n<body>\n");
+                        dprintf(slaveSocket, "<html><head><title>PBFLookup: Results</title>\n");
+                        dprintf(slaveSocket, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n</head><body>\n");
                         dprintf(slaveSocket, "<h1>Results</h1><p>For the following input, results were located:</p>\n");
                         dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
                         dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
@@ -347,7 +348,8 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "</tbody></table>\n");
                     } else {
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
-                        dprintf(slaveSocket, "<html><head><title>Results</title></head>\n<body>\n");
+                        dprintf(slaveSocket, "<html><head><title>PBFLookup: Results</title>\n");
+                        dprintf(slaveSocket, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
                         dprintf(slaveSocket, "<h1>Results</h1><p>Sorry, no results could be found for the following input:</p>\n");
                         dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
                         dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
