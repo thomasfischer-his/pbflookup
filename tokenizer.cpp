@@ -177,6 +177,11 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
         for (size_t i = 0; i <= words.size() - s; ++i) {
             /// Single words that may be misleading, such as 'nya'
             if (s == 1 && blacklistedSingleWords.find(words[i]) != blacklistedSingleWords.end()) continue;
+            /// Free-standing numbers should be skipped as well (won't affect search for e.g. 'väg 53')
+            bool isNumber = true;
+            for (int p = words[i].length() - 1; isNumber && p >= 0; --p)
+                isNumber &= words[i][p] >= '0' && words[i][p] <= '9';
+            if (isNumber) continue;
 
             std::string combined_word;
             for (int k = 0; k < s; ++k) {
