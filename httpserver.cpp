@@ -186,6 +186,10 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
                         dprintf(slaveSocket, "<p><input type=\"submit\" value=\"Find location for text\"></p>\n");
                         dprintf(slaveSocket, "</form>\n");
+                        dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
+                        dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
+                        timerServer.elapsed(&cputimeServer, &walltimeServer);
+                        dprintf(slaveSocket, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
                         dprintf(slaveSocket, "</body></html>\n\n\n");
                     }
                 } else if (readbuffer[0] == 'P' && readbuffer[1] == 'O' && readbuffer[2] == 'S' && readbuffer[3] == 'T' && readbuffer[4] == ' ') {
@@ -378,8 +382,7 @@ void HTTPServer::run() {
                     dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", cputimeSearch / 1000.0);
                     dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
                     timerServer.elapsed(&cputimeServer, &walltimeServer);
-                    dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputimeServer / 1000.0);
-                    dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
+                    dprintf(slaveSocket, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
                     dprintf(slaveSocket, "</body></html>\n\n\n");
                 } else {
                     dprintf(slaveSocket, "HTTP/1.1 400 Bad Request\n");
@@ -390,8 +393,7 @@ void HTTPServer::run() {
                     dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
                     dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
                     timerServer.elapsed(&cputimeServer, &walltimeServer);
-                    dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputimeServer / 1000.0);
-                    dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
+                    dprintf(slaveSocket, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
                     dprintf(slaveSocket, "</body></html>\n\n\n");
                 }
 
