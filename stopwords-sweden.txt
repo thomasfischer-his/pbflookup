@@ -375,7 +375,6 @@ vart
 vem
 vems
 verkligen
-vi
 vid
 vidare
 viktig

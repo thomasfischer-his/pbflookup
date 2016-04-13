@@ -165,7 +165,7 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
         "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
         "sp\xc3\xa5r", "svea", "sverige",
         "tillf\xc3\xa4llig", "torg", "torget",
-        "via", "v\xc3\xa4g", "v\xc3\xa4gen",
+        "vi", "via", "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
         "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
     };
