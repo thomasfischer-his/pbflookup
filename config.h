@@ -29,7 +29,7 @@ extern char inputextfilename[];
 extern char stopwordfilename[];
 extern unsigned int http_port;
 extern char http_interface[];
-extern char css_data[];
+extern char cssfilename[];
 
 extern FILE *logfile; ///< defined in 'error.cpp'
 

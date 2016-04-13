@@ -34,6 +34,8 @@
 #include "config.h"
 #include "error.h"
 
+#define MAX_BUFFER_LEN 16384
+
 int serverSocket;
 
 /// Taken from
@@ -146,9 +148,25 @@ void HTTPServer::run() {
 
                 if (readbuffer[0] == 'G' && readbuffer[1] == 'E' && readbuffer[2] == 'T' && readbuffer[3] == ' ') {
                     dprintf(slaveSocket, "HTTP/1.1 200 OK\n");
-                    if (css_data[0] != '\0' && strncmp(readbuffer + 4, "/default.css", 12) == 0) {
+                    if (cssfilename[0] != '\0' && strncmp(readbuffer + 4, "/default.css", 12) == 0) {
+                        Error::info("CSS file requested");
                         dprintf(slaveSocket, "Content-Type: text/css; charset=utf-8\n");
-                        dprintf(slaveSocket, "\n%s\n\n", css_data);
+                        FILE *f = fopen(cssfilename, "r");
+                        if (f != NULL) {
+                            static char cssbuffer[MAX_BUFFER_LEN];
+                            size_t remaining = MAX_BUFFER_LEN - 1;
+                            char *cur = cssbuffer;
+                            size_t len = fread(cur, remaining, 1, f);
+                            while (len > 0) {
+                                remaining -= len;
+                                cur += len;
+                                len = fread(cur, remaining, 1, f);
+                            }
+                            fclose(f);
+                            dprintf(slaveSocket, "\n%s\n", cssbuffer);
+                        } else
+                            Error::warn("Cannot open CSS file '%s'", cssfilename);
+                        dprintf(slaveSocket, "\n");
                     } else {
                         dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
                         dprintf(slaveSocket, "\n<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
