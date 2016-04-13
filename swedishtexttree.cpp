@@ -131,7 +131,10 @@ std::ostream &SwedishTextTree::write(std::ostream &output) {
 bool SwedishTextTree::insert(const std::string &input, const OSMElement &element) {
     bool result = true;
     std::vector<std::string> words;
-    const int num_components = Tokenizer::tokenize_line(input, words, Tokenizer::Duplicates);
+    bool warnings = false;
+    const int num_components = Tokenizer::tokenize_line(input, words, Tokenizer::Duplicates, &warnings);
+    if (warnings)
+        Error::warn("Got tokenizer warnings for OSM Element %s", element.operator std::string().c_str());
     if (num_components > 0) {
         static const int buffer_len = 1024;
         char buffer[buffer_len];

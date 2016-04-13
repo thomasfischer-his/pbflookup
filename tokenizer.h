@@ -43,7 +43,7 @@ public:
 
     std::string input_text() const;
 
-    static size_t tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity);
+    static size_t tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings = NULL);
 
 private:
     class Private;

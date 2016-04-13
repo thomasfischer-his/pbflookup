@@ -211,8 +211,9 @@ std::string Tokenizer::input_text() const {
     return result;
 }
 
-size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity) {
+size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings) {
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
+    if (warnings != NULL) *warnings = false;
 
     std::string internal_line = line;
     utf8tolower(internal_line);
@@ -236,6 +237,7 @@ size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string
                 unicode = (utf8char[0] & 15) << 12 | (utf8char[1] & 63) << 6 | (utf8char[2] & 63);
             --it; ///< One step back, as for-loop will step for forward again
             Error::warn("Skipping UTF-8 sequence of three or more bytes, but not supported: %s (U+%04X)", utf8char, unicode);
+            if (warnings != NULL) *warnings = true;
             prev_c = 0; ///< Do not remember this UTF-8 sequence
             continue; ///< Continue with next character
         } else if ((prev_c & 224) == 192) {
@@ -245,6 +247,7 @@ size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string
                 /// Warn about two-byte UTF-8 sequences that are not known letters (e.g. Yen symbol)
                 unsigned char utf8char[] = {prev_c, c, '\0'};
                 Error::warn("Skipping unsupported UTF-8 character: %s (%02x %02x = U+%04X)", utf8char, utf8char[0], utf8char[1], (utf8char[0] & 31) << 6 | (utf8char[0] & 63));
+                if (warnings != NULL) *warnings = true;
                 lastword.pop_back(); ///< Start of sequence already in word, remove it
                 prev_c = 0; ///< Do not remember this UTF-8 sequence
                 continue; ///< Continue with next character
