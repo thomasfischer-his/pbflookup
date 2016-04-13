@@ -37,6 +37,18 @@ struct OSMElement {
         type = _type;
         realworld_type = _realworld_type;
     }
+
+    operator std::string() const {
+        std::string typeString;
+        switch (type) {
+        case UnknownElementType: typeString = "Unknown "; break;
+        case Node: typeString = "Node "; break;
+        case Way: typeString = "Way "; break;
+        case Relation: typeString = "Relation "; break;
+        }
+
+        return typeString + std::to_string(id);
+    }
 };
 
 #endif // TYPES_H
