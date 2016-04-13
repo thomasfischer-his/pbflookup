@@ -274,7 +274,6 @@ std::vector<unsigned int> SwedishTextTree::code_word(const char *word)  const {
             continue;
         }
 
-        c = utf8tolower(prev_c, c);
         result.push_back(code_char(prev_c, c));
 
         prev_c = c;

@@ -99,6 +99,55 @@ bool getCenterOfOSMElement(const OSMElement &element, Coord &coord) {
         return false;
 }
 
+void handleCombiningDiacriticalMark(std::string &text, size_t i) {
+    /// Assumption: text[i] == 0xcc
+    const unsigned char textPlusOne = (unsigned char)(text[i + 1]);
+    const unsigned char textMinusOne = (unsigned char)(text[i - 1]);
+    if (i > 0 && i < text.length() - 1 && textPlusOne >= 0x80 && textPlusOne <= 0x8a && textMinusOne >= 0x41 && textMinusOne <= 0x75) {
+        /// Combining Diacritical Mark detected
+        if (textPlusOne == 0x81) { /// Combining Acute Accent
+            if (textMinusOne == 'e') {
+                text[i - 1] = 0xc3; text[i] = 0xa9;
+                text.erase(i + 1, 1);
+            } else if (textMinusOne == 'E') {
+                text[i - 1] = 0xc3; text[i] = 0x89;
+                text.erase(i + 1, 1);
+            }
+        } else if (textPlusOne == 0x88) { /// Combining Diaeresis
+            if (textMinusOne == 'a') {
+                text[i - 1] = 0xc3; text[i] = 0xa4;
+                text.erase(i + 1, 1);
+            } else if (textMinusOne == 'A') {
+                text[i - 1] = 0xc3; text[i] = 0x84;
+                text.erase(i + 1, 1);
+            } else if (textMinusOne == 'o') {
+                text[i - 1] = 0xc3; text[i] = 0xb6;
+                text.erase(i + 1, 1);
+            } else if (textMinusOne == 'o') {
+                text[i - 1] = 0xc3; text[i] = 0x96;
+                text.erase(i + 1, 1);
+            }
+        } else if (textPlusOne == 0x8a) { /// Combining Ring Above
+            if (textMinusOne == 'a') {
+                text[i - 1] = 0xc3; text[i] = 0xa5;
+                text.erase(i + 1, 1);
+            } else if (textMinusOne == 'A') {
+                text[i - 1] = 0xc3; text[i] = 0x85;
+                text.erase(i + 1, 1);
+            }
+        }
+    }
+}
+
+void correctutf8mistakes(std::string &text, size_t i) {
+    const unsigned char c = text[i];
+    const unsigned char next_c = i < text.length() - 1 ? text[i + 1] : 0;
+    if (c == 0xc2 && next_c == 0xb4) { /// Acute Accent (spacing character)
+        text[i] = '\'';
+        text.erase(i + 1, 1);
+    }
+}
+
 unsigned char utf8tolower(const unsigned char &prev_c, unsigned char c) {
     if ((c >= 'A' && c <= 'Z') ||
             (prev_c == 0xc3 && c >= 0x80 && c <= 0x9e && c != 0x97 /** poor man's Latin-1 Supplement lower case */))
@@ -125,16 +174,14 @@ std::string &utf8tolower(std::string &text) {
     unsigned char prev_c = 0;
     for (size_t i = 0; i < text.length(); ++i) {
         const unsigned char c = text[i];
-        prev_c = text[i] = utf8tolower(prev_c, c);
-    }
-    return text;
-}
-
-char *utf8toupper_chars(char *text, size_t len) {
-    unsigned char prev_c = 0;
-    for (size_t i = 0; text[i] != '\0' && i < len; ++i) {
-        const unsigned char c = text[i];
-        prev_c = text[i] = utf8toupper(prev_c, c);
+        if (i > 0 && c == 0xcc) {
+            handleCombiningDiacriticalMark(text, i);
+            prev_c = text[i];
+        } else if (c == 0xc2 /** observation: mapper use by mistake UTF-8 sequences starting with 0xc2 */) {
+            correctutf8mistakes(text, i);
+            prev_c = text[i];
+        } else
+            prev_c = text[i] = utf8tolower(prev_c, c);
     }
     return text;
 }

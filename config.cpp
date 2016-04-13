@@ -280,7 +280,6 @@ bool init_configuration(const char *configfilename) {
                 strncpy(http_interface, buffer, MAX_STRING_LEN - 1);
             else
                 snprintf(http_interface, MAX_STRING_LEN - 1, "ANY");
-            utf8toupper_chars(http_interface, MAX_STRING_LEN - 1);
 
             if (configIfExistsLookup(config, "cssfilename", buffer)) {
                 FILE *f = fopen(buffer, "r");

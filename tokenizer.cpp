@@ -214,10 +214,12 @@ std::string Tokenizer::input_text() const {
 size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity) {
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
 
+    std::string internal_line = line;
+    utf8tolower(internal_line);
     std::unordered_set<std::string> known_words;
     unsigned char prev_c = '\0';
     std::string lastword;
-    for (std::string::const_iterator it = line.cbegin(); it != line.cend(); ++it) {
+    for (std::string::const_iterator it = internal_line.cbegin(); it != internal_line.cend(); ++it) {
         const unsigned char &c = *it;
 
         if ((c & 224) == 224) {
@@ -225,7 +227,7 @@ size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string
             /// detected by as the three most significant bits are set
             unsigned char utf8char[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
             size_t utf8char_pos = 0;
-            while (it != line.cend() && ((*it) & 128) == 128 && utf8char_pos < 7) {
+            while (it != internal_line.cend() && ((*it) & 128) == 128 && utf8char_pos < 7) {
                 utf8char[utf8char_pos++] = *it;
                 ++it;
             }
@@ -251,12 +253,10 @@ size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string
 
         if ((prev_c & 224) == 192 /** Inside an UTF-8 sequence cannot be a gap */
                 || gap.find(c) == std::string::npos) {
-            /// Character is not a 'gap' character
-            /// First, convert character to lower case
-            const unsigned char lower_c = utf8tolower(prev_c, c);
-            /// Second, add character to current word
-            lastword.append((char *)(&lower_c), 1);
-            prev_c = lower_c;
+            /// Character is not a 'gap' character,
+            /// so add character to current word
+            lastword.append((char *)(&c), 1);
+            prev_c = c;
         } else if (!lastword.empty()) {
             /// Character is a 'gap' character and the current word is not empty
             /// Current word is not a stop word
