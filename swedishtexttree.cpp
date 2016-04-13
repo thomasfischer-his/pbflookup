@@ -269,7 +269,7 @@ std::vector<unsigned int> SwedishTextTree::code_word(const char *word)  const {
     const unsigned int len = strlen(word);
     unsigned char prev_c = 0;
     for (unsigned int i = 0; i < len; ++i) {
-        unsigned char c = (unsigned char)word[i];
+        const unsigned char c = (unsigned char)word[i];
         if (c < 0x20) /// break at newline or similar
             break;
         if (c == 0xc3) {
