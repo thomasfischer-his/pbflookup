@@ -1357,7 +1357,7 @@ std::string Sweden::nameOfSCBarea(int scbarea) {
     case 2181: return "Sandviken";
     case  191: return "Sigtuna";
     case 1291: return "Simrishamn";
-    case 1265: return "Sj\xc3\xb""6bo";
+    case 1265: return "Sj\xc3\xb6""bo";
     case 1495: return "Skara";
     case 2482: return "Skellefte\xc3\xa5";
     case 1904: return "Skinnskatteberg";
