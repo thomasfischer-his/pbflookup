@@ -177,7 +177,7 @@ void HTTPServer::run() {
                         dprintf(slaveSocket, "<h1>Search for Locations described in Swedish Text</h1>\n");
                         dprintf(slaveSocket, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\">\n");
                         if (!testsets.empty()) {
-                            dprintf(slaveSocket, "<p>Either select a pre-configured text from this list: <select onchange=\"testsetChanged(this)\" id=\"testsets\">\n");
+                            dprintf(slaveSocket, "<p>Either select a pre-configured text from this list of %lu examples:\n<select onchange=\"testsetChanged(this)\" id=\"testsets\">\n", testsets.size());
                             dprintf(slaveSocket, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
                             for (const struct testset &t : testsets)
                                 dprintf(slaveSocket, "<option value=\"%s\">%s</option>", t.text.c_str(), t.name.c_str());
@@ -348,7 +348,7 @@ void HTTPServer::run() {
 
                         dprintf(slaveSocket, "<h2>Found Locations</h2>\n");
                         dprintf(slaveSocket, "<p>Number of results: %lu</p>\n", results.size());
-                        dprintf(slaveSocket, "<table>\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
+                        dprintf(slaveSocket, "<table id=\"results\">\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
                         static const size_t maxCountResults = 20;
                         size_t resultCounter = maxCountResults;
                         for (const Result &result : results) {
@@ -359,7 +359,7 @@ void HTTPServer::run() {
                             const std::vector<int> m = sweden->insideSCBarea(result.coord);
                             const int scbarea = m.empty() ? 0 : m.front();
                             dprintf(slaveSocket, "<tr><td>lat= %.4lf<br/>lon= %.4lf<br/>near %s, %s</td>", lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
-                            static const int zoom = 16;
+                            static const int zoom = 15;
                             dprintf(slaveSocket, "<td><a href=\"http://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
                             const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
                             dprintf(slaveSocket, "<img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
