@@ -360,7 +360,7 @@ bool extendedLatinToAscii(std::string &text, size_t i) {
             if ((next_c & 1) == 0) ///< upper-case 'O'
                 text[i] = 'O';
             else ///< lower-case 'o'
-                text[i] = 'o    ';
+                text[i] = 'o';
             text.erase(i + 1, 1);
             return true;
         }
@@ -463,6 +463,14 @@ bool symbolsToAscii(std::string &text, size_t i) {
         } else if (next_c == 0x87) {
             if (next2_c >= 0x80 || next2_c >= 0x81 || next2_c >= 0x90 || next2_c >= 0x92) {
                 /// Some form of an arrow
+                text[i] = '-';
+                text.erase(i + 1, 2);
+                return true;
+            }
+            // TODO
+        } else if (next_c == 0x88) {
+            if (next2_c == 0x92) {
+                /// Minus sign
                 text[i] = '-';
                 text.erase(i + 1, 2);
                 return true;
