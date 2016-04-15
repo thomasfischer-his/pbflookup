@@ -1453,7 +1453,7 @@ std::string Sweden::nameOfSCBarea(int scbarea) {
     case 2560: return "\xc3\x84lvsbyn";
     case 1292: return "\xc3\x84ngelholm";
     case 1407: return "\xc3\x96""cker\xc3\xb6";
-    case  509: return "\xc3\x96""desh\xc3\xb""6g";
+    case  509: return "\xc3\x96""desh\xc3\xb6g";
     case 1880: return "\xc3\x96rebro";
     case 1257: return "\xc3\x96rkelljunga";
     case 2284: return "\xc3\x96rnsk\xc3\xb6ldsvik";
