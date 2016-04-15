@@ -341,6 +341,29 @@ bool extendedLatinToAscii(std::string &text, size_t i) {
             text.erase(i + 1, 1);
             return true;
         }
+    } else if (c == 0xc8) {
+        if (next_c >= 0xa6 && next_c <= 0xa7) {
+            if ((next_c & 1) == 0) ///< upper-case 'A'
+                text[i] = 'A';
+            else ///< lower-case 'a'
+                text[i] = 'a';
+            text.erase(i + 1, 1);
+            return true;
+        } else if (next_c >= 0xa8 && next_c <= 0xa9) {
+            if ((next_c & 1) == 0) ///< upper-case 'E'
+                text[i] = 'E';
+            else ///< lower-case 'e'
+                text[i] = 'e';
+            text.erase(i + 1, 1);
+            return true;
+        } else if (next_c >= 0xaa && next_c <= 0xb1) {
+            if ((next_c & 1) == 0) ///< upper-case 'O'
+                text[i] = 'O';
+            else ///< lower-case 'o'
+                text[i] = 'o    ';
+            text.erase(i + 1, 1);
+            return true;
+        }
     } else {
         const unsigned char next2_c = i < text.length() - 2 ? text[i + 2] : 0;
 
@@ -402,35 +425,52 @@ bool symbolsToAscii(std::string &text, size_t i) {
     const unsigned char c = text[i];
     const unsigned char next_c = i < text.length() - 1 ? text[i + 1] : 0;
 
-    if (c == 0xe2 && next_c == 0x80) {
-        const unsigned char next2_c = i < text.length() - 2 ? text[i + 2] : 0;
-        if (next2_c >= 0x92 && next2_c <= 0x95) {
-            /// Some form of a dash
-            text[i] = '-';
-            text.erase(i + 1, 2);
+    if (c == 0xc2) {
+        if (next_c == 0xa1) {
+            /// Inverted Exclamation Mark
+            text[i] = '!';
+            text.erase(i + 1, 1);
+            return true;
+        } else if (next_c == 0xb4) {  /// Acute Accent (spacing character)
+            text[i] = '\'';
+            text.erase(i + 1, 1);
             return true;
         }
-        // TODO
-    } else if (c == 0xe2 && next_c == 0x86) {
+    } else if (c == 0xe2) {
         const unsigned char next2_c = i < text.length() - 2 ? text[i + 2] : 0;
-        if (next2_c >= 0x90 || next2_c >= 0x92 || next2_c >= 0x94 || next2_c >= 0xbc || next2_c >= 0xbd) {
-            /// Some form of an arrow
-            text[i] = '-';
-            text.erase(i + 1, 2);
-            return true;
-        }
-        // TODO
-    } else if (c == 0xe2 && next_c == 0x87) {
-        const unsigned char next2_c = i < text.length() - 2 ? text[i + 2] : 0;
-        if (next2_c >= 0x80 || next2_c >= 0x81 || next2_c >= 0x90 || next2_c >= 0x92) {
-            /// Some form of an arrow
-            text[i] = '-';
-            text.erase(i + 1, 2);
-            return true;
+        if (next_c == 0x80) {
+            if (next2_c >= 0x92 && next2_c <= 0x95) {
+                /// Some form of a dash
+                text[i] = '-';
+                text.erase(i + 1, 2);
+                return true;
+            } else if (next2_c == 0xa6) {
+                /// Horizontal Ellipsis: ...
+                text[i] = '.';
+                text[i + 1] = '.';
+                text[i + 2] = '.';
+                return true;
+            }
+            // TODO
+        } else if (next_c == 0x86) {
+            if (next2_c >= 0x90 || next2_c >= 0x92 || next2_c >= 0x94 || next2_c >= 0xbc || next2_c >= 0xbd) {
+                /// Some form of an arrow
+                text[i] = '-';
+                text.erase(i + 1, 2);
+                return true;
+            }
+            // TODO
+        } else if (next_c == 0x87) {
+            if (next2_c >= 0x80 || next2_c >= 0x81 || next2_c >= 0x90 || next2_c >= 0x92) {
+                /// Some form of an arrow
+                text[i] = '-';
+                text.erase(i + 1, 2);
+                return true;
+            }
+            // TODO
         }
         // TODO
     }
-    // TODO
 
     return false;
 }
@@ -440,11 +480,7 @@ bool correctutf8mistakes(std::string &text, size_t &i) {
     const unsigned char next_c = i < text.length() - 1 ? text[i + 1] : 0;
     const unsigned char next2_c = i < text.length() - 2 ? text[i + 2] : 0;
 
-    if (c == 0xc2 && next_c == 0xb4) { /// Acute Accent (spacing character)
-        text[i] = '\'';
-        text.erase(i + 1, 1);
-        return true;
-    } else if (c == 0xc2 && next_c == 0xae) { /// Registered Trademark, ...
+    if (c == 0xc2 && next_c == 0xae) { /// Registered Trademark, ...
         text.erase(i, 2);
         --i;
         return true;
@@ -461,6 +497,11 @@ bool correctutf8mistakes(std::string &text, size_t &i) {
         } else if ((next2_c >= 0x98 && next2_c <= 0x9b) || next2_c == 0xb2 || next2_c == 0xb5) {
             /// Something like a single quotation mark
             text[i] = '\'';
+            text.erase(i + 1, 2);
+            return true;
+        } else if (next2_c == 0xa2) {
+            /// Bullet symbol
+            text[i] = '.';
             text.erase(i + 1, 2);
             return true;
         }
