@@ -114,8 +114,15 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
         tokenize_line(line, words, multiplicity);
     }
 
-    words.erase(std::remove_if(words.begin(), words.end(), [this](std::string word) {
-        return d->is_stopword(word);
+    words.erase(std::remove_if(words.begin(), words.end(), [this](const std::string & word) {
+        return d->is_stopword(word) ||
+               /// Skip single-character, ASCII, non-letter and non-digit characters
+               (word.length() == 1 && (
+                    (word[0] >= 0x21 && word[0] <= 0x2f)
+                    || (word[0] >= 0x3a && word[0] <= 0x40)
+                    || (word[0] >= 0x5b && word[0] <= 0x60)
+                    || (word[0] >= 0x7b && word[0] <= 0x7e)
+                ));
     }), words.end());
 
     return words.size();
