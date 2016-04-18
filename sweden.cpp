@@ -2000,6 +2000,7 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
 #ifdef DEBUG
     static const size_t maxlen = 16128;
     char id_str[maxlen + 256];
+    memset(id_str, 0, maxlen);
     char *p = id_str;
     for (auto it = result.cbegin(); it != result.cend() && (size_t)(p - id_str) < maxlen; ++it) {
         static WriteableString placeName;
