@@ -150,6 +150,7 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
     static const std::unordered_set<std::string> blacklistedSingleWords = {
         "nya", "nytt", "gamla", "gammalt",
         "v\xc3\xa4stra", "\xc3\xb6stra", "norra", "s\xc3\xb6""dra",
+        "inre", "yttre",
         /** The following list has been manually assembled, based on existing testsets.
           * This is most likely the clostest point where this software is fine-tuned to
           * perform well for the testset.
