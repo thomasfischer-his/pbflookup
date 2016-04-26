@@ -58,6 +58,7 @@ bool OsmPbfReader::parse(std::istream &input) {
     wayNodes = NULL;
     relMembers = NULL;
     sweden = NULL;
+    size_t count_named_nodes = 0, count_named_ways = 0, count_named_relations = 0;
 
     if (!input || !input.good())
         return false;
@@ -264,6 +265,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             if (strcmp("name", ckey) == 0) {
                                 /// Store 'name' string for later use
                                 name = primblock.stringtable().s(pg.nodes(j).vals(k));
+                                ++count_named_nodes;
                             } else if (strcmp("place", ckey) == 0) {
                                 const char *cvalue = primblock.stringtable().s(pg.nodes(j).vals(k)).c_str();
 
@@ -346,6 +348,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 if (strcmp("name", ckey) == 0) {
                                     /// Store 'name' string for later use
                                     name = primblock.stringtable().s(value);
+                                    ++count_named_nodes;
                                 } else if (strcmp("place", ckey) == 0) {
                                     const char *cvalue = primblock.stringtable().s(value).c_str();
 
@@ -406,6 +409,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             if (strcmp("name", ckey) == 0) {
                                 /// Store 'name' string for later use
                                 name = primblock.stringtable().s(pg.ways(w).vals(k));
+                                ++count_named_ways;
                             } else if (strcmp("highway", ckey) == 0) {
                                 const char *cvalue = primblock.stringtable().s(pg.ways(w).vals(k)).c_str();
 
@@ -479,6 +483,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             if (strcmp("name", ckey) == 0) {
                                 /// Store 'name' string for later use
                                 name = primblock.stringtable().s(pg.relations(i).vals(k));
+                                ++count_named_relations;
                             } else if (strcmp("ref:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
                                 sweden->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), relId);
@@ -550,6 +555,11 @@ bool OsmPbfReader::parse(std::istream &input) {
 
     /// Line break after series of dots
     std::cout << std::endl;
+
+    Error::info("Number of named nodes: %d", count_named_nodes);
+    Error::info("Number of named nodes: %d", count_named_ways);
+    Error::info("Number of named relations: %d", count_named_relations);
+    Error::info("Number of named elements (sum): %d", count_named_nodes + count_named_ways + count_named_relations);
 
     for (const std::pair<uint64_t, std::string> &pair : roadsWithoutRef) {
         WayNodes wn;
