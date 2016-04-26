@@ -421,7 +421,7 @@ bool extendedLatinToAscii(std::string &text, size_t i) {
 }
 
 
-bool symbolsToAscii(std::string &text, size_t i) {
+bool symbolsToAscii(std::string &text, size_t &i) {
     const unsigned char c = text[i];
     const unsigned char next_c = i < text.length() - 1 ? text[i + 1] : 0;
 
@@ -430,6 +430,10 @@ bool symbolsToAscii(std::string &text, size_t i) {
             /// Inverted Exclamation Mark
             text[i] = '!';
             text.erase(i + 1, 1);
+            return true;
+        } else if (next_c == 0xb0) {  /// Degree symbol, erase it
+            text.erase(i, 2);
+            --i;
             return true;
         } else if (next_c == 0xb4) {  /// Acute Accent (spacing character)
             text[i] = '\'';
