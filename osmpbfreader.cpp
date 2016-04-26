@@ -427,6 +427,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                             } else if (strcmp("ref", ckey) == 0)
                                 /// Store 'ref' string for later use
                                 strncpy(buffer_ref, primblock.stringtable().s(pg.ways(w).vals(k)).c_str(), SHORT_STRING_BUFFER_SIZE);
+                            else if (strcmp("building", ckey) == 0)
+                                /// Remember if way is a building
+                                realworld_type = OSMElement::Building;
                         }
 
                         /// If 'ref' string is not empty and 'highway' string is 'primary', 'secondary', or 'tertiary' ...
