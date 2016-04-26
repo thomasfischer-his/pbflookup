@@ -492,7 +492,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 /// Store 'admin_level' string for later use
                                 std::stringstream ss(primblock.stringtable().s(pg.relations(i).vals(k)));
                                 ss >> admin_level;
-                            }
+                            } else if (strcmp("building", ckey) == 0)
+                                /// Remember if way is a building
+                                realworld_type = OSMElement::Building;
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
 
