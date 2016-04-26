@@ -158,6 +158,8 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
         "nya", "nytt", "gamla", "gammalt",
         "v\xc3\xa4stra", "\xc3\xb6stra", "norra", "s\xc3\xb6""dra",
         "inre", "yttre",
+        "vita", "gr\xc3\xb6na", "r\xc3\xb6""da", "bl\xc3\xa5""a", "svarta", // TODO more colors
+        "pappa", "mamma", "son", "dotter",
         /** The following list has been manually assembled, based on existing testsets.
           * This is most likely the clostest point where this software is fine-tuned to
           * perform well for the testset.
@@ -173,7 +175,7 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
         "m\xc3\xa4n",
         "plats", "platsen",
         "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
-        "sp\xc3\xa5r", "svea", "sverige",
+        "sp\xc3\xa5r", "svea", "sverige", "s\xc3\xa5g",
         "tillf\xc3\xa4llig", "torg", "torget",
         "vi", "via", "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
