@@ -49,6 +49,10 @@ struct OSMElement {
 
         return typeString + std::to_string(id);
     }
+
+    bool isValid() const {
+        return id < UINT64_MAX && type != UnknownElementType;
+    }
 };
 
 #endif // TYPES_H

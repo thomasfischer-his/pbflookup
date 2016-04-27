@@ -27,10 +27,8 @@
 
 #include "global.h"
 #include "globalobjects.h"
-#include "helper.h"
 #include "timer.h"
-#include "tokenizer.h"
-#include "tokenprocessor.h"
+#include "resultgenerator.h"
 #include "config.h"
 #include "error.h"
 
@@ -198,121 +196,8 @@ void HTTPServer::run() {
                     Timer timerSearch;
                     int64_t cputimeSearch, walltimeSearch;
 
-                    struct Result {
-                        Result(const Coord &_coord, double _quality, const std::string &_origin)
-                            : coord(_coord), quality(_quality), origin(_origin) {
-                            /** nothing */
-                        }
-
-                        Coord coord;
-                        double quality;
-                        std::string origin;
-                    };
-                    std::vector<Result> results;
-
                     timerSearch.start();
-
-                    Tokenizer tokenizer;
-                    TokenProcessor tokenProcessor;
-
-                    std::vector<std::string> words, word_combinations;
-                    tokenizer.read_words(text, words, Tokenizer::Duplicates);
-                    tokenizer.add_grammar_cases(words);
-                    tokenizer.generate_word_combinations(words, word_combinations, 3 /** TODO configurable */, Tokenizer::Unique);
-
-                    std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
-                    std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor.evaluteRoads(word_combinations, identifiedRoads);
-
-                    for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
-                        const int distance = roadMatch.distance;
-
-                        if (distance < 10000) {
-                            /// Closer than 10km
-                            Coord c;
-                            if (node2Coord->retrieve(roadMatch.bestRoadNode, c)) {
-                                results.push_back(Result(c, roadMatch.quality, std::string("roadMatch: road:") + static_cast<std::string>(roadMatch.road) + " near " + roadMatch.word_combination));
-                            }
-                        }
-                    }
-
-
-                    const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
-                    if (!adminReg.empty()) {
-                        const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
-                        for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
-                            Coord c;
-                            if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
-                                results.push_back(Result(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegionName + " > " + adminRegionMatch.name));
-                            }
-                        }
-                    }
-
-
-                    std::vector<struct OSMElement> places;
-                    places = sweden->identifyPlaces(word_combinations);
-                    if (!places.empty()) {
-                        const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
-                        for (auto it = ++places.cbegin(); it != places.cend();) {
-                            if (it->realworld_type != firstRwt)
-                                it = places.erase(it);
-                            else
-                                ++it;
-                        }
-                        const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
-                        for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
-                            Coord c;
-                            if (node2Coord->retrieve(nearPlacesMatch.local.id, c)) {
-                                WriteableString globalName, localName;
-                                nodeNames->retrieve(nearPlacesMatch.global.id, globalName);
-                                nodeNames->retrieve(nearPlacesMatch.local.id, localName);
-                                results.push_back(Result(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + std::to_string(nearPlacesMatch.global.id) + " (" + globalName.c_str() + ") > " + std::to_string(nearPlacesMatch.local.id) + " (" + localName.c_str() + ")"));
-                            }
-                        }
-                    }
-
-                    std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor.evaluateUniqueMatches(word_combinations);
-
-                    for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
-                        Coord c;
-                        if (node2Coord->retrieve(uniqueMatch.element.id, c)) {
-                            results.push_back(Result(c, uniqueMatch.quality * .8, std::string("Unique name: ") + uniqueMatch.name));
-                        }
-                    }
-
-                    if (!places.empty()) {
-                        /// No good result found, but some places have been recognized in the process.
-                        /// Pick one of the larger places as result.
-                        // FIXME picking the right place from the list is rather ugly. Can do better?
-                        OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
-                        Coord c;
-                        uint64_t bestId = 0;
-                        for (auto it = places.cbegin(); it != places.cend(); ++it) {
-                            if (it->realworld_type == OSMElement::PlaceMedium && rwt >= OSMElement::PlaceSmall) {
-                                bestId = it->id;
-                                node2Coord->retrieve(bestId, c);
-                                rwt = it->realworld_type;
-                            } else if (it->realworld_type < OSMElement::PlaceMedium && rwt >= OSMElement::PlaceMedium) {
-                                bestId = it->id;
-                                node2Coord->retrieve(bestId, c);
-                                rwt = it->realworld_type;
-                            } else if (rwt != OSMElement::PlaceLarge && it->realworld_type == OSMElement::PlaceLargeArea) {
-                                bestId = it->id;
-                                node2Coord->retrieve(bestId, c);
-                                rwt = it->realworld_type;
-                            } else if (rwt == OSMElement::PlaceLargeArea && it->realworld_type == OSMElement::PlaceLarge) {
-                                bestId = it->id;
-                                node2Coord->retrieve(bestId, c);
-                                rwt = it->realworld_type;
-                            }
-                        }
-
-                        if (c.isValid()) {
-                            const double quality = rwt == OSMElement::PlaceLarge ? 1.0 : (rwt == OSMElement::PlaceMedium?.9 : (rwt == OSMElement::PlaceLargeArea?.6 : (rwt == OSMElement::PlaceSmall?.8 : .5)));
-                            WriteableString placeName;
-                            nodeNames->retrieve(bestId, placeName);
-                            results.push_back(Result(c, quality * .5, std::string("Large place: ") + placeName));
-                        }
-                    }
+                    std::vector<Result> results = ResultGenerator::findResults(text, ResultGenerator::VerbositySilent);
                     timerSearch.elapsed(&cputimeSearch, &walltimeSearch);
 
                     dprintf(slaveSocket, "HTTP/1.1 200 OK\n");
