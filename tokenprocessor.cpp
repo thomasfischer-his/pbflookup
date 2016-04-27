@@ -46,24 +46,6 @@ public:
         /// nothing
     }
 
-    static inline double initialWeight(OSMElement::RealWorldType node_type) {
-        double weight = 0.0;
-
-        switch (node_type) {
-        case OSMElement::PlaceLargeArea: weight = initialWeightPlaceLarge; break;
-        case OSMElement::PlaceLarge: weight = initialWeightPlaceLarge; break;
-        case OSMElement::PlaceMedium: weight = initialWeightPlaceMedium; break;
-        case OSMElement::PlaceSmall: weight = initialWeightPlaceSmall; break;
-        case OSMElement::RoadMajor: weight = initialWeightRoadMajor; break;
-        case OSMElement::RoadMedium: weight = initialWeightRoadMedium; break;
-        case OSMElement::RoadMinor: weight = initialWeightRoadMinor; break;
-        default:
-            weight = initialWeightDefault;
-        }
-
-        return weight;
-    }
-
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances, uint64_t &mostCentralNodeId) {
         considered_nodes = considered_distances = 0;
         mostCentralNodeId = 0;
@@ -156,55 +138,6 @@ TokenProcessor::TokenProcessor()
 
 TokenProcessor::~TokenProcessor() {
     delete d;
-}
-
-void TokenProcessor::evaluteWordCombinations(const std::vector<std::string> &word_combinations, WeightedNodeSet &wns) const {
-    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
-        const std::string &combined = *itW;
-        const char *combined_cstr = combined.c_str();
-        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        if (id_list.empty())
-            Error::info("Got no hits for word combination '%s', skipping", combined_cstr);
-        else {
-            Error::info("Got %i hits for word combination '%s'", id_list.size(), combined_cstr);
-            unsigned int considered_nodes, considered_distances;
-            uint64_t mostCentralNodeId;
-            const int estDist = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, mostCentralNodeId);
-            if (estDist > 10000) ///< 10 km
-                Error::info("Estimated distance (%i km) too large for word combination '%s' (hits=%i), skipping", (estDist + 500) / 1000, combined_cstr, id_list.size());
-            else if (considered_nodes == 0)
-                Error::info("No node to consider");
-            else {
-                if (considered_nodes > 3 && considered_distances < considered_nodes)
-                    Error::info("Considered more than %i nodes, but only %i distances eventually considered", considered_nodes, considered_distances);
-                Error::debug("Estimated distance is %i m", estDist);
-                for (std::vector<OSMElement>::const_iterator it = id_list.cbegin(); it != id_list.cend(); ++it) {
-                    const uint64_t id = (*it).id;
-                    const OSMElement::ElementType type = (*it).type;
-                    const OSMElement::RealWorldType realworld_type = (*it).realworld_type;
-                    const float weight = Private::initialWeight(realworld_type);
-                    Error::debug("weight=%.3f", weight);
-                    if (type == OSMElement::Node) {
-#ifdef DEBUG
-                        Error::debug("   https://www.openstreetmap.org/node/%llu", id);
-#endif // DEBUG
-                        wns.appendNode(id, weight);
-                    } else if (type == OSMElement::Way) {
-#ifdef DEBUG
-                        Error::debug("   https://www.openstreetmap.org/way/%llu", id);
-#endif // DEBUG
-                        wns.appendWay(id, weight);
-                    } else if (type == OSMElement::Relation) {
-#ifdef DEBUG
-                        Error::debug("   https://www.openstreetmap.org/relation/%llu", id);
-#endif // DEBUG
-                        wns.appendRelation(id, weight);
-                    } else
-                        Error::warn("  Neither node, way, nor relation: %llu", id);
-                }
-            }
-        }
-    }
 }
 
 std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads) {
