@@ -17,7 +17,6 @@
 #ifndef TOKENPROCESSOR_H
 #define TOKENPROCESSOR_H
 
-#include "weightednodeset.h"
 #include "sweden.h"
 
 class TokenProcessor
