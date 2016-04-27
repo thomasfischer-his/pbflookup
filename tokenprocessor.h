@@ -85,7 +85,7 @@ public:
     std::vector<struct NearPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
 
     struct UniqueMatch {
-        UniqueMatch(std::string _name, const OSMElement &_element, double _quality = -1.0)
+        UniqueMatch(std::string _name, const OSMElement &_element, double _quality)
             : name(_name), element(_element), quality(_quality) {
             /// nothing
         }
