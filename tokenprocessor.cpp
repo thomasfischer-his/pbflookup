@@ -27,6 +27,7 @@
 #include "helper.h"
 
 #define min(a,b) ((b)>(a)?(a):(b))
+#define max(a,b) ((b)<(a)?(a):(b))
 
 class TokenProcessor::Private
 {
@@ -48,33 +49,31 @@ public:
 
     int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances, uint64_t &mostCentralNodeId) {
         considered_nodes = considered_distances = 0;
-        mostCentralNodeId = 0;
+        mostCentralNodeId = INT64_MAX;
 
         if (id_list.empty()) return 0; ///< too few elements as input
 
+        /// Collect as many nodes (identified by their ids) as referenced
+        /// by the provided id_list vector. Ways and relations get resolved
+        /// to nodes to some extend.
         std::unordered_set<uint64_t> node_ids;
-        for (auto it = id_list.cbegin(); it != id_list.cend(); ++it) {
-            const uint64_t id = (*it).id;
-            const OSMElement::ElementType type = (*it).type;
-            if (type == OSMElement::Node)
-                node_ids.insert(id);
-            else if (type == OSMElement::Way) {
+        for (const OSMElement &element : id_list) {
+            if (element.type == OSMElement::Node)
+                node_ids.insert(element.id);
+            else if (element.type == OSMElement::Way) {
                 WayNodes wn;
-                const bool found = wayNodes->retrieve(id, wn);
-                if (found)
+                if (wayNodes->retrieve(element.id, wn))
                     for (size_t i = 0; i < wn.num_nodes; ++i)
                         node_ids.insert(wn.nodes[i]);
-            } else if (type == OSMElement::Relation) {
+            } else if (element.type == OSMElement::Relation) {
                 RelationMem rm;
-                const bool found = relMembers->retrieve(id, rm);
-                if (found)
+                if (relMembers->retrieve(element.id, rm))
                     for (size_t i = 0; i < rm.num_members; ++i)
                         if (rm.members[i].type == OSMElement::Node)
                             node_ids.insert(rm.members[i].id);
                         else if (rm.members[i].type == OSMElement::Way) {
                             WayNodes wn;
-                            const bool found = wayNodes->retrieve(rm.members[i].id, wn);
-                            if (found)
+                            if (wayNodes->retrieve(rm.members[i].id, wn))
                                 for (size_t i = 0; i < wn.num_nodes; ++i)
                                     node_ids.insert(wn.nodes[i]);
                         }
@@ -82,41 +81,48 @@ public:
         }
 
         considered_nodes = node_ids.size();
-        if (node_ids.size() <= 1)
+        if (considered_nodes <= 1)
             return 0; ///< too few nodes found
 
         /// Whereas std::unordered_set node_ids is good for
         /// collecting unique instances of node ids, it does
         /// not provide a way for fast random access. Therefore,
         /// an array is built based on data collected in the set.
-        uint64_t *node_id_array = (uint64_t *)malloc(node_ids.size() * sizeof(uint64_t));
+        uint64_t *node_id_array = (uint64_t *)malloc(considered_nodes * sizeof(uint64_t));
         int i = 0;
         for (auto it = node_ids.cbegin(); it != node_ids.cend(); ++it, ++i)
             node_id_array[i] = *it;
 
         std::vector<int> distances;
-        const int stepcount = min(7, node_ids.size() / 2 + 1);
-        size_t step = node_ids.size() / stepcount + 1;
-        while (node_ids.size() % step == 0) ++step;
+        // TODO remove static const int very_few_nodes = 5;
+        const int stepcount = min(considered_nodes - 1, min(7, max(1, considered_nodes / 2)));
+        size_t step = considered_nodes / stepcount;
+        /// Ensure that both numbers have no common divisor except for 1
+        while (considered_nodes % step == 0 && step < considered_nodes) ++step;
+        if (step >= considered_nodes) step = 1; ///< this should only happen for considered_nodes<=3
+        step = max(1, min(considered_nodes - 1, step)); ///< ensure that step is within valid bounds
 
-        int bestDistance = INT_MAX;
-        for (size_t a = 0; a < node_ids.size(); ++a) {
+        int bestDistanceAverage = INT_MAX;
+        for (size_t a = 0; a < considered_nodes; ++a) {
             size_t b = a;
             Coord cA;
             if (node2Coord->retrieve(node_id_array[a], cA)) {
-                int sumDistances = 0;
+                int sumDistances = 0, countDistances = 0;
                 for (int s = 0; s < stepcount; ++s) {
-                    b = (b + step) % node_ids.size();
+                    b = (b + step) % considered_nodes;
                     Coord cB;
-                    if (node_id_array[a] < node_id_array[b] && node2Coord->retrieve(node_id_array[b], cB)) {
+                    if (node2Coord->retrieve(node_id_array[b], cB)) {
                         const int d = Coord::distanceLatLon(cA, cB);
-                        distances.push_back(d);
+                        if (a < b) ///< record each distance only once
+                            distances.push_back(d);
                         sumDistances += d;
+                        ++countDistances;
                     }
                 }
 
-                if (sumDistances < bestDistance) {
-                    bestDistance = sumDistances;
+                const int averageDistance = countDistances > 0 ? sumDistances / countDistances : 0;
+                if (countDistances > 0 && averageDistance < bestDistanceAverage) {
+                    bestDistanceAverage = averageDistance;
                     mostCentralNodeId = node_id_array[a];
                 }
             }
@@ -125,7 +131,7 @@ public:
         considered_distances = distances.size();
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
-        if (distances.size() < 2) return 0; ///< too few distances computed
+        if (distances.size() == 0) return 0; ///< too few distances computed
         return distances[distances.size() / 4]; ///< take first quartile
     }
 };
@@ -335,6 +341,17 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
     return result;
 }
 
+double TokenProcessor::qualityForRealWorldTypes(const OSMElement &element) const {
+    switch (element.realworld_type) {
+    case OSMElement::PlaceLarge: return 1.0;
+    case OSMElement::PlaceMedium: return 0.8;
+    case OSMElement::PlaceSmall: return 0.6;
+    case OSMElement::Island: return 0.5;
+    case OSMElement::Building: return 0.4;
+    default: return 0.3;
+    }
+}
+
 std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const {
     std::vector<struct TokenProcessor::UniqueMatch> result;
 
@@ -348,31 +365,36 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         /// Even 'unique' locations may consist of multiple nodes or ways,
         /// such as the shape of a single building
         if (id_list.size() > 0 && id_list.size() < 30 /** arbitrarily chosen value */) {
-            unsigned int considered_nodes = 0, considered_distances = 0;
-            OSMElement mostCentralElement;
-            int internodeDistanceMeter = 0;
             if (id_list.size() == 1) {
-                /// For single id results, set inter-node distance to
-                /// 1m (distance==0 is interpreted as error)
-                internodeDistanceMeter = 1;
-                /// If the single id is a way or a relation, resolve it to
-                /// a node; a node is needed to retrieve a coordinate from it
-                const OSMElement element = id_list.front().type == OSMElement::Node ? id_list.front() : getNodeInOSMElement(id_list.front());
-                if (element.type == OSMElement::Node)
-                    /// Resolving relations or ways to a node succeeded
-                    mostCentralElement = element;
-                else
-                    continue;
+                /// For single-element results, set inter-node distance to
+                /// 1m as distance==0 is interpreted as error
+                result.push_back(UniqueMatch(combined, id_list.front(), qualityForRealWorldTypes(id_list.front())));
             } else { /** id_list.size() > 1 */
                 /// Estimate the inter-node distance. For an 'unique' location,
                 /// all nodes must be close by as they are supposed to belong
                 /// together, e.g. the nodes that shape a building
-                internodeDistanceMeter = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, mostCentralElement.id);
-            }
+                unsigned int considered_nodes = 0, considered_distances = 0;
+                uint64_t centralNodeId;
+                int internodeDistanceMeter = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, centralNodeId);
+                /// Check if estimated 1. quartile of inter-node distance is less than 500m
+                if (internodeDistanceMeter > 0 && internodeDistanceMeter < 500) {
+                    OSMElement bestElement;
+                    Coord centralNodeCoord, bestElementCoord;
+                    node2Coord->retrieve(centralNodeId, centralNodeCoord);
+                    int bestElementsDistanceToCentralNode = INT_MAX;
+                    for (const OSMElement &e : id_list) {
+                        OSMElement eNode = getNodeInOSMElement(e);
+                        node2Coord->retrieve(eNode.id, bestElementCoord);
+                        const int distance = Coord::distanceXY(centralNodeCoord, bestElementCoord);
+                        if (distance < bestElementsDistanceToCentralNode) {
+                            bestElementsDistanceToCentralNode = distance;
+                            bestElement = e;
+                        }
+                    }
 
-            if (internodeDistanceMeter > 0 && internodeDistanceMeter < 1000) {
-                /// Estimated 1. quartile of inter-node distance is 1km
-                result.push_back(UniqueMatch(combined, mostCentralElement));
+                    if (bestElementsDistanceToCentralNode < 1000)
+                        result.push_back(UniqueMatch(combined, bestElement, qualityForRealWorldTypes(bestElement)));
+                }
             }
         }
     }

@@ -22,6 +22,9 @@
 
 class TokenProcessor
 {
+private:
+    double qualityForRealWorldTypes(const OSMElement &element) const;
+
 public:
     explicit TokenProcessor();
     ~TokenProcessor();
