@@ -286,7 +286,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
                                     realworld_type = OSMElement::PlaceSmall;
                                 else if (strcmp("island", cvalue) == 0)
-                                    realworld_type = OSMElement::PlaceMedium;
+                                    realworld_type = OSMElement::Island;
                                 else {
                                     /// Skipping other types of places:
                                     /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
@@ -368,10 +368,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                                         realworld_type = OSMElement::PlaceMedium;
                                     else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
                                         realworld_type = OSMElement::PlaceSmall;
+                                    else if (strcmp("island", cvalue) == 0)
+                                        realworld_type = OSMElement::Island;
                                     else {
                                         /// Skipping other types of places:
                                         /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
-                                        /// * Neither continents nor islands may be very helpful
                                         /// * Very small places like farms or plots neither
                                     }
                                 }
@@ -434,6 +435,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                             else if (strcmp("building", ckey) == 0)
                                 /// Remember if way is a building
                                 realworld_type = OSMElement::Building;
+                            else if (strcmp("place", ckey) == 0) {
+                                const char *cvalue = primblock.stringtable().s(pg.ways(w).vals(k)).c_str();
+                                if (strcmp("island", cvalue) == 0)
+                                    realworld_type = OSMElement::Island;
+                            }
                         }
 
                         /// If 'ref' string is not empty and 'highway' string is 'primary', 'secondary', or 'tertiary' ...
@@ -500,6 +506,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                             } else if (strcmp("building", ckey) == 0)
                                 /// Remember if way is a building
                                 realworld_type = OSMElement::Building;
+                            else if (strcmp("place", ckey) == 0) {
+                                const char *cvalue = primblock.stringtable().s(pg.relations(i).vals(k)).c_str();
+                                if (strcmp("island", cvalue) == 0)
+                                    realworld_type = OSMElement::Island;
+                            }
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
 

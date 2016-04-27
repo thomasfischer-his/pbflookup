@@ -463,6 +463,8 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
             case OSMElement::RealWorldType::PlaceLarge: a.quality = 1.0; break;
             case OSMElement::RealWorldType::PlaceMedium: a.quality = .85; break;
             case OSMElement::RealWorldType::PlaceSmall: a.quality = .7; break;
+            case OSMElement::RealWorldType::Island: a.quality = .6; break;
+            case OSMElement::RealWorldType::Building: a.quality = .4; break;
             default: a.quality = 0.5;
             }
 
@@ -478,6 +480,8 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
             case OSMElement::RealWorldType::PlaceLarge: b.quality = 1.0; break;
             case OSMElement::RealWorldType::PlaceMedium: b.quality = .85; break;
             case OSMElement::RealWorldType::PlaceSmall: b.quality = .7; break;
+            case OSMElement::RealWorldType::Island: b.quality = .6; break;
+            case OSMElement::RealWorldType::Building: b.quality = .4; break;
             default: b.quality = 0.5;
             }
 
