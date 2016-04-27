@@ -146,6 +146,10 @@ void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
                 /// 'biblioteket' -> 'bibliotek'
                 indefinite_form = word.substr(0, len - 2);
                 it = ++words.insert(it, indefinite_form);
+            } else if (word[len - 1] == 's') {
+                /// This word could be a genetive (Karlsborgs -> Karlsborg)
+                const std::string nominative = word.substr(0, len - 1);
+                it = ++words.insert(it, nominative);
             }
         }
     }
@@ -155,8 +159,9 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
     /// There are words that are often part of a valid name, but by itself
     /// are rather meaningless, i.e. cause too many false hits:
     static const std::unordered_set<std::string> blacklistedSingleWords = {
-        "nya", "nytt", "gamla", "gammalt",
+        "ny", "nya", "nytt", "gammal", "gamla", "gammalt",
         "v\xc3\xa4stra", "\xc3\xb6stra", "norra", "s\xc3\xb6""dra",
+        "v\xc3\xa4ster", "\xc3\xb6ster", "norr", "s\xc3\xb6""der",
         "inre", "yttre",
         "vita", "gr\xc3\xb6na", "r\xc3\xb6""da", "bl\xc3\xa5""a", "svarta", // TODO more colors
         "pappa", "mamma", "son", "dotter",
@@ -165,17 +170,17 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
           * perform well for the testset.
           * The list needs to be generalized
           */
-        "bil", "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "b\xc3\xa5""de",
-        "center", "city",
+        "bil", "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "bruk", "b\xc3\xa5""de",
+        "center", "centrala", "city",
         "dahl" /** such as in 'Dahl Sverige' */,
         "g\xc3\xa5rd", "g\xc3\xb6ta",
-        "hamn", "halv", "hitta", "hos", "hus",
+        "hamn", "halv", "hitta", "hos", "hus", "h\xc3\xb6jd",
         "km", "kommun",
         "l\xc3\xa4n",
         "m\xc3\xa4n",
-        "plats", "platsen",
+        "plats", "platsen", "pris",
         "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
-        "sp\xc3\xa5r", "svea", "sverige", "s\xc3\xa5g",
+        "sp\xc3\xa5r", "station", "svea", "sverige", "s\xc3\xa5g",
         "tillf\xc3\xa4llig", "torg", "torget",
         "vi", "via", "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
@@ -187,6 +192,8 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
 
     for (int s = min(words_per_combination, words.size()); s >= 1; --s) {
         for (size_t i = 0; i <= words.size() - s; ++i) {
+            /// Skip single letter words that do not represent a valid sentence in Swedish
+            if (words[i][1] == '\0' && words[i][0] >= 'a' && words[i][0] <= 'z') continue;
             /// Single words that may be misleading, such as 'nya'
             if (s == 1 && blacklistedSingleWords.find(words[i]) != blacklistedSingleWords.end()) continue;
             /// Free-standing numbers should be skipped as well (won't affect search for e.g. 'väg 53')
