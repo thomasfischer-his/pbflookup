@@ -250,7 +250,23 @@ void HTTPServer::run() {
                             dprintf(slaveSocket, "<img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
                             dprintf(slaveSocket, "<img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
                             dprintf(slaveSocket, "<img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" />", zoom, tileX - 1, tileY + 1, zoom, tileX, tileY + 1, zoom, tileX + 1, tileY + 1);
-                            dprintf(slaveSocket, "</a></td><td>%s</td></tr>\n", result.origin.c_str());
+                            std::string hintText = result.origin;
+                            if (!result.elements.empty()) {
+                                hintText += "\n<small><ul>\n";
+                                for (const OSMElement &e : result.elements) {
+                                    hintText += "\n<li><a target=\"_top\" href=\"";
+                                    const std::string eid = std::to_string(e.id);
+                                    switch (e.type) {
+                                    case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">Node " + eid; break;
+                                    case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">Way " + eid; break;
+                                    case OSMElement::Relation: hintText += "https://www.openstreetmap.org/way/" + eid + "\">Way " + eid; break;
+                                    case OSMElement::UnknownElementType: hintText += "https://www.openstreetmap.org/\">Unknown element type with id " + eid; break;
+                                    }
+                                    hintText += "</li>\n";
+                                }
+                                hintText += "</ul></small>";
+                            }
+                            dprintf(slaveSocket, "</a></td><td>%s</td></tr>\n", hintText.c_str());
                         }
                         dprintf(slaveSocket, "</tbody></table>\n");
                     } else {
