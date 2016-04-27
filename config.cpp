@@ -240,8 +240,7 @@ bool init_configuration(const char *configfilename) {
             if (config.exists("testsets" + testsetKeySuffix)) {
                 libconfig::Setting &setting = config.lookup("testsets" + testsetKeySuffix);
                 if (setting.isList()) {
-                    for (auto it = setting.begin(); it != setting.end(); ++it) {
-                        const libconfig::Setting &testsetSetting = *it;
+                    for (const libconfig::Setting &testsetSetting : setting) {
                         if (testsetSetting.isGroup()) {
                             struct testset ts;
                             ts.name = testsetSetting.lookup("name").c_str();

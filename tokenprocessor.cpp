@@ -356,8 +356,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
     std::vector<struct TokenProcessor::UniqueMatch> result;
 
     /// Go through all word combinations (usually 1 to 3 words combined)
-    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
-        const std::string &combined = *itW;
+    for (const std::string &combined : word_combinations) {
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
@@ -459,21 +458,20 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
     std::vector<struct TokenProcessor::AdminRegionMatch> result;
     if (adminRegions.empty() || word_combinations.empty()) return result; ///< Nothing to do
 
-    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
-        const std::string &combined = *itW;
+    for (const std::string &combined : word_combinations) {
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
         const std::vector<struct OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        for (auto itId = id_list.cbegin(); itId != id_list.cend(); ++itId) {
-            const OSMElement element = itId->type == OSMElement::Node ? *itId : getNodeInOSMElement(*itId);
-            if (element.type != OSMElement::Node) continue; ///< Not a node
+        for (const OSMElement &element : id_list) {
+            const OSMElement &eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
+            if (eNode.type != OSMElement::Node) continue; ///< Not a node
 
-            for (auto itAR = adminRegions.cbegin(); itAR != adminRegions.cend(); ++itAR) {
-                const uint64_t adminRegRelId = itAR->relationId;
-                const std::string adminRegName = itAR->name;
-                if (adminRegRelId > 0 && adminRegRelId != element.id && sweden->nodeInsideRelationRegion(element.id, adminRegRelId))
-                    result.push_back(AdminRegionMatch(combined, *itId, adminRegRelId, adminRegName));
+            for (const Sweden::KnownAdministrativeRegion &adminReg : adminRegions) {
+                const uint64_t adminRegRelId = adminReg.relationId;
+                const std::string adminRegName = adminReg.name;
+                if (adminRegRelId > 0 && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId))
+                    result.push_back(AdminRegionMatch(combined, element, adminRegRelId, adminRegName));
             }
         }
     }

@@ -541,8 +541,7 @@ public:
         /// avoids costly operations further below
         if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) return false;
 
-        for (std::vector<std::deque<Coord> >::const_iterator itB = region.polygons.cbegin(); itB != region.polygons.cend(); ++itB) {
-            const std::deque<Coord> &polygon = *itB;
+        for (const std::deque<Coord> &polygon : region.polygons) {
             /// For a good explanation, see here: http://alienryderflex.com/polygon/
             const int polyCorners = polygon.size();
             int j = polyCorners - 1;
@@ -585,8 +584,7 @@ public:
 
             char buffer[STRING_BUFFER_SIZE];
             snprintf(buffer, STRING_BUFFER_SIZE, "area code: %i", code);
-            for (auto itVDC = region.polygons.cbegin(); itVDC != region.polygons.cend(); ++itVDC) {
-                const std::deque<Coord> dequeCoord = *itVDC;
+            for (const std::deque<Coord> dequeCoord : region.polygons) {
                 std::vector<int> x, y;
                 for (auto itC = dequeCoord.cbegin(); itC != dequeCoord.cend(); ++itC) {
                     x.push_back(itC->x);
@@ -1977,17 +1975,16 @@ void Sweden::fixUnlabeledRegionalRoads() {
 std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::string> &word_combinations) const {
     std::vector<struct OSMElement> result;
 
-    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
-        const std::string &combined = *itW;
+    for (const std::string &combined : word_combinations) {
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
         const std::vector<struct OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        for (auto itE = id_list.cbegin(); itE != id_list.cend(); ++itE) {
-            const struct OSMElement &element = itE->type == OSMElement::Node ? *itE : getNodeInOSMElement(*itE);
-            if (element.type != OSMElement::Node) continue; /// resolving to OSMElement of type Node failed
-            if (element.realworld_type == OSMElement::PlaceLargeArea || element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
-                result.push_back(element);
+        for (const OSMElement &element : id_list) {
+            const OSMElement &eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
+            if (eNode.type != OSMElement::Node) continue; /// resolving to OSMElement of type Node failed
+            if (eNode.realworld_type == OSMElement::PlaceLargeArea || eNode.realworld_type == OSMElement::PlaceLarge || eNode.realworld_type == OSMElement::PlaceMedium || eNode.realworld_type == OSMElement::PlaceSmall)
+                result.push_back(eNode);
         }
     }
 
@@ -2032,8 +2029,7 @@ uint64_t Sweden::retrieveAdministrativeRegion(const std::string &name, int *admi
 std::vector<struct Sweden::KnownAdministrativeRegion> Sweden::identifyAdministrativeRegions(const std::vector<std::string> &word_combinations) {
     std::vector<struct KnownAdministrativeRegion> result;
 
-    for (auto itW = word_combinations.cbegin(); itW != word_combinations.cend(); ++itW) {
-        const std::string &combined = *itW;
+    for (const std::string &combined : word_combinations) {
         int admin_level = -1;
         const uint64_t relationId = retrieveAdministrativeRegion(combined, &admin_level);
         if (relationId > 0) {
