@@ -124,6 +124,18 @@ public:
         if (distances.size() == 0) return 0; ///< too few distances computed
         return distances[distances.size() / 4]; ///< take first quartile
     }
+
+    static double qualityForRealWorldTypes(const OSMElement &element) {
+        switch (element.realworld_type) {
+        case OSMElement::PlaceLargeArea: return 0.8;
+        case OSMElement::PlaceLarge: return 1.0;
+        case OSMElement::PlaceMedium: return 0.85;
+        case OSMElement::PlaceSmall: return 0.7;
+        case OSMElement::Island: return 0.6;
+        case OSMElement::Building: return 0.9;
+        default: return 0.5;
+        }
+    }
 };
 
 TokenProcessor::TokenProcessor()
@@ -303,10 +315,14 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
              * quality value linearly increases towards 1.0.
              */
             a.quality = findGlobalNameInCombinedA > a.word_combination.length() ? 1.0 : findGlobalNameInCombinedA / (double)(a.word_combination.length() - findGlobalNameInCombinedA + 1);
+
+            /// Reduce quality for certain types of places, like small hamlets
+            a.quality *= Private::qualityForRealWorldTypes(a.global);
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
             b.quality = findGlobalNameInCombinedB > b.word_combination.length() ? 1.0 : findGlobalNameInCombinedB / (double)(b.word_combination.length() - findGlobalNameInCombinedB + 1);
+            b.quality *= Private::qualityForRealWorldTypes(b.global);
         }
 
         /// Larger values findGlobalNameInCombinedX, i.e. late or no hits for global name preferred
@@ -326,17 +342,6 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
     return result;
 }
 
-double TokenProcessor::qualityForRealWorldTypes(const OSMElement &element) const {
-    switch (element.realworld_type) {
-    case OSMElement::PlaceLarge: return 1.0;
-    case OSMElement::PlaceMedium: return 0.8;
-    case OSMElement::PlaceSmall: return 0.6;
-    case OSMElement::Island: return 0.5;
-    case OSMElement::Building: return 0.4;
-    default: return 0.3;
-    }
-}
-
 std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const {
     std::vector<struct TokenProcessor::UniqueMatch> result;
 
@@ -352,7 +357,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
             if (element_list.size() == 1) {
                 /// For single-element results, set inter-node distance to
                 /// 1m as distance==0 is interpreted as error
-                result.push_back(UniqueMatch(combined, element_list.front(), qualityForRealWorldTypes(element_list.front())));
+                result.push_back(UniqueMatch(combined, element_list.front(), Private::qualityForRealWorldTypes(element_list.front())));
             } else { /** element_list.size() > 1 */
                 /// Estimate the inter-node distance. For an 'unique' location,
                 /// all nodes must be close by as they are supposed to belong
@@ -377,7 +382,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                     }
 
                     if (bestElementsDistanceToCentralNode < 1000)
-                        result.push_back(UniqueMatch(combined, bestElement, qualityForRealWorldTypes(bestElement)));
+                        result.push_back(UniqueMatch(combined, bestElement, Private::qualityForRealWorldTypes(bestElement)));
                 }
             }
         }
@@ -397,15 +402,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
 
         /// Set quality during sorting if not already set for match a
         if (a.quality < 0.0) {
-            switch (a.element.realworld_type) {
-            case OSMElement::RealWorldType::PlaceLargeArea: a.quality = 0.8; break;
-            case OSMElement::RealWorldType::PlaceLarge: a.quality = 1.0; break;
-            case OSMElement::RealWorldType::PlaceMedium: a.quality = .85; break;
-            case OSMElement::RealWorldType::PlaceSmall: a.quality = .7; break;
-            case OSMElement::RealWorldType::Island: a.quality = .6; break;
-            case OSMElement::RealWorldType::Building: a.quality = .4; break;
-            default: a.quality = 0.5;
-            }
+            a.quality = Private::qualityForRealWorldTypes(a.element);
 
             if (countSpacesA >= 3) a.quality *= 1.0;
             else if (countSpacesA == 2) a.quality *= 0.9;
@@ -414,15 +411,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
-            switch (b.element.realworld_type) {
-            case OSMElement::RealWorldType::PlaceLargeArea: b.quality = 0.8; break;
-            case OSMElement::RealWorldType::PlaceLarge: b.quality = 1.0; break;
-            case OSMElement::RealWorldType::PlaceMedium: b.quality = .85; break;
-            case OSMElement::RealWorldType::PlaceSmall: b.quality = .7; break;
-            case OSMElement::RealWorldType::Island: b.quality = .6; break;
-            case OSMElement::RealWorldType::Building: b.quality = .4; break;
-            default: b.quality = 0.5;
-            }
+            b.quality = Private::qualityForRealWorldTypes(b.element);
 
             if (countSpacesB >= 3) b.quality *= 1.0;
             else if (countSpacesB == 2) b.quality *= 0.9;
