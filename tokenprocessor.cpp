@@ -245,23 +245,23 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        for (auto itN = element_list.cbegin(); itN != element_list.cend(); ++itN) {
-            const OSMElement element = itN->type == OSMElement::Node ? *itN : getNodeInOSMElement(*itN);
-            if (element.type != OSMElement::Node)
+        for (const OSMElement &element : element_list) {
+            const OSMElement eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
+            if (eNode.type != OSMElement::Node)
                 /// Resolving relations or ways to a node failed
                 continue;
 
             int minDistance = INT_MAX;
             auto bestPlace = placesToCoord.cend();
             Coord c;
-            const bool foundNode = node2Coord->retrieve(element.id, c);
+            const bool foundNode = node2Coord->retrieve(eNode.id, c);
             if (!foundNode) continue;
 
             for (auto itP = placesToCoord.cbegin(); itP != placesToCoord.cend(); ++itP) {
                 const struct OSMElement &place = itP->first;
                 const struct Coord &placeCoord = itP->second;
 
-                if (place.id == element.id || place.id == itN->id) continue; ///< do not compare place with itself
+                if (place.id == eNode.id || place.id == element.id) continue; ///< do not compare place with itself
                 const int distance = Coord::distanceLatLon(c, placeCoord);
                 if (distance < minDistance) {
                     minDistance = distance;
@@ -271,7 +271,7 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
             static const int limitDistance = 20000; ///< 20km
             if (minDistance <= limitDistance && bestPlace != placesToCoord.cend())
-                result.push_back(NearPlaceMatch(combined, bestPlace->first /** struct OSMElement */, *itN, minDistance));
+                result.push_back(NearPlaceMatch(combined, bestPlace->first /** struct OSMElement */, element, minDistance));
         }
     }
 
@@ -465,7 +465,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
             for (const Sweden::KnownAdministrativeRegion &adminReg : adminRegions) {
                 const uint64_t adminRegRelId = adminReg.relationId;
                 const std::string adminRegName = adminReg.name;
-                if (adminRegRelId > 0 && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId))
+                if (adminRegRelId > 0 && adminRegRelId != element.id && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId))
                     result.push_back(AdminRegionMatch(combined, element, adminRegRelId, adminRegName));
             }
         }
