@@ -35,7 +35,7 @@ public:
     static void debug(const char *format, ...);
 
 private:
-    enum MessageType {MessageError, MessageWarn, MessageInfo, MessageDebug};
+    enum MessageType {MessageDebug = 0, MessageInfo = 1, MessageWarn = 2, MessageError = 3};
 
     Error();
 

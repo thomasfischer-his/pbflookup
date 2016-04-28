@@ -34,6 +34,9 @@ extern char cssfilename[];
 
 extern FILE *logfile; ///< defined in 'error.cpp'
 
+enum LoggingLevel {LevelDebug = 0, LevelInfo = 1, LevelWarn = 2, LevelError = 3};
+extern LoggingLevel minimumLoggingLevel; ///< defined in 'error.cpp'
+
 struct testset {
     std::string name;
     std::vector<Coord> coord;

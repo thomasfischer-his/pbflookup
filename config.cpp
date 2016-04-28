@@ -225,6 +225,18 @@ bool init_configuration(const char *configfilename) {
             /// TODO figure out how to close file at program termination
         }
 
+        minimumLoggingLevel = LevelDebug; ///< default value if nothing else set
+        if (configIfExistsLookup(config, "loglevel", buffer)) {
+            if (buffer[0] == 'd' && buffer[1] == 'e' && buffer[2] == 'b')
+                minimumLoggingLevel = LevelDebug;
+            else if (buffer[0] == 'i' && buffer[1] == 'n' && buffer[2] == 'f')
+                minimumLoggingLevel = LevelInfo;
+            else if (buffer[0] == 'w' && buffer[1] == 'a' && buffer[2] == 'r')
+                minimumLoggingLevel = LevelWarn;
+            else if (buffer[0] == 'e' && buffer[1] == 'r' && buffer[2] == 'r')
+                minimumLoggingLevel = LevelError;
+        }
+
         if (configIfExistsLookup(config, "pidfile", buffer))
             strncpy(pidfilename, buffer, MAX_STRING_LEN - 1);
         else

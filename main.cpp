@@ -56,6 +56,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    /// Omit debug output in server mode
+    if (server_mode() && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
+
     /// std::unique_ptr will take care of destroying the unique instance of
     /// GlobalObjectManager when this function exists.
     /// Note: 'gom' is not used correctly. Rather, it will initialize various
