@@ -37,7 +37,6 @@ char inputextfilename[MAX_STRING_LEN];
 char stopwordfilename[MAX_STRING_LEN];
 unsigned int http_port;
 char http_interface[MAX_STRING_LEN];
-char cssfilename[MAX_STRING_LEN];
 
 std::vector<struct testset> testsets;
 
@@ -124,7 +123,6 @@ bool init_configuration(const char *configfilename) {
     memset(stopwordfilename, 0, MAX_STRING_LEN);
     http_port = 0;
     memset(http_interface, 0, MAX_STRING_LEN);
-    memset(cssfilename, 0, MAX_STRING_LEN);
 
     /**
      * Modify given configuration filename:
@@ -324,18 +322,9 @@ bool init_configuration(const char *configfilename) {
             else
                 snprintf(http_interface, MAX_STRING_LEN - 1, "ANY");
 
-            if (configIfExistsLookup(config, "cssfilename", buffer)) {
-                FILE *f = fopen(buffer, "r");
-                if (f != NULL) {
-                    strncpy(cssfilename, buffer, MAX_STRING_LEN - 1);
-                    fclose(f);
-                }
-            }
-
 #ifdef DEBUG
             Error::debug("  http_port = %d", http_port);
             Error::debug("  http_interface = %s", http_interface);
-            Error::debug("  cssfilename = %s", cssfilename);
 #endif // DEBUG
         } else {
             http_port = 0;
