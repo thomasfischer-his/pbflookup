@@ -79,16 +79,20 @@ void HTTPServer::run() {
     memset(&serverName, 0, sizeof(serverName));
     serverName.sin_family = AF_INET;
     serverName.sin_port = htons(http_port);
-    if (http_interface[0] == 'L' && http_interface[1] == 'O' && http_interface[2] == 'C' && http_interface[3] == 'A' && http_interface[4] == 'L')
+    /// An interface name like 'LOCAL', 'local', 'LOOP', or 'loop' means INADDR_LOOPBACK
+    if (((http_interface[0] | 0x20) == 'l' && (http_interface[1] | 0x20) == 'o' && (http_interface[2] | 0x20) == 'c' && (http_interface[3] | 0x20) == 'a' && (http_interface[4] | 0x20) == 'l')
+            || ((http_interface[0] | 0x20) == 'l' && (http_interface[1] | 0x20) == 'o' && (http_interface[2] | 0x20) == 'o' && (http_interface[3] | 0x20) == 'p'))
         serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    else if (http_interface[0] == 'A' && http_interface[1] == 'N' && http_interface[2] == 'Y')
-        serverName.sin_addr.s_addr = htonl(INADDR_ANY);
-    else {
-        if (inet_aton(http_interface, &serverName.sin_addr) == 0) {
-            Error::warn("Provided http_interface '%s' is invalid, using local loopback instead", http_interface);
-            serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    else
+        /// An interface name like 'ANY' or 'any' means INADDR_ANY
+        if ((http_interface[0] | 0x20) == 'a' && (http_interface[1] | 0x20) == 'n' && (http_interface[2] | 0x20) == 'y')
+            serverName.sin_addr.s_addr = htonl(INADDR_ANY);
+        else {
+            if (inet_aton(http_interface, &serverName.sin_addr) == 0) {
+                Error::warn("Provided http_interface '%s' is invalid, using local loopback instead", http_interface);
+                serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+            }
         }
-    }
     /// 'my_addr.sin_zero' set to zeros by above memset command
 
     status = bind(serverSocket, (struct sockaddr *) &serverName, sizeof(serverName));
