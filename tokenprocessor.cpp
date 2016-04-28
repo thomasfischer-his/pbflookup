@@ -31,16 +31,6 @@
 
 class TokenProcessor::Private
 {
-private:
-
-    static constexpr double initialWeightPlaceLarge = 1000.0;
-    static constexpr double initialWeightPlaceMedium = 100.0;
-    static constexpr double initialWeightPlaceSmall = 10.0;
-    static constexpr double initialWeightRoadMajor = 1000.0;
-    static constexpr double initialWeightRoadMedium = 100.0;
-    static constexpr double initialWeightRoadMinor = 10.0;
-    static constexpr double initialWeightDefault = 1.0;
-
 public:
     explicit Private()
     {
