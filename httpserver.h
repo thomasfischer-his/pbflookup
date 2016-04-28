@@ -19,7 +19,14 @@
 
 class HTTPServer {
 public:
+    HTTPServer();
+    ~HTTPServer();
+
     void run();
+
+private:
+    class Private;
+    Private *const d;
 };
 
 #endif // HTTP_SERVER_H

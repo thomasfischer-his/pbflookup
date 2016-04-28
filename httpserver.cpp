@@ -34,6 +34,7 @@
 #include "error.h"
 
 #define MAX_BUFFER_LEN 16384
+#define MAX_STRING_LEN 1024
 
 int serverSocket;
 
@@ -63,6 +64,186 @@ int lat2tiley(double lat, int z)
     return (int)(floor((1.0 - log(tan(lat * M_PI / 180.0) + 1.0 / cos(lat * M_PI / 180.0)) / M_PI) / 2.0 * pow(2.0, z)));
 }
 
+class HTTPServer::Private {
+private:
+    HTTPServer *p;
+
+public:
+    Timer timerServer, timerSearch;
+
+    Private(HTTPServer *parent)
+        : p(parent) {
+        // TODO
+    }
+
+    void deliverFile(int fd, const char *filename) {
+        /// Check for valid filenames
+        bool valid_filename = true;
+        const size_t len = strlen(filename);
+        static const char acceptable_chars[] = "0123456789-_./aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
+        static char needle[] = {'\0', '\0'};
+        for (size_t i = 0; valid_filename && i < len; ++i) {
+            if (filename[i] == '.' && i > 0 && filename[i - 1] == '.') valid_filename = false; ///< someone tries to escape confinement
+            needle[0] = filename[i];
+            if (strstr(acceptable_chars, needle) == NULL) valid_filename = false; ///< not an acceptable character
+        }
+
+        char localfilename[MAX_STRING_LEN];
+        snprintf(localfilename, MAX_STRING_LEN - 1, "public/%s", filename);
+
+        FILE *localfile = valid_filename ? fopen(localfilename, "r") : NULL;
+        if (localfile != NULL) {
+            dprintf(fd, "HTTP/1.1 200 OK\n");
+            const size_t lflen = strlen(localfilename);
+            if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
+                dprintf(fd, "Content-Type: text/css; charset=utf-8\n");
+            else if (lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
+                dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+            else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'x' && localfilename[lflen - 1] == 't')
+                dprintf(fd, "Content-Type: text/plain; charset=utf-8\n");
+            else
+                dprintf(fd, "Content-Type: application/octet-stream\n");
+            dprintf(fd, "Cache-Control: public\n");
+            dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+
+            /// Important: file size is limited to MAX_BUFFER_LEN
+            static char buffer[MAX_BUFFER_LEN];
+            size_t remaining = MAX_BUFFER_LEN - 1;
+            char *cur = buffer;
+            size_t len = fread(cur, remaining, 1, localfile);
+            while (len > 0) {
+                remaining -= len;
+                cur += len;
+                len = fread(cur, remaining, 1, localfile);
+            }
+            dprintf(fd, "\n%s\n", buffer);
+
+            fclose(localfile);
+        } else {
+            dprintf(fd, "HTTP/1.1 404 Not Found\n");
+            dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+            dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+            dprintf(fd, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /><title>PBFLookup: 404 &ndash; Not Found</title></head><body><h1>404 &ndash; Not Found</h1><p>Could not serve your request for this file:</p><pre>%s</pre></body></html>\n\n\n", filename);
+        }
+    }
+
+    void printTimer(int fd, Timer *timerServer, Timer *timerSearch) {
+        int64_t cputime, walltime;
+        if (timerServer != NULL) {
+            dprintf(fd, "<h2>Consumed Time</h2>\n");
+            if (timerSearch != NULL) {
+                dprintf(fd, "<h3>Search</h3>\n");
+                timerSearch->elapsed(&cputime, &walltime);
+                dprintf(fd, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputime / 1000.0);
+                dprintf(fd, "Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
+            }
+            dprintf(fd, "<h3>HTTP Server</h3>\n");
+            timerServer->elapsed(&cputime, &walltime);
+            dprintf(fd, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
+        }
+    }
+
+    void writeFormHTML(int fd) {
+        dprintf(fd, "HTTP/1.1 200 OK\n");
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+        dprintf(fd, "Cache-Control: public\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+        dprintf(fd, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
+        dprintf(fd, "<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
+        dprintf(fd, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n</script>\n");
+        dprintf(fd, "</head>\n");
+        dprintf(fd, "<body>\n");
+        dprintf(fd, "<h1>Search for Locations described in Swedish Text</h1>\n");
+        dprintf(fd, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\">\n");
+        if (!testsets.empty()) {
+            dprintf(fd, "<p>Either select a pre-configured text from this list of %lu examples:\n<select onchange=\"testsetChanged(this)\" id=\"testsets\">\n", testsets.size());
+            dprintf(fd, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
+            for (const struct testset &t : testsets)
+                dprintf(fd, "<option value=\"%s\">%s</option>", t.text.c_str(), t.name.c_str());
+            dprintf(fd, "</select> or &hellip;</p>\n");
+        }
+        dprintf(fd, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
+        dprintf(fd, "<p><input type=\"submit\" value=\"Find location for text\"></p>\n");
+        dprintf(fd, "</form>\n");
+        printTimer(fd, &timerServer, NULL);
+        dprintf(fd, "</body></html>\n\n\n");
+    }
+
+    void writeResultsHTML(int fd, const char *text, const std::vector<Result> &results) {
+        dprintf(fd, "HTTP/1.1 200 OK\n");
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+
+        if (!results.empty()) {
+            dprintf(fd, "<html><head><title>PBFLookup: %lu Results</title>\n", results.size());
+            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n</head><body>\n");
+            dprintf(fd, "<h1>Results</h1><p>For the following input, <strong>%lu results</strong> were located:</p>\n", results.size());
+            dprintf(fd, "<p><tt>%s</tt></p>\n", text);
+            dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
+
+            dprintf(fd, "<h2>Found Locations</h2>\n");
+            dprintf(fd, "<p>Number of results: %lu</p>\n", results.size());
+            dprintf(fd, "<table id=\"results\">\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
+            static const size_t maxCountResults = 20;
+            size_t resultCounter = maxCountResults;
+            for (const Result &result : results) {
+                if (--resultCounter <= 0) break; ///< Limit number of results
+
+                const double lon = Coord::toLongitude(result.coord.x);
+                const double lat = Coord::toLatitude(result.coord.y);
+                const std::vector<int> m = sweden->insideSCBarea(result.coord);
+                const int scbarea = m.empty() ? 0 : m.front();
+                dprintf(fd, "<tr><td>lat= %.4lf<br/>lon= %.4lf<br/>near %s, %s</td>", lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
+                static const int zoom = 15;
+                dprintf(fd, "<td><a href=\"http://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
+                const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
+                dprintf(fd, "<img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
+                dprintf(fd, "<img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
+                dprintf(fd, "<img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" />", zoom, tileX - 1, tileY + 1, zoom, tileX, tileY + 1, zoom, tileX + 1, tileY + 1);
+                std::string hintText = result.origin;
+                if (!result.elements.empty()) {
+                    hintText += "\n<small><ul>\n";
+                    for (const OSMElement &e : result.elements) {
+                        hintText += "\n<li><a target=\"_top\" href=\"";
+                        const std::string eid = std::to_string(e.id);
+                        switch (e.type) {
+                        case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">" + e.operator std::string(); break;
+                        case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
+                        case OSMElement::Relation: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
+                        case OSMElement::UnknownElementType: hintText += "https://www.openstreetmap.org/\">Unknown element type with id " + eid; break;
+                        }
+                        const std::string name = e.name();
+                        if (!name.empty())
+                            hintText += "(" + e.name() + ")";
+                        hintText += "</li>\n";
+                    }
+                    hintText += "</ul></small>";
+                }
+                dprintf(fd, "</a></td><td>%s</td></tr>\n", hintText.c_str());
+            }
+            dprintf(fd, "</tbody></table>\n");
+        } else {
+            dprintf(fd, "<html><head><title>PBFLookup: No Results</title>\n");
+            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
+            dprintf(fd, "<h1>Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>\n");
+            dprintf(fd, "<p><tt>%s</tt></p>\n", text);
+            dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
+        }
+        printTimer(fd, &timerServer, &timerSearch);
+        dprintf(fd, "</body></html>\n\n\n");
+    }
+};
+
+HTTPServer::HTTPServer()
+    : d(new Private(this))
+{
+    // TODO
+}
+
+HTTPServer::~HTTPServer() {
+    delete d;
+}
 
 void HTTPServer::run() {
     /** Turn off bind address checking, and allow port numbers to be reused
@@ -131,9 +312,7 @@ void HTTPServer::run() {
 
     Error::info("Press Ctrl+C or send SIGTERM or SIGINT to pid %d", getpid());
     while (!doexitserver) {
-        Timer timerServer;
-        int64_t cputimeServer, walltimeServer;
-        timerServer.start();
+        d->timerServer.start();
 
         /// It is necessary to re-initialize the file descriptor sets
         /// in each loop iteration, as pselect(..) may modify them
@@ -184,62 +363,26 @@ void HTTPServer::run() {
                 read(slaveSocket, readbuffer, readbuffer_size);
 
                 if (readbuffer[0] == 'G' && readbuffer[1] == 'E' && readbuffer[2] == 'T' && readbuffer[3] == ' ') {
-                    dprintf(slaveSocket, "HTTP/1.1 200 OK\n");
-                    if (cssfilename[0] != '\0' && strncmp(readbuffer + 4, "/default.css", 12) == 0) {
-                        Error::info("CSS file requested");
-                        dprintf(slaveSocket, "Content-Type: text/css; charset=utf-8\n");
-                        FILE *f = fopen(cssfilename, "r");
-                        if (f != NULL) {
-                            static char cssbuffer[MAX_BUFFER_LEN];
-                            size_t remaining = MAX_BUFFER_LEN - 1;
-                            char *cur = cssbuffer;
-                            size_t len = fread(cur, remaining, 1, f);
-                            while (len > 0) {
-                                remaining -= len;
-                                cur += len;
-                                len = fread(cur, remaining, 1, f);
-                            }
-                            fclose(f);
-                            dprintf(slaveSocket, "\n%s\n", cssbuffer);
-                        } else
-                            Error::warn("Cannot open CSS file '%s'", cssfilename);
-                        dprintf(slaveSocket, "\n");
-                    } else {
-                        dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
-                        dprintf(slaveSocket, "\n<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
-                        dprintf(slaveSocket, "<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
-                        dprintf(slaveSocket, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n</script>\n");
-                        dprintf(slaveSocket, "</head>\n");
-                        dprintf(slaveSocket, "<body>\n");
-                        dprintf(slaveSocket, "<h1>Search for Locations described in Swedish Text</h1>\n");
-                        dprintf(slaveSocket, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\">\n");
-                        if (!testsets.empty()) {
-                            dprintf(slaveSocket, "<p>Either select a pre-configured text from this list of %lu examples:\n<select onchange=\"testsetChanged(this)\" id=\"testsets\">\n", testsets.size());
-                            dprintf(slaveSocket, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
-                            for (const struct testset &t : testsets)
-                                dprintf(slaveSocket, "<option value=\"%s\">%s</option>", t.text.c_str(), t.name.c_str());
-                            dprintf(slaveSocket, "</select> or &hellip;</p>\n");
+                    char getfilename[MAX_STRING_LEN];
+                    strncpy(getfilename, readbuffer + 4, MAX_STRING_LEN - 1);
+                    for (int i = 0; i < MAX_STRING_LEN; ++i)
+                        if (getfilename[i] <= 32 || getfilename[i] >= 128) {
+                            getfilename[i] = '\0';
+                            break;
                         }
-                        dprintf(slaveSocket, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
-                        dprintf(slaveSocket, "<p><input type=\"submit\" value=\"Find location for text\"></p>\n");
-                        dprintf(slaveSocket, "</form>\n");
-                        dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
-                        dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
-                        timerServer.elapsed(&cputimeServer, &walltimeServer);
-                        dprintf(slaveSocket, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
-                        dprintf(slaveSocket, "</body></html>\n\n\n");
-                    }
+
+                    if (getfilename[0] == '/' && getfilename[1] == '\0')
+                        /// Serve default search form
+                        d->writeFormHTML(slaveSocket);
+                    else
+                        d->deliverFile(slaveSocket, getfilename);
                 } else if (readbuffer[0] == 'P' && readbuffer[1] == 'O' && readbuffer[2] == 'S' && readbuffer[3] == 'T' && readbuffer[4] == ' ') {
                     strncpy(text, strstr(readbuffer, "\ntext=") + 6, readbuffer_size);
 
-                    Timer timerSearch;
-                    int64_t cputimeSearch, walltimeSearch;
-
-                    timerSearch.start();
+                    d->timerSearch.start();
                     std::vector<Result> results = ResultGenerator::findResults(text, ResultGenerator::VerbositySilent);
-                    timerSearch.elapsed(&cputimeSearch, &walltimeSearch);
+                    d->timerSearch.stop();
 
-                    dprintf(slaveSocket, "HTTP/1.1 200 OK\n");
                     if (!results.empty()) {
                         /// Sort results by quality (highest first)
                         std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
@@ -261,83 +404,14 @@ void HTTPServer::run() {
                             if (!removedOuter)
                                 ++outer;
                         }
-
-                        dprintf(slaveSocket, "Cache-Control: private, max-age=0, no-cache, no-store\n");
-                        dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
-                        dprintf(slaveSocket, "<html><head><title>PBFLookup: Results</title>\n");
-                        dprintf(slaveSocket, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n</head><body>\n");
-                        dprintf(slaveSocket, "<h1>Results</h1><p>For the following input, results were located:</p>\n");
-                        dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
-                        dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
-
-                        dprintf(slaveSocket, "<h2>Found Locations</h2>\n");
-                        dprintf(slaveSocket, "<p>Number of results: %lu</p>\n", results.size());
-                        dprintf(slaveSocket, "<table id=\"results\">\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
-                        static const size_t maxCountResults = 20;
-                        size_t resultCounter = maxCountResults;
-                        for (const Result &result : results) {
-                            if (--resultCounter <= 0) break; ///< Limit number of results
-
-                            const double lon = Coord::toLongitude(result.coord.x);
-                            const double lat = Coord::toLatitude(result.coord.y);
-                            const std::vector<int> m = sweden->insideSCBarea(result.coord);
-                            const int scbarea = m.empty() ? 0 : m.front();
-                            dprintf(slaveSocket, "<tr><td>lat= %.4lf<br/>lon= %.4lf<br/>near %s, %s</td>", lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
-                            static const int zoom = 15;
-                            dprintf(slaveSocket, "<td><a href=\"http://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
-                            const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
-                            dprintf(slaveSocket, "<img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
-                            dprintf(slaveSocket, "<img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
-                            dprintf(slaveSocket, "<img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"http://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" />", zoom, tileX - 1, tileY + 1, zoom, tileX, tileY + 1, zoom, tileX + 1, tileY + 1);
-                            std::string hintText = result.origin;
-                            if (!result.elements.empty()) {
-                                hintText += "\n<small><ul>\n";
-                                for (const OSMElement &e : result.elements) {
-                                    hintText += "\n<li><a target=\"_top\" href=\"";
-                                    const std::string eid = std::to_string(e.id);
-                                    switch (e.type) {
-                                    case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">" + e.operator std::string(); break;
-                                    case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
-                                    case OSMElement::Relation: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
-                                    case OSMElement::UnknownElementType: hintText += "https://www.openstreetmap.org/\">Unknown element type with id " + eid; break;
-                                    }
-                                    const std::string name = e.name();
-                                    if (!name.empty())
-                                        hintText += "(" + e.name() + ")";
-                                    hintText += "</li>\n";
-                                }
-                                hintText += "</ul></small>";
-                            }
-                            dprintf(slaveSocket, "</a></td><td>%s</td></tr>\n", hintText.c_str());
-                        }
-                        dprintf(slaveSocket, "</tbody></table>\n");
-                    } else {
-                        dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
-                        dprintf(slaveSocket, "<html><head><title>PBFLookup: Results</title>\n");
-                        dprintf(slaveSocket, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
-                        dprintf(slaveSocket, "<h1>Results</h1><p>Sorry, no results could be found for the following input:</p>\n");
-                        dprintf(slaveSocket, "<p><tt>%s</tt></p>\n", text);
-                        dprintf(slaveSocket, "<p><a href=\".\">New search</a></p>\n");
                     }
-                    dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
-                    dprintf(slaveSocket, "<h3>Search</h3>\n");
-                    dprintf(slaveSocket, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputimeSearch / 1000.0);
-                    dprintf(slaveSocket, "Wall Time: %.1f&thinsp;ms</p>\n", cputimeSearch / 1000.0);
-                    dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
-                    timerServer.elapsed(&cputimeServer, &walltimeServer);
-                    dprintf(slaveSocket, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
-                    dprintf(slaveSocket, "</body></html>\n\n\n");
+
+                    d->writeResultsHTML(slaveSocket, text, results);
                 } else {
                     dprintf(slaveSocket, "HTTP/1.1 400 Bad Request\n");
-                    dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n\n");
-                    dprintf(slaveSocket, "<html><head><title>PBFLookup: Bad Request</title>\n");
-                    dprintf(slaveSocket, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
-                    dprintf(slaveSocket, "<h1>Bad Request</h1>\n");
-                    dprintf(slaveSocket, "<h2>Consumed Time</h2>\n");
-                    dprintf(slaveSocket, "<h3>HTTP Server</h3>\n");
-                    timerServer.elapsed(&cputimeServer, &walltimeServer);
-                    dprintf(slaveSocket, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltimeServer / 1000.0);
-                    dprintf(slaveSocket, "</body></html>\n\n\n");
+                    dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
+                    dprintf(slaveSocket, "Content-Transfer-Encoding: 8bit\n\n");
+                    dprintf(slaveSocket, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /><title>PBFLookup: 400 &ndash; Bad Request</title></head><body><h1>400 &ndash; Bad Request</h1><p>Could not serve your request.</p></body></html>\n\n\n");
                 }
 
                 close(slaveSocket);
