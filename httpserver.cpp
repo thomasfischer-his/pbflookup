@@ -131,10 +131,16 @@ void HTTPServer::run() {
         int64_t cputimeServer, walltimeServer;
         timerServer.start();
 
+        /// It is necessary to re-initialize the file descriptor sets
+        /// in each loop iteration, as select(..) may modify them
         FD_ZERO(&readfds);
-        FD_SET(serverSocket, &readfds);
+        FD_SET(serverSocket, &readfds); ///< Watch server socket for incoming requests
+
+        /// It is necessary to re-initialize this struct in each loop iteration,
+        /// as select(..) may modify it (to tell us how long it waited)
         struct timespec timeout;
-        timeout.tv_sec = 5;
+        /// Wait up to 60 seconds
+        timeout.tv_sec = 60;
         timeout.tv_nsec = 0;
 
         const int pselect_result = pselect(serverSocket + 1, &readfds, NULL /** writefds */, NULL /** errorfds */, &timeout, &oldsigset);
