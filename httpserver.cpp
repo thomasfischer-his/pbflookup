@@ -145,18 +145,18 @@ void HTTPServer::run() {
 
         const int pselect_result = pselect(serverSocket + 1, &readfds, NULL /** writefds */, NULL /** errorfds */, &timeout, &oldsigset);
         if (pselect_result < 0) {
-            if (errno == EINTR) {
-                Error::debug("Got interrupted");
-                doexitserver = true;
-                break;
-            } else
+            if (errno == EINTR)
+                Error::debug("pselect(..) received signal: doexitserver=%s", doexitserver ? "true" : "false");
+            else
                 Error::err("pselect(...)  errno=%d  select_result=%d", errno, pselect_result);
         } else if (pselect_result == 0) {
             /// Timeout in pselect(..), nothing happened
             continue;
         }
 
-        if (FD_ISSET(serverSocket, &readfds)) {
+        if (doexitserver)
+            break;
+        else if (FD_ISSET(serverSocket, &readfds)) {
             /// Connection attempt on server
             socklen_t sockaddr_in_size = sizeof(struct sockaddr_in);
             struct sockaddr_in their_addr;
