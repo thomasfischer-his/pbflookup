@@ -58,6 +58,8 @@ int main(int argc, char *argv[]) {
 
     /// Omit debug output in server mode
     if (server_mode() && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
+    /// No color output in server mode
+    if (server_mode()) Error::useColor = false;
 
     /// std::unique_ptr will take care of destroying the unique instance of
     /// GlobalObjectManager when this function exists.
@@ -68,7 +70,7 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<GlobalObjectManager> gom(new GlobalObjectManager());
 
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && wayNames != NULL && relationNames != NULL && swedishTextTree != NULL && sweden != NULL) {
-        serverSocket = http_port < 1024 ? -1 : socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+        serverSocket = server_mode() ? socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) : -1;
         if (serverSocket >= 0) {
             HTTPServer httpServer;
             httpServer.run();
@@ -76,7 +78,8 @@ int main(int argc, char *argv[]) {
         } else if (!testsets.empty()) {
             Testset testsetRunner;
             testsetRunner.run();
-        }
+        } else
+            Error::warn("Running neither HTTP server nor testset (none is configured)");
     } else
         Error::err("No all variables got initialized correctly: relMembers, wayNodes, node2Coord, nodeNames, wayNames, relationNames, swedishTextTree, sweden");
 
