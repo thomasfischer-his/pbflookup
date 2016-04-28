@@ -24,6 +24,7 @@ struct Coord;
 
 extern char tempdir[];
 extern char mapname[];
+extern char pidfilename[];
 extern char osmpbffilename[];
 extern char inputextfilename[];
 extern char stopwordfilename[];

@@ -31,6 +31,7 @@
 
 char tempdir[MAX_STRING_LEN];
 char mapname[MAX_STRING_LEN];
+char pidfilename[MAX_STRING_LEN];
 char osmpbffilename[MAX_STRING_LEN];
 char inputextfilename[MAX_STRING_LEN];
 char stopwordfilename[MAX_STRING_LEN];
@@ -117,6 +118,7 @@ void replacevariablenames(char *text) {
 bool init_configuration(const char *configfilename) {
     memset(tempdir, 0, MAX_STRING_LEN);
     memset(mapname, 0, MAX_STRING_LEN);
+    memset(pidfilename, 0, MAX_STRING_LEN);
     memset(osmpbffilename, 0, MAX_STRING_LEN);
     memset(inputextfilename, 0, MAX_STRING_LEN);
     memset(stopwordfilename, 0, MAX_STRING_LEN);
@@ -222,6 +224,16 @@ bool init_configuration(const char *configfilename) {
             logfile = fopen(logfilename, "w");
             /// TODO figure out how to close file at program termination
         }
+
+        if (configIfExistsLookup(config, "pidfile", buffer))
+            strncpy(pidfilename, buffer, MAX_STRING_LEN - 1);
+        else
+            snprintf(pidfilename, MAX_STRING_LEN - 1, "${XDG_RUNTIME_DIR}/pbflookup.pid");
+        replacetildehome(pidfilename);
+        replacevariablenames(pidfilename);
+#ifdef DEBUG
+        Error::debug("  pidfilename = '%s'", pidfilename);
+#endif // DEBUG
 
         if (configIfExistsLookup(config, "osmpbffilename", buffer))
             strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
