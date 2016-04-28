@@ -288,14 +288,13 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
          * 2. Prefer local places that are closer to their global places'
          *    location.
          */
-        WriteableString globalNameA, globalNameB;
-        nodeNames->retrieve(a.global.id, globalNameA);
+        std::string globalNameA = a.global.name(), globalNameB;
         utf8tolower(globalNameA);
         if (a.global.id == b.global.id)
             /// Avoid looking up same id twice
             globalNameB = globalNameA;
         else {
-            nodeNames->retrieve(b.global.id, globalNameB);
+            globalNameB = b.global.name();
             utf8tolower(globalNameB);
         }
         /// std::string::find(..) will return the largest positive value for
@@ -330,12 +329,8 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
     });
 
 #ifdef DEBUG
-    for (auto it = result.cbegin(); it != result.cend(); ++it) {
-        WriteableString localName, globalName;
-        nodeNames->retrieve(it->local.id, localName);
-        nodeNames->retrieve(it->global.id, globalName);
-        Error::debug("Found node %llu (%s) near place %llu (%s) with distance %.1fkm", it->local.id, localName.c_str(), it->global.id, globalName.c_str(), it->distance / 1000.0);
-    }
+    for (const TokenProcessor::NearPlaceMatch &npm : result)
+        Error::debug("Found %s (%s) near place %s (%s) with distance %.1fkm", npm.local.operator std::string().c_str(), npm.local.name().c_str(), npm.global.operator std::string().c_str(), npm.global.name().c_str(), npm.distance / 1000.0);
 #endif
 
     return result;

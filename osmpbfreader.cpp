@@ -55,6 +55,8 @@ bool OsmPbfReader::parse(std::istream &input) {
     swedishTextTree = NULL;
     node2Coord = NULL;
     nodeNames = NULL;
+    wayNames = NULL;
+    relationNames = NULL;
     wayNodes = NULL;
     relMembers = NULL;
     sweden = NULL;
@@ -72,6 +74,12 @@ bool OsmPbfReader::parse(std::istream &input) {
     nodeNames = new IdTree<WriteableString>();
     if (nodeNames == NULL)
         Error::err("Could not allocate memory for nodeNames");
+    wayNames = new IdTree<WriteableString>();
+    if (wayNames == NULL)
+        Error::err("Could not allocate memory for wayNames");
+    relationNames = new IdTree<WriteableString>();
+    if (relationNames == NULL)
+        Error::err("Could not allocate memory for relationNames");
     wayNodes = new IdTree<WayNodes>();
     if (wayNodes == NULL)
         Error::err("Could not allocate memory for wayNodes");
@@ -470,6 +478,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             const bool result = swedishTextTree->insert(name, element);
                             if (!result)
                                 Error::warn("Cannot insert %s", name.c_str());
+                            wayNames->insert(wayId, WriteableString(name));
                         }
                     }
                 }
@@ -546,6 +555,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             const bool result = swedishTextTree->insert(name, element);
                             if (!result)
                                 Error::warn("Cannot insert %s", name.c_str());
+                            relationNames->insert(relId, WriteableString(name));
                         }
                     }
                 }

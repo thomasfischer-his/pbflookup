@@ -1999,11 +1999,8 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
     char id_str[maxlen + 256];
     memset(id_str, 0, maxlen);
     char *p = id_str;
-    for (auto it = result.cbegin(); it != result.cend() && (size_t)(p - id_str) < maxlen; ++it) {
-        static WriteableString placeName;
-        nodeNames->retrieve(it->id, placeName);
-        p += snprintf(p, maxlen - (p - id_str), " %lu (%s)", it->id, placeName.c_str());
-    }
+    for (auto it = result.cbegin(); it != result.cend() && (size_t)(p - id_str) < maxlen; ++it)
+        p += snprintf(p, maxlen - (p - id_str), " %s (%s)", it->operator std::string().c_str(), it->name().c_str());
     Error::debug("Num of places: %d  List of node ids:%s", result.size(), id_str);
 #endif
 

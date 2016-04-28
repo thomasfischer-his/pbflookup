@@ -17,7 +17,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-#include <cstdint>
+#include <string>
 
 struct OSMElement {
     enum ElementType {UnknownElementType = 0, Node, Way, Relation};
@@ -37,6 +37,8 @@ struct OSMElement {
         type = _type;
         realworld_type = _realworld_type;
     }
+
+    std::string name() const;
 
     operator std::string() const {
         std::string typeString;

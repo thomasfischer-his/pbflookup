@@ -111,15 +111,12 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
         for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
             Coord c;
             if (node2Coord->retrieve(getNodeInOSMElement(nearPlacesMatch.local).id, c)) {
-                WriteableString globalName, localName;
-                nodeNames->retrieve(nearPlacesMatch.global.id, globalName);
-                nodeNames->retrieve(nearPlacesMatch.local.id, localName);
-                Result r(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + std::to_string(nearPlacesMatch.global.id) + " (" + globalName.c_str() + ") > " + std::to_string(nearPlacesMatch.local.id) + " (" + localName.c_str() + ")");
+                Result r(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + nearPlacesMatch.global.operator std::string() + " (" + nearPlacesMatch.global.name().c_str() + ") > " + nearPlacesMatch.local.operator std::string() + " (" + nearPlacesMatch.local.name().c_str() + ")");
                 r.elements.push_back(nearPlacesMatch.global);
                 r.elements.push_back(nearPlacesMatch.local);
                 results.push_back(r);
                 if (verbosity > VerbositySilent)
-                    Error::debug("Got a result for place %llu and local node %llu", nearPlacesMatch.global.id, nearPlacesMatch.local.id);
+                    Error::debug("Got a result for place %s and local %s", nearPlacesMatch.global.operator std::string().c_str(), nearPlacesMatch.local.operator std::string().c_str());
             }
         }
     }
@@ -176,12 +173,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
 
         if (bestPlace.isValid()) {
             const double quality = rwt == OSMElement::PlaceLarge ? 1.0 : (rwt == OSMElement::PlaceMedium?.9 : (rwt == OSMElement::PlaceLargeArea?.6 : (rwt == OSMElement::PlaceSmall?.8 : .5)));
-            WriteableString placeName;
             OSMElement node = getNodeInOSMElement(bestPlace);
-            nodeNames->retrieve(node.id, placeName);
             Coord c;
             if (node2Coord->retrieve(node.id, c)) {
-                Result r(c, quality * .5, std::string("Large place: ") + placeName);
+                Result r(c, quality * .5, std::string("Large place: ") + bestPlace.name() + " (" + bestPlace.operator std::string() + ")");
                 r.elements.push_back(bestPlace);
                 results.push_back(r);
             }

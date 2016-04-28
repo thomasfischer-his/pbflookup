@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<PidFile> pidFile(new PidFile(pidfilename));
     std::unique_ptr<GlobalObjectManager> gom(new GlobalObjectManager());
 
-    if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
+    if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && wayNames != NULL && relationNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         serverSocket = http_port < 1024 ? -1 : socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
         if (serverSocket >= 0) {
             HTTPServer httpServer;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
             testsetRunner.run();
         }
     } else
-        Error::err("No all variables got initialized correctly: relMembers, wayNodes, node2Coord, nodeNames, swedishTextTree, sweden");
+        Error::err("No all variables got initialized correctly: relMembers, wayNodes, node2Coord, nodeNames, wayNames, relationNames, swedishTextTree, sweden");
 
     return 0;
 }

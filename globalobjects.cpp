@@ -33,6 +33,8 @@ IdTree<WayNodes> *wayNodes = NULL; ///< declared in 'globalobjects.h'
 IdTree<Coord> *node2Coord = NULL; ///< declared in 'globalobjects.h'
 IdTree<RelationMem> *relMembers = NULL; ///< declared in 'globalobjects.h'
 IdTree<WriteableString> *nodeNames = NULL; ///< declared in 'globalobjects.h'
+IdTree<WriteableString> *wayNames = NULL; ///< declared in 'globalobjects.h'
+IdTree<WriteableString> *relationNames = NULL; ///< declared in 'globalobjects.h'
 SwedishTextTree *swedishTextTree = NULL; ///< declared in 'globalobjects.h'
 Sweden *sweden = NULL; ///< declared in 'globalobjects.h'
 
@@ -106,6 +108,56 @@ void saveNodeNames() {
         nodeNames->write(out);
     } else
         Error::err("Cannot save nodeNames, variable is NULL");
+}
+
+void loadWayNames() {
+    char filenamebuffer[1024];
+    snprintf(filenamebuffer, 1024, "%s/%s.wn", tempdir, mapname);
+    Error::debug("Reading from '%s'", filenamebuffer);
+    std::ifstream wnfile(filenamebuffer);
+    boost::iostreams::filtering_istream in;
+    in.push(boost::iostreams::gzip_decompressor());
+    in.push(wnfile);
+    wayNames = new IdTree<WriteableString>(in);
+}
+
+void saveWayNames() {
+    char filenamebuffer[1024];
+    if (wayNames != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.wn", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        std::ofstream wnfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(wnfile);
+        wayNames->write(out);
+    } else
+        Error::err("Cannot save wayNames, variable is NULL");
+}
+
+void loadRelationNames() {
+    char filenamebuffer[1024];
+    snprintf(filenamebuffer, 1024, "%s/%s.rn", tempdir, mapname);
+    Error::debug("Reading from '%s'", filenamebuffer);
+    std::ifstream rnfile(filenamebuffer);
+    boost::iostreams::filtering_istream in;
+    in.push(boost::iostreams::gzip_decompressor());
+    in.push(rnfile);
+    relationNames = new IdTree<WriteableString>(in);
+}
+
+void saveRelationNames() {
+    char filenamebuffer[1024];
+    if (wayNames != NULL) {
+        snprintf(filenamebuffer, 1024, "%s/%s.rn", tempdir, mapname);
+        Error::debug("Writing to '%s'", filenamebuffer);
+        std::ofstream rnfile(filenamebuffer);
+        boost::iostreams::filtering_ostream out;
+        out.push(boost::iostreams::gzip_compressor());
+        out.push(rnfile);
+        relationNames->write(out);
+    } else
+        Error::err("Cannot save relationNames, variable is NULL");
 }
 
 void loadWayNodes() {
@@ -190,6 +242,8 @@ GlobalObjectManager::GlobalObjectManager() {
     wayNodes = NULL;
     relMembers = NULL;
     nodeNames = NULL;
+    wayNames = NULL;
+    relationNames = NULL;
     sweden = NULL;
 
     char filenamebuffer[1024];
@@ -235,6 +289,10 @@ GlobalObjectManager::~GlobalObjectManager() {
         delete node2Coord;
     if (nodeNames != NULL)
         delete nodeNames;
+    if (wayNames != NULL)
+        delete wayNames;
+    if (relationNames != NULL)
+        delete relationNames;
     if (wayNodes != NULL)
         delete wayNodes;
     if (relMembers != NULL)
@@ -254,6 +312,10 @@ void GlobalObjectManager::load() {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     boost::thread threadLoadNodeNames(loadNodeNames);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    boost::thread threadLoadWayNames(loadWayNames);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    boost::thread threadLoadRelationNames(loadRelationNames);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     boost::thread threadLoadWayNodes(loadWayNodes);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     boost::thread threadLoadRelMem(loadRelMem);
@@ -262,6 +324,8 @@ void GlobalObjectManager::load() {
     threadLoadSwedishTextTree.join();
     threadLoadNode2Cood.join();
     threadLoadNodeNames.join();
+    threadLoadWayNames.join();
+    threadLoadRelationNames.join();
     threadLoadWayNodes.join();
     threadLoadRelMem.join();
     Error::debug("All load threads joined, now loading 'sweden'");
@@ -279,6 +343,10 @@ void GlobalObjectManager::save() const {
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     boost::thread threadSaveNodeNames(saveNodeNames);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    boost::thread threadSaveWayNames(saveWayNames);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    boost::thread threadSaveRelationNames(saveRelationNames);
+    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     boost::thread threadSaveWayNodes(saveWayNodes);
     boost::this_thread::sleep(boost::posix_time::milliseconds(100));
     boost::thread threadSaveRelMem(saveRelMem);
@@ -289,6 +357,8 @@ void GlobalObjectManager::save() const {
     threadSaveSwedishTextTree.join();
     threadSaveNode2Cood.join();
     threadSaveNodeNames.join();
+    threadSaveWayNames.join();
+    threadSaveRelationNames.join();
     threadSaveWayNodes.join();
     threadSaveRelMem.join();
     threadSaveSweden.join();

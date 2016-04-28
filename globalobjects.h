@@ -26,6 +26,8 @@ extern IdTree<WayNodes> *wayNodes; ///< defined in 'globalobjects.cpp'
 extern IdTree<Coord> *node2Coord; ///< defined in 'globalobjects.cpp'
 extern IdTree<RelationMem> *relMembers; ///< defined in 'globalobjects.cpp'
 extern IdTree<WriteableString> *nodeNames; ///< defined in 'globalobjects.cpp'
+extern IdTree<WriteableString> *wayNames; ///< defined in 'globalobjects.cpp'
+extern IdTree<WriteableString> *relationNames; ///< defined in 'globalobjects.cpp'
 extern SwedishTextTree *swedishTextTree; ///< defined in 'globalobjects.cpp'
 extern Sweden *sweden; ///< defined in 'globalobjects.cpp'
 
