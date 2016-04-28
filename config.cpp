@@ -92,6 +92,26 @@ void replacevariablenames(char *text) {
             strncpy(needlepos + timestamplen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
         }
     }
+
+    /// Find an replace environment variables
+    static const char *needle_varstart = "${";
+    static const char *needle_varend = "}";
+    needlepos = strstr(text, needle_varstart);
+    while (needlepos != NULL) {
+        static char temp[MAX_STRING_LEN];
+        const char *needleend = strstr(needlepos, needle_varend);
+        const size_t needle_len = needleend - needlepos - 2;
+        snprintf(temp, needle_len + 1, needlepos + 2);
+        const char *envvar = getenv(temp);
+        const size_t envvarlen = strlen(envvar);
+        const size_t prefixlen = needlepos - text;
+        strncpy(temp, text, MAX_STRING_LEN);
+        strncpy(needlepos, envvar, MAX_STRING_LEN - prefixlen);
+        strncpy(needlepos + envvarlen, temp + prefixlen + needle_len + 3, MAX_STRING_LEN - prefixlen - needle_len - 3);
+
+        /// Continue searching after current replacement
+        needlepos = strstr(needlepos + envvarlen, needle_varstart);
+    }
 }
 
 bool init_configuration(const char *configfilename) {
