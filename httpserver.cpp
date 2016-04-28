@@ -24,6 +24,7 @@
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "global.h"
 #include "globalobjects.h"
@@ -35,6 +36,20 @@
 #define MAX_BUFFER_LEN 16384
 
 int serverSocket;
+
+/// Internally used to quit server, may be set by signal handler
+bool doexitserver;
+
+void sigtermfn(int signal) {
+    if (signal == SIGTERM) {
+        Error::debug("Got SIGTERM");
+        doexitserver = true;
+    } else  if (signal == SIGINT) {
+        Error::debug("Got SIGINT");
+        doexitserver = true;
+    } else
+        Error::warn("Handling unknown signal %d", signal);
+}
 
 /// Taken from
 ///  http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#C.2FC.2B.2B
@@ -84,7 +99,6 @@ void HTTPServer::run() {
     if (status == -1)
         Error::err("listen()");
 
-    bool doexitserver = false;
     fd_set readfds;
     Error::info("HTTP Server awaits connection attempts on port %d", http_port);
     /// Extract four bytes for IPv4 address; for ANY use '127.0.0.1'
@@ -94,7 +108,24 @@ void HTTPServer::run() {
     const unsigned char d = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
     Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a, b, c, d, htons(serverName.sin_port));
 
-    Error::info("Enter 'quit' to quit HTTP server");
+
+    doexitserver = false;
+    /// Install the signal handler for SIGTERM and SIGINT
+    struct sigaction s;
+    s.sa_handler = sigtermfn;
+    sigemptyset(&s.sa_mask);
+    s.sa_flags = 0;
+    sigaction(SIGTERM, &s, NULL);
+    sigaction(SIGINT, &s, NULL);
+
+    /// Block SIGTERM and SIGINT
+    sigset_t sigset, oldsigset;
+    sigemptyset(&sigset);
+    sigaddset(&sigset, SIGTERM);
+    sigaddset(&sigset, SIGINT);
+    sigprocmask(SIG_BLOCK, &sigset, &oldsigset);
+
+    Error::info("Press Ctrl+C or send SIGTERM or SIGINT to pid %d", getpid());
     while (!doexitserver) {
         Timer timerServer;
         int64_t cputimeServer, walltimeServer;
@@ -102,26 +133,24 @@ void HTTPServer::run() {
 
         FD_ZERO(&readfds);
         FD_SET(serverSocket, &readfds);
-        FD_SET(0, &readfds);
-        struct timeval timeout;
+        struct timespec timeout;
         timeout.tv_sec = 5;
-        timeout.tv_usec = 0;
+        timeout.tv_nsec = 0;
 
-        if (select(serverSocket + 1, &readfds, NULL /** writefds */, NULL /** errorfds */, &timeout) < 0) {
-            Error::err("select(...)");
+        const int pselect_result = pselect(serverSocket + 1, &readfds, NULL /** writefds */, NULL /** errorfds */, &timeout, &oldsigset);
+        if (pselect_result < 0) {
+            if (errno == EINTR) {
+                Error::debug("Got interrupted");
+                doexitserver = true;
+                break;
+            } else
+                Error::err("select(...)  errno=%d  select_result=%d", errno, pselect_result);
+        } else if (pselect_result == 0) {
+            /// Timeout in select(..), nothing happened
+            continue;
         }
 
-        if (FD_ISSET(0, &readfds)) {
-            /// User input from stdin
-            static const size_t buffer_size = 1024;
-            char buffer[buffer_size];
-            fgets(buffer, buffer_size, stdin);
-            if (buffer[0] == 'q' && buffer[1] == 'u' && buffer[2] == 'i' && buffer[3] == 't') {
-                /// User wants to quit server
-                doexitserver = true;
-                Error::info("Will quit HTTP server");
-            }
-        } else if (FD_ISSET(serverSocket, &readfds)) {
+        if (FD_ISSET(serverSocket, &readfds)) {
             /// Connection attempt on server
             socklen_t sockaddr_in_size = sizeof(struct sockaddr_in);
             struct sockaddr_in their_addr;
@@ -306,6 +335,11 @@ void HTTPServer::run() {
                 close(slaveSocket);
             }
             }
+        } else {
+            Error::warn("select() finished, but no data to process?  errno=%d  select_result=%d", errno, pselect_result);
         }
     }
+
+    /// Restore old signal mask
+    sigprocmask(SIG_SETMASK, &oldsigset, NULL);
 }
