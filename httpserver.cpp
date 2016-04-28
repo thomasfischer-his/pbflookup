@@ -132,12 +132,12 @@ void HTTPServer::run() {
         timerServer.start();
 
         /// It is necessary to re-initialize the file descriptor sets
-        /// in each loop iteration, as select(..) may modify them
+        /// in each loop iteration, as pselect(..) may modify them
         FD_ZERO(&readfds);
         FD_SET(serverSocket, &readfds); ///< Watch server socket for incoming requests
 
         /// It is necessary to re-initialize this struct in each loop iteration,
-        /// as select(..) may modify it (to tell us how long it waited)
+        /// as pselect(..) may modify it (to tell us how long it waited)
         struct timespec timeout;
         /// Wait up to 60 seconds
         timeout.tv_sec = 60;
@@ -150,9 +150,9 @@ void HTTPServer::run() {
                 doexitserver = true;
                 break;
             } else
-                Error::err("select(...)  errno=%d  select_result=%d", errno, pselect_result);
+                Error::err("pselect(...)  errno=%d  select_result=%d", errno, pselect_result);
         } else if (pselect_result == 0) {
-            /// Timeout in select(..), nothing happened
+            /// Timeout in pselect(..), nothing happened
             continue;
         }
 
@@ -342,7 +342,7 @@ void HTTPServer::run() {
             }
             }
         } else {
-            Error::warn("select() finished, but no data to process?  errno=%d  select_result=%d", errno, pselect_result);
+            Error::warn("pselect() finished, but no data to process?  errno=%d  select_result=%d", errno, pselect_result);
         }
     }
 
