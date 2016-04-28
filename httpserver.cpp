@@ -106,11 +106,11 @@ void HTTPServer::run() {
     fd_set readfds;
     Error::info("HTTP Server awaits connection attempts on port %d", http_port);
     /// Extract four bytes for IPv4 address; for ANY use '127.0.0.1'
-    const unsigned char a = serverName.sin_addr.s_addr == 0x0 ? 127 : serverName.sin_addr.s_addr & 255;
-    const unsigned char b = serverName.sin_addr.s_addr == 0x0 ? 0 : (serverName.sin_addr.s_addr >> 8) & 255;
-    const unsigned char c = serverName.sin_addr.s_addr == 0x0 ? 0 : (serverName.sin_addr.s_addr >> 16) & 255;
-    const unsigned char d = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
-    Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a, b, c, d, htons(serverName.sin_port));
+    const unsigned char a1 = serverName.sin_addr.s_addr == 0x0 ? 127 : serverName.sin_addr.s_addr & 255;
+    const unsigned char a2 = serverName.sin_addr.s_addr == 0x0 ? 0 : (serverName.sin_addr.s_addr >> 8) & 255;
+    const unsigned char a3 = serverName.sin_addr.s_addr == 0x0 ? 0 : (serverName.sin_addr.s_addr >> 16) & 255;
+    const unsigned char a4 = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
+    Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a1, a2, a3, a4, htons(serverName.sin_port));
 
 
     doexitserver = false;
