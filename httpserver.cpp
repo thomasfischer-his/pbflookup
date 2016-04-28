@@ -296,11 +296,14 @@ void HTTPServer::run() {
                                     hintText += "\n<li><a target=\"_top\" href=\"";
                                     const std::string eid = std::to_string(e.id);
                                     switch (e.type) {
-                                    case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">Node " + eid; break;
-                                    case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">Way " + eid; break;
-                                    case OSMElement::Relation: hintText += "https://www.openstreetmap.org/way/" + eid + "\">Way " + eid; break;
+                                    case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">" + e.operator std::string(); break;
+                                    case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
+                                    case OSMElement::Relation: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
                                     case OSMElement::UnknownElementType: hintText += "https://www.openstreetmap.org/\">Unknown element type with id " + eid; break;
                                     }
+                                    const std::string name = e.name();
+                                    if (!name.empty())
+                                        hintText += "(" + e.name() + ")";
                                     hintText += "</li>\n";
                                 }
                                 hintText += "</ul></small>";
