@@ -1889,7 +1889,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
                 /// Got a valid road number
                 roadType = roadNumber < 500 ? Sweden::National : Sweden::LanUnknown;
             } else {
-                Error::debug("Not a road number: %s", cur);
+                Error::warn("Not a road number: %s", cur);
                 roadNumber = invalidRoadNumber;
             }
         }
@@ -1897,7 +1897,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
         if (roadNumber != invalidRoadNumber && roadType != Sweden::UnknownRoadType) {
             const Sweden::Road foundRoad(roadType, roadNumber);
 #ifdef DEBUG
-            Error::info("Found road %s", foundRoad.operator std::string().c_str());
+            Error::debug("Found road %s", foundRoad.operator std::string().c_str());
 #endif // DEBUG
 
             /// Add only unique its to result list
