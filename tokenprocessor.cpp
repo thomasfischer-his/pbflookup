@@ -47,17 +47,17 @@ public:
         /// nothing
     }
 
-    int interIdEstimatedDistance(const std::vector<OSMElement> &id_list, unsigned int &considered_nodes, unsigned int &considered_distances, uint64_t &mostCentralNodeId) {
+    int interIdEstimatedDistance(const std::vector<OSMElement> &element_list, unsigned int &considered_nodes, unsigned int &considered_distances, uint64_t &mostCentralNodeId) {
         considered_nodes = considered_distances = 0;
         mostCentralNodeId = INT64_MAX;
 
-        if (id_list.empty()) return 0; ///< too few elements as input
+        if (element_list.empty()) return 0; ///< too few elements as input
 
         /// Collect as many nodes (identified by their ids) as referenced
-        /// by the provided id_list vector. Ways and relations get resolved
-        /// to nodes to some extend.
+        /// by the provided element_list vector. Ways and relations get
+        /// resolved to nodes to some extend.
         std::unordered_set<uint64_t> node_ids;
-        for (const OSMElement &element : id_list) {
+        for (const OSMElement &element : element_list) {
             if (element.type == OSMElement::Node)
                 node_ids.insert(element.id);
             else if (element.type == OSMElement::Way) {
@@ -156,9 +156,9 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        if (!id_list.empty()) {
-            Error::debug("Got %i hits for word '%s'", id_list.size(), combined_cstr);
+        std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        if (!element_list.empty()) {
+            Error::debug("Got %i hits for word '%s'", element_list.size(), combined_cstr);
 
             /// Find shortest distance between any OSM element and any road element
             for (auto itR = knownRoads.begin(); itR != knownRoads.end(); ++itR) {
@@ -167,7 +167,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
                 Sweden::Road bestRoad(*itR);
                 int minDistance = INT_MAX;
                 /// Go through all OSM elements
-                for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
+                for (auto itN = element_list.cbegin(); itN != element_list.cend(); ++itN) {
                     const uint64_t id = (*itN).id;
                     const OSMElement::ElementType type = (*itN).type;
                     const OSMElement::RealWorldType realworld_type = (*itN).realworld_type;
@@ -244,8 +244,8 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        for (auto itN = id_list.cbegin(); itN != id_list.cend(); ++itN) {
+        std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        for (auto itN = element_list.cbegin(); itN != element_list.cend(); ++itN) {
             const OSMElement element = itN->type == OSMElement::Node ? *itN : getNodeInOSMElement(*itN);
             if (element.type != OSMElement::Node)
                 /// Resolving relations or ways to a node failed
@@ -355,28 +355,28 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        std::vector<OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         /// Even 'unique' locations may consist of multiple nodes or ways,
         /// such as the shape of a single building
-        if (id_list.size() > 0 && id_list.size() < 30 /** arbitrarily chosen value */) {
-            if (id_list.size() == 1) {
+        if (element_list.size() > 0 && element_list.size() < 30 /** arbitrarily chosen value */) {
+            if (element_list.size() == 1) {
                 /// For single-element results, set inter-node distance to
                 /// 1m as distance==0 is interpreted as error
-                result.push_back(UniqueMatch(combined, id_list.front(), qualityForRealWorldTypes(id_list.front())));
-            } else { /** id_list.size() > 1 */
+                result.push_back(UniqueMatch(combined, element_list.front(), qualityForRealWorldTypes(element_list.front())));
+            } else { /** element_list.size() > 1 */
                 /// Estimate the inter-node distance. For an 'unique' location,
                 /// all nodes must be close by as they are supposed to belong
                 /// together, e.g. the nodes that shape a building
                 unsigned int considered_nodes = 0, considered_distances = 0;
                 uint64_t centralNodeId;
-                int internodeDistanceMeter = d->interIdEstimatedDistance(id_list, considered_nodes, considered_distances, centralNodeId);
+                int internodeDistanceMeter = d->interIdEstimatedDistance(element_list, considered_nodes, considered_distances, centralNodeId);
                 /// Check if estimated 1. quartile of inter-node distance is less than 500m
                 if (internodeDistanceMeter > 0 && internodeDistanceMeter < 500) {
                     OSMElement bestElement;
                     Coord centralNodeCoord, bestElementCoord;
                     node2Coord->retrieve(centralNodeId, centralNodeCoord);
                     int bestElementsDistanceToCentralNode = INT_MAX;
-                    for (const OSMElement &e : id_list) {
+                    for (const OSMElement &e : element_list) {
                         OSMElement eNode = getNodeInOSMElement(e);
                         node2Coord->retrieve(eNode.id, bestElementCoord);
                         const int distance = Coord::distanceXY(centralNodeCoord, bestElementCoord);
@@ -457,8 +457,8 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        const std::vector<struct OSMElement> id_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
-        for (const OSMElement &element : id_list) {
+        const std::vector<struct OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        for (const OSMElement &element : element_list) {
             const OSMElement &eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
             if (eNode.type != OSMElement::Node) continue; ///< Not a node
 
