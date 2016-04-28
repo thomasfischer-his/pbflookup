@@ -355,3 +355,7 @@ bool init_configuration(const char *configfilename) {
 
     return true;
 }
+
+bool server_mode() {
+    return http_port > 0;
+}

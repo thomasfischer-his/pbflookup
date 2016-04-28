@@ -44,4 +44,14 @@ extern std::vector<struct testset> testsets;
 
 bool init_configuration(const char *configfilename);
 
+/**
+ * Check if the software running in 'server mode', i.e.
+ * running a HTTP server.
+ * This function has undefined behavior before
+ * init_configuration(const char *configfilename) has
+ * been called.
+ * @return True if HTTP is (to be) started, otherwise false
+ */
+bool server_mode();
+
 #endif // CONFIG_H
