@@ -184,12 +184,6 @@ void saveSweden() {
         Error::err("Cannot save sweden, variable is NULL");
 }
 
-GlobalObjectManager *GlobalObjectManager::instance() {
-    if (self == NULL)
-        self = new GlobalObjectManager();
-    return self;
-}
-
 GlobalObjectManager::GlobalObjectManager() {
     swedishTextTree = NULL;
     node2Coord = NULL;
@@ -250,8 +244,6 @@ GlobalObjectManager::~GlobalObjectManager() {
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);
     Error::info("Spent CPU time to free memory: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
-
-    self = NULL; /// make global instance inaccessible through instance()
 }
 
 void GlobalObjectManager::load() {
@@ -319,5 +311,3 @@ bool GlobalObjectManager::testNonEmptyFile(const std::string &filename, unsigned
 
     return false; ///< fail by default
 }
-
-GlobalObjectManager *GlobalObjectManager::self = NULL;

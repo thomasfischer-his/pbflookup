@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     /// Note: 'gom' is not used correctly. Rather, it will initialize various
     /// global variables/objects during creation and free those global variables/
     /// objects during its destruction.
-    std::unique_ptr<GlobalObjectManager> gom(GlobalObjectManager::instance());
+    std::unique_ptr<GlobalObjectManager> gom(new GlobalObjectManager());
 
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         serverSocket = http_port < 1024 ? -1 : socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);

@@ -32,7 +32,7 @@ extern Sweden *sweden; ///< defined in 'globalobjects.cpp'
 
 class GlobalObjectManager {
 public:
-    static GlobalObjectManager *instance();
+    GlobalObjectManager();
     ~GlobalObjectManager();
 
 protected:
@@ -47,10 +47,7 @@ protected:
     static bool testNonEmptyFile(const std::string &filename, unsigned int minimumSize = 16);
 
 private:
-    static GlobalObjectManager *self;
     Timer timer;
-
-    GlobalObjectManager();
 };
 
 #endif // GLOBAL_OBJECTS_H
