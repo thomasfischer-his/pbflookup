@@ -292,7 +292,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     realworld_type = OSMElement::PlaceLarge;
                                 else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
                                     realworld_type = OSMElement::PlaceMedium;
-                                else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
+                                else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
+                                    /// Disabling 'city_block' as those may have misleading names like node 3188612201 ('Skaraborg') in Södermalm, Stockholm
                                     realworld_type = OSMElement::PlaceSmall;
                                 else if (strcmp("island", cvalue) == 0)
                                     realworld_type = OSMElement::Island;
@@ -375,7 +376,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                                         realworld_type = OSMElement::PlaceLarge;
                                     else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
                                         realworld_type = OSMElement::PlaceMedium;
-                                    else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("city_block", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
+                                    else if (strcmp("quarter", cvalue) == 0 || strcmp("neighbourhood", cvalue) == 0 || strcmp("hamlet", cvalue) == 0 || strcmp("isolated_dwelling", cvalue) == 0)
+                                        /// Disabling 'city_block' as those may have misleading names like node 3188612201 ('Skaraborg') in Södermalm, Stockholm
                                         realworld_type = OSMElement::PlaceSmall;
                                     else if (strcmp("island", cvalue) == 0)
                                         realworld_type = OSMElement::Island;
