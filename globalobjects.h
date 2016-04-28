@@ -50,4 +50,13 @@ private:
     Timer timer;
 };
 
+class PidFile {
+public:
+    PidFile(const char *pidfilename);
+    ~PidFile();
+
+private:
+    const char *m_pidfilename;
+};
+
 #endif // GLOBAL_OBJECTS_H

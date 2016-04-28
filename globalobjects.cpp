@@ -311,3 +311,35 @@ bool GlobalObjectManager::testNonEmptyFile(const std::string &filename, unsigned
 
     return false; ///< fail by default
 }
+
+PidFile::PidFile(const char *pidfilename)
+    : m_pidfilename(pidfilename) {
+    if (m_pidfilename == NULL || m_pidfilename[0] == '\0') {
+        /// Invalid pidfilename
+        Error::err("Invalid pidfilename");
+        return /*false*/;
+    }
+    FILE *pidfile = fopen(m_pidfilename, "w");
+    if (pidfile == NULL) {
+        /// Cannot open/write to pidfile
+        Error::err("Cannot open/write to pidfile: %s", m_pidfilename);
+        return /*false*/;
+    }
+
+    const int pid = getpid();
+    if (fprintf(pidfile, "%d\n", pid) <= 0) {
+        /// Could not write number to pidfile
+        Error::err("Could not write number to pidfile: %s", m_pidfilename);
+        fclose(pidfile);
+        return /*false*/;
+    }
+
+    fclose(pidfile);
+
+    Error::info("Created PID file in '%s', PID is %d", pidfilename, pid);
+    return /*true*/;
+}
+
+PidFile::~PidFile() {
+    unlink(m_pidfilename);
+}
