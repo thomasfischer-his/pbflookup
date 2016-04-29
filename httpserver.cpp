@@ -197,7 +197,7 @@ public:
                 const int scbarea = m.empty() ? 0 : m.front();
                 dprintf(fd, "<tr><td>lat= %.4lf<br/>lon= %.4lf<br/>near %s, %s</td>", lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
                 static const int zoom = 15;
-                dprintf(fd, "<td><a href=\"https://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
+                dprintf(fd, "<td><a href=\"https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
                 const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
                 dprintf(fd, "<img src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
                 dprintf(fd, "<img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
@@ -217,7 +217,7 @@ public:
                         const std::string name = e.name();
                         if (!name.empty())
                             hintText += " (" + e.name() + ")";
-                        hintText += "</li>\n";
+                        hintText += "</a></li>\n";
                     }
                     hintText += "</ul></small>";
                 }
@@ -328,7 +328,7 @@ public:
             dprintf(fd, "      <municipality>%s</municipality>\n", Sweden::nameOfSCBarea(scbarea).c_str());
             dprintf(fd, "      <county>%s</county>\n", Sweden::nameOfSCBarea(scbarea / 100).c_str());
             static const int zoom = 13;
-            dprintf(fd, "      <url rel=\"openstreetmap\">https://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf</url>\n", lat, lon, zoom, lat, lon);
+            dprintf(fd, "      <url rel=\"openstreetmap\">https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf</url>\n", lat, lon, zoom, lat, lon);
             const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
             dprintf(fd, "      <image rel=\"tile\">https://%c.tile.openstreetmap.org/%d/%d/%d.png</image>\n", (unsigned char)('a' + resultCounter % 3), zoom, tileX, tileY);
             dprintf(fd, "      <origin>\n");
