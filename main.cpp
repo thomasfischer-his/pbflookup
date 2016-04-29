@@ -19,6 +19,7 @@
 
 #include <sys/socket.h>
 #include <netinet/ip.h>
+#include <unistd.h>
 
 #include "global.h"
 #include "globalobjects.h"
@@ -56,10 +57,11 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    /// Omit debug output in server mode
-    if (server_mode() && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
-    /// No color output in server mode
-    if (server_mode()) Error::useColor = false;
+    /// Omit debug output if both in server mode and not attached to terminal,
+    /// i.e. when started as a systemd service
+    if (server_mode() && !isatty(1) && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
+    /// Use colors only in terminal
+    Error::useColor = isatty(1);
 
     /// std::unique_ptr will take care of destroying the unique instance of
     /// GlobalObjectManager when this function exists.

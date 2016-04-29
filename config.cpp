@@ -148,6 +148,7 @@ bool init_configuration(const char *configfilename) {
     }
 
 #ifdef DEBUG
+    Error::debug("%sttached to terminal", isatty(1) ? "A" : "NOT a");
     Error::info("Loading configuration file '%s'", internal_configfilename);
 #endif // DEBUG
 

@@ -25,6 +25,7 @@
 #else
 #include <netinet/in.h>
 #endif
+#include <unistd.h>
 
 #include <stack>
 
@@ -137,7 +138,7 @@ bool OsmPbfReader::parse(std::istream &input) {
         input.read(buffer, sz);
         if (input.gcount() != sz || input.fail()) {
             Error::err("unable to read blob from file");
-        } else if (!server_mode())
+        } else if (isatty(1))
             std::cout << (sz > (1 << 18) ? "*" : (sz > (1 << 16) ? ":" : ".")) << std::flush;
 
         // parse the blob from the read-buffer
@@ -578,7 +579,7 @@ bool OsmPbfReader::parse(std::istream &input) {
     free(simplifiedWay);
 
     /// Line break after series of dots
-    if (!server_mode())
+    if (isatty(1))
         std::cout << std::endl;
 
     Error::info("Number of named nodes: %d", count_named_nodes);
