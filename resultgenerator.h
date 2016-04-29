@@ -19,6 +19,9 @@
 
 #include "idtree.h"
 
+class Tokenizer;
+class TokenProcessor;
+
 struct Result {
     Result(const Coord &_coord, double _quality, const std::string &_origin)
         : coord(_coord), quality(_quality), origin(_origin) {
@@ -36,7 +39,14 @@ class ResultGenerator {
 public:
     enum Verbosity { VerbositySilent = 0, VerbosityTalking = 5};
 
-    static std::vector<Result> findResults(const std::string &text, ResultGenerator::Verbosity verbosity);
+    ResultGenerator();
+    ~ResultGenerator();
+
+    std::vector<Result> findResults(const std::string &text, ResultGenerator::Verbosity verbosity);
+
+private:
+    Tokenizer *tokenizer;
+    TokenProcessor *tokenProcessor;
 };
 
 #endif // RESULTGENERATOR_H

@@ -22,19 +22,26 @@
 #include "helper.h"
 #include "timer.h"
 
+ResultGenerator::ResultGenerator() {
+    tokenizer = new Tokenizer();
+    tokenProcessor = new TokenProcessor();
+}
+
+ResultGenerator::~ResultGenerator() {
+    delete tokenizer;
+    delete tokenProcessor;
+}
+
 std::vector<Result> ResultGenerator::findResults(const std::string &text, ResultGenerator::Verbosity verbosity) {
     std::vector<Result> results;
     Timer timer;
     int64_t cputime, walltime;
 
-    Tokenizer tokenizer;
-    TokenProcessor tokenProcessor;
-
     timer.start();
     std::vector<std::string> words, word_combinations;
-    tokenizer.read_words(text, words, Tokenizer::Duplicates);
-    tokenizer.add_grammar_cases(words);
-    tokenizer.generate_word_combinations(words, word_combinations, 3 /** TODO configurable */, Tokenizer::Unique);
+    tokenizer->read_words(text, words, Tokenizer::Duplicates);
+    tokenizer->add_grammar_cases(words);
+    tokenizer->generate_word_combinations(words, word_combinations, 3 /** TODO configurable */, Tokenizer::Unique);
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to tokenize text of length %d: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", text.length(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
@@ -50,7 +57,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
         Error::info("=== Testing for roads close to cities/towns ===");
 
     const std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
-    const std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor.evaluteRoads(word_combinations, identifiedRoads);
+    const std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
 
     for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
         const int distance = roadMatch.distance;
@@ -76,7 +83,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
     }
     const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
     if (!adminReg.empty()) {
-        const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor.evaluateAdministrativeRegions(adminReg, word_combinations);
+        const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor->evaluateAdministrativeRegions(adminReg, word_combinations);
         for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
             Coord c;
             if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
@@ -107,7 +114,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
             else
                 ++it;
         }
-        const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor.evaluateNearPlaces(word_combinations, places);
+        const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, places);
         for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
             Coord c;
             if (node2Coord->retrieve(getNodeInOSMElement(nearPlacesMatch.local).id, c)) {
@@ -130,7 +137,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
         Error::info("=== Testing word combination occurring only once (unique) in OSM data ===");
         timer.start();
     }
-    std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor.evaluateUniqueMatches(word_combinations);
+    std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
     for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
         Coord c;
         if (node2Coord->retrieve(getNodeInOSMElement(uniqueMatch.element).id, c)) {

@@ -26,6 +26,7 @@
 
 void Testset::run() {
     int setNr = 0;
+    ResultGenerator resultGenerator;
     for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
         Error::info("Test set: %s", it->name.c_str());
         const std::vector<Coord> &expected = it->coord;
@@ -38,7 +39,7 @@ void Testset::run() {
             sweden->drawRoads(*svgwriter);
         }
 
-        std::vector<Result> results = ResultGenerator::findResults(it->text, ResultGenerator::VerbosityTalking);
+        std::vector<Result> results = resultGenerator.findResults(it->text, ResultGenerator::VerbosityTalking);
 
         if (!results.empty()) {
             /// Sort results by quality (highest first)

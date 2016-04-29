@@ -412,7 +412,6 @@ void HTTPServer::run() {
     const unsigned char a4 = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
     Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a1, a2, a3, a4, htons(serverName.sin_port));
 
-
     doexitserver = false;
     /// Install the signal handler for SIGTERM and SIGINT
     struct sigaction s;
@@ -428,6 +427,8 @@ void HTTPServer::run() {
     sigaddset(&sigset, SIGTERM);
     sigaddset(&sigset, SIGINT);
     sigprocmask(SIG_BLOCK, &sigset, &oldsigset);
+
+    ResultGenerator resultGenerator;
 
     Error::info("Press Ctrl+C or send SIGTERM or SIGINT to pid %d", getpid());
     while (!doexitserver) {
@@ -503,7 +504,7 @@ void HTTPServer::run() {
                     strncpy(text, strstr(readbuffer, "\ntext=") + 6, maxBufferSize);
 
                     d->timerSearch.start();
-                    std::vector<Result> results = ResultGenerator::findResults(text, ResultGenerator::VerbositySilent);
+                    std::vector<Result> results = resultGenerator.findResults(text, ResultGenerator::VerbositySilent);
                     d->timerSearch.stop();
 
                     if (!results.empty()) {
