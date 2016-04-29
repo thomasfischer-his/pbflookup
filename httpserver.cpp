@@ -32,6 +32,7 @@
 #include "resultgenerator.h"
 #include "config.h"
 #include "error.h"
+#include "helper.h"
 
 #define MAX_BUFFER_LEN 16384
 #define MAX_STRING_LEN 1024
@@ -233,6 +234,69 @@ public:
         printTimer(fd, &timerServer, &timerSearch);
         dprintf(fd, "</body></html>\n\n\n");
     }
+
+
+    void writeResultsJSON(int fd, const char *text, const std::vector<Result> &results) {
+        int64_t cputime, walltime;
+        dprintf(fd, "HTTP/1.1 200 OK\n");
+        dprintf(fd, "Content-Type: application/json; charset=utf-8\n");
+        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+
+        dprintf(fd, "{\n");
+        timerSearch.elapsed(&cputime, &walltime);
+        dprintf(fd, "  \"cputime[ms]\": %.3f,\n", cputime / 1000.0);
+
+        static const size_t maxCountResults = results.size() > 20 ? 20 : results.size();
+        size_t resultCounter = maxCountResults;
+        dprintf(fd, "  \"results\": [\n");
+        for (const Result &result : results) {
+            if (--resultCounter <= 0) break; ///< Limit number of results
+            dprintf(fd, "    {\n");
+
+            const double lon = Coord::toLongitude(result.coord.x);
+            const double lat = Coord::toLatitude(result.coord.y);
+            const std::vector<int> m = sweden->insideSCBarea(result.coord);
+            const int scbarea = m.empty() ? 0 : m.front();
+
+            dprintf(fd, "      \"latitude\": %.4lf,\n", lat);
+            dprintf(fd, "      \"longitude\": %.4lf,\n", lon);
+            dprintf(fd, "      \"scbareacode\": %d,\n", scbarea);
+            dprintf(fd, "      \"municipality\": \"%s\",\n", Sweden::nameOfSCBarea(scbarea).c_str());
+            dprintf(fd, "      \"county\": \"%s\",\n", Sweden::nameOfSCBarea(scbarea / 100).c_str());
+            static const int zoom = 13;
+            dprintf(fd, "      \"url\": \"https://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf\",\n", lat, lon, zoom, lat, lon);
+            const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
+            dprintf(fd, "      \"image\": \"https://%c.tile.openstreetmap.org/%d/%d/%d.png\",\n", (unsigned char)('a' + resultCounter % 3), zoom, tileX, tileY);
+            dprintf(fd, "      \"origin\": {\n");
+            dprintf(fd, "        \"description\": \"%s\",\n", result.origin.c_str());
+            dprintf(fd, "        \"elements\": [");
+            bool first = true;
+            for (const OSMElement &e : result.elements) {
+                if (!first)
+                    dprintf(fd, ",");
+                switch (e.type) {
+                case OSMElement::Node: dprintf(fd, "\n          \"node/%lu\"", e.id); break;
+                case OSMElement::Way: dprintf(fd, "\n          \"way/%lu\"", e.id); break;
+                case OSMElement::Relation: dprintf(fd, "\n          \"relation/%lu\"", e.id); break;
+                default: {
+                    /// ignore everything else
+                }
+                }
+                first = false;
+            }
+            dprintf(fd, "\n        ]\n");
+            dprintf(fd, "      }\n");
+
+            if (resultCounter <= 1)
+                dprintf(fd, "    }\n");
+            else
+                dprintf(fd, "    },\n");
+        }
+        dprintf(fd, "  ]\n");
+
+        dprintf(fd, "}\n\n\n");
+    }
 };
 
 HTTPServer::HTTPServer()
@@ -377,6 +441,11 @@ void HTTPServer::run() {
                     else
                         d->deliverFile(slaveSocket, getfilename);
                 } else if (readbuffer[0] == 'P' && readbuffer[1] == 'O' && readbuffer[2] == 'S' && readbuffer[3] == 'T' && readbuffer[4] == ' ') {
+                    enum RequestedMime {HTML, JSON};
+                    std::string headerbuffer(readbuffer);
+                    utf8tolower(headerbuffer);
+                    const RequestedMime requestedMime = headerbuffer.find("\naccept: application/json") > 0 ? JSON : HTML;
+
                     strncpy(text, strstr(readbuffer, "\ntext=") + 6, readbuffer_size);
 
                     d->timerSearch.start();
@@ -406,7 +475,10 @@ void HTTPServer::run() {
                         }
                     }
 
-                    d->writeResultsHTML(slaveSocket, text, results);
+                    switch (requestedMime) {
+                    case HTML: d->writeResultsHTML(slaveSocket, text, results); break;
+                    case JSON: d->writeResultsJSON(slaveSocket, text, results); break;
+                    }
                 } else {
                     dprintf(slaveSocket, "HTTP/1.1 400 Bad Request\n");
                     dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
