@@ -34,8 +34,8 @@
 #include "error.h"
 #include "helper.h"
 
-#define MAX_BUFFER_LEN 16384
-#define MAX_STRING_LEN 1024
+static const size_t maxBufferSize = 16384;
+static const size_t maxStringLen = 1024;
 
 int serverSocket;
 
@@ -89,8 +89,8 @@ public:
             if (strstr(acceptable_chars, needle) == NULL) valid_filename = false; ///< not an acceptable character
         }
 
-        char localfilename[MAX_STRING_LEN];
-        snprintf(localfilename, MAX_STRING_LEN - 1, "public/%s", filename);
+        char localfilename[maxStringLen];
+        snprintf(localfilename, maxStringLen - 1, "public/%s", filename);
 
         FILE *localfile = valid_filename ? fopen(localfilename, "r") : NULL;
         if (localfile != NULL) {
@@ -107,9 +107,9 @@ public:
             dprintf(fd, "Cache-Control: public\n");
             dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
 
-            /// Important: file size is limited to MAX_BUFFER_LEN
-            static char buffer[MAX_BUFFER_LEN];
-            size_t remaining = MAX_BUFFER_LEN - 1;
+            /// Important: file size is limited to maxBufferSize
+            static char buffer[maxBufferSize];
+            size_t remaining = maxBufferSize - 1;
             char *cur = buffer;
             size_t len = fread(cur, remaining, 1, localfile);
             while (len > 0) {
@@ -422,14 +422,13 @@ void HTTPServer::run() {
                 /// Child process
                 close(serverSocket);
 
-                static const size_t readbuffer_size = 16384;
-                char readbuffer[readbuffer_size], text[readbuffer_size];
-                read(slaveSocket, readbuffer, readbuffer_size);
+                char readbuffer[maxBufferSize], text[maxBufferSize];
+                read(slaveSocket, readbuffer, maxBufferSize);
 
                 if (readbuffer[0] == 'G' && readbuffer[1] == 'E' && readbuffer[2] == 'T' && readbuffer[3] == ' ') {
-                    char getfilename[MAX_STRING_LEN];
-                    strncpy(getfilename, readbuffer + 4, MAX_STRING_LEN - 1);
-                    for (int i = 0; i < MAX_STRING_LEN; ++i)
+                    char getfilename[maxStringLen];
+                    strncpy(getfilename, readbuffer + 4, maxStringLen - 1);
+                    for (size_t i = 0; i < maxStringLen; ++i)
                         if (getfilename[i] <= 32 || getfilename[i] >= 128) {
                             getfilename[i] = '\0';
                             break;
@@ -446,7 +445,7 @@ void HTTPServer::run() {
                     utf8tolower(headerbuffer);
                     const RequestedMime requestedMime = headerbuffer.find("\naccept: application/json") > 0 ? JSON : HTML;
 
-                    strncpy(text, strstr(readbuffer, "\ntext=") + 6, readbuffer_size);
+                    strncpy(text, strstr(readbuffer, "\ntext=") + 6, maxBufferSize);
 
                     d->timerSearch.start();
                     std::vector<Result> results = ResultGenerator::findResults(text, ResultGenerator::VerbositySilent);
