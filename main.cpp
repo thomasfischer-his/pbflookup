@@ -45,6 +45,35 @@ void init_rand() {
     srand(seed);
 }
 
+bool debugged_with_gdb() {
+    /// Check only once if running inside debugger (gdb),
+    /// memorize result in static variable for later calls
+    /// Values for 'status':
+    ///   0: status not yet determined
+    ///   1: inside gdb
+    ///  -1: not being debugged with gdb
+    static int status = 0;
+    if (status == 0) {
+        /// Running inside debugger means that parent process's
+        /// command line ends with "/gdb"
+        static const size_t buffer_size = 128;
+        const pid_t parent_pid = getppid();
+        char procfilename[buffer_size];
+        snprintf(procfilename, buffer_size - 1, "/proc/%d/cmdline", parent_pid);
+        FILE *f = fopen(procfilename, "r");
+        if (f != NULL) {
+            char buffer[buffer_size];
+            if (fread(buffer, sizeof(char), buffer_size - 1, f) > 4) {
+                const size_t len = strlen(buffer);
+                status = buffer[len] == '\0' && buffer[len - 1] == 'b' && buffer[len - 2] == 'd' && buffer[len - 3] == 'g' && buffer[len - 4] == '/' ? 1 : -1;
+            }
+        }
+        fclose(f);
+    }
+
+    return status > 0;
+}
+
 int main(int argc, char *argv[]) {
 #ifdef DEBUG
     Error::debug("DEBUG flag enabled");
@@ -57,9 +86,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    /// Omit debug output if both in server mode and not attached to terminal,
+    /// Omit debug output if in server mode and not attached to terminal and not debugged,
     /// i.e. when started as a systemd service
-    if (server_mode() && !isatty(1) && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
+    if (server_mode() && !isatty(1) && !debugged_with_gdb() && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
     /// Use colors only in terminal
     Error::useColor = isatty(1);
 
