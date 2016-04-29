@@ -483,16 +483,27 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
              * quality value linearly increases towards 1.0.
              */
             a.quality = findAdminInCombinedA > a.name.length() ? 1.0 : findAdminInCombinedA / (double)(a.name.length() - findAdminInCombinedA + 1);
+            if (a.match.realworld_type < OSMElement::PlaceLarge || a.match.realworld_type > OSMElement::PlaceSmall)
+                /// Prefer 'places' over anything else
+                a.quality *= .9;
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
             b.quality = findAdminInCombinedB > b.name.length() ? 1.0 : findAdminInCombinedB / (double)(b.name.length() - findAdminInCombinedB + 1);
+            if (b.match.realworld_type < OSMElement::PlaceLarge || b.match.realworld_type > OSMElement::PlaceSmall)
+                /// Prefer 'places' over anything else
+                b.quality *= .9;
         }
 
         /// Larger values findAdminInCombinedX, i.e. late or no hits for admin region preferred
         if (findAdminInCombinedA < findAdminInCombinedB) return false;
         else if (findAdminInCombinedA > findAdminInCombinedB) return true;
         else { /** findAdminInCombinedA == findAdminInCombinedB */
+            if (a.match.realworld_type >= OSMElement::PlaceLarge && a.match.realworld_type <= OSMElement::PlaceSmall && (b.match.realworld_type < OSMElement::PlaceLarge || b.match.realworld_type > OSMElement::PlaceSmall))
+                return true;
+            else if (b.match.realworld_type >= OSMElement::PlaceLarge && b.match.realworld_type <= OSMElement::PlaceSmall && (a.match.realworld_type < OSMElement::PlaceLarge || a.match.realworld_type > OSMElement::PlaceSmall))
+                return false;
+
             const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
             const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
             if (countSpacesA < countSpacesB) return false;

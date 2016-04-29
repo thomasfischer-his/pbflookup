@@ -51,6 +51,7 @@ private:
         return x->tv_sec < y->tv_sec;
     }
 
+    int64_t stopped_elapsed_cpu, stopped_elapsed_wall;
 
 public:
     Timer() {
@@ -58,11 +59,23 @@ public:
     }
 
     void start() {
+        stopped_elapsed_cpu = stopped_elapsed_wall = -1;
         clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &previous_cpu);
         gettimeofday(&previous_wall, NULL);
     }
 
+    void stop() {
+        elapsed(&stopped_elapsed_cpu, &stopped_elapsed_wall);
+    }
+
     void elapsed(int64_t *elapsed_cpu, int64_t *elapsed_wall) {
+        if (stopped_elapsed_cpu >= 0 && stopped_elapsed_wall >= 0) {
+            /// Timer was previously stopped with stop()
+            *elapsed_cpu = stopped_elapsed_cpu;
+            *elapsed_wall = stopped_elapsed_wall;
+            return;
+        }
+
         struct timespec now_cpu;
         if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu) == 0) {
             const int64_t now_us = (int64_t)now_cpu.tv_sec * 1000000 + now_cpu.tv_nsec / 1000;
