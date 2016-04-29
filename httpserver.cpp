@@ -216,7 +216,7 @@ public:
                         }
                         const std::string name = e.name();
                         if (!name.empty())
-                            hintText += "(" + e.name() + ")";
+                            hintText += " (" + e.name() + ")";
                         hintText += "</li>\n";
                     }
                     hintText += "</ul></small>";
