@@ -1836,7 +1836,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
         Sweden::RoadType roadType = Sweden::UnknownRoadType;
 
         /// Current word is one or two characters long and following word starts with digit 1 to 9
-        if (i < words.size() - 1 && (words[i][1] == '\0' || words[i][2] == '\0') && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
+        if (i < words.size() - 1 && ((words[i][0] >= 'a' && words[i][0] <= 'z' && words[i][1] == '\0') || (words[i][0] >= 'a' && words[i][0] <= 'b' && words[i][1] >= 'a' && words[i][1] <= 'd' && words[i][2] == '\0')) && words[i + 1][0] >= '1' && words[i + 1][0] <= '9') {
             /// Get following word's numeric value as 'roadNumber'
             char *next;
             const char *cur = words[i + 1].c_str();
