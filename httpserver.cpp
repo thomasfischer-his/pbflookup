@@ -210,7 +210,7 @@ public:
                         switch (e.type) {
                         case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">" + e.operator std::string(); break;
                         case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
-                        case OSMElement::Relation: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
+                        case OSMElement::Relation: hintText += "https://www.openstreetmap.org/relation/" + eid + "\">" + e.operator std::string(); break;
                         case OSMElement::UnknownElementType: hintText += "https://www.openstreetmap.org/\">Unknown element type with id " + eid; break;
                         }
                         const std::string name = e.name();
