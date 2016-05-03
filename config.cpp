@@ -255,8 +255,10 @@ bool init_configuration(const char *configfilename) {
 
         if (configIfExistsLookup(config, "osmpbffilename", buffer))
             strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
-        else
+        else if (mapname[0] != '\0')
             snprintf(osmpbffilename, MAX_STRING_LEN - 1, "${mapname}-latest.osm.pbf");
+        else
+            Error::err("No filename for .osm.pbf file set and cannot determine automatically");
         replacetildehome(osmpbffilename);
         replacevariablenames(osmpbffilename);
         makeabsolutepath(osmpbffilename);
