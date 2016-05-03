@@ -115,6 +115,20 @@ void replacevariablenames(char *text) {
     }
 }
 
+void makeabsolutepath(char *text) {
+    if (text != NULL && text[0] != '\0' && text[0] != '/') {
+        char cwd[MAX_STRING_LEN];
+        if (getcwd(cwd, MAX_STRING_LEN) != NULL) {
+            /// Insert current working directory in front of relative path
+            /// Requires some copying of strings ...
+            char *buffer = strndup(text, MAX_STRING_LEN);
+            const size_t len = snprintf(text, MAX_STRING_LEN - 1, "%s/%s", cwd, buffer);
+            text[len] = '\0';
+            free(buffer);
+        }
+    }
+}
+
 bool init_configuration(const char *configfilename) {
     memset(tempdir, 0, MAX_STRING_LEN);
     memset(mapname, 0, MAX_STRING_LEN);
@@ -134,19 +148,7 @@ bool init_configuration(const char *configfilename) {
     char internal_configfilename[MAX_STRING_LEN];
     strncpy(internal_configfilename, configfilename, MAX_STRING_LEN - 1);
     replacetildehome(internal_configfilename);
-    if (internal_configfilename[0] != '\0' && internal_configfilename[0] != '/') {
-        char cwd[MAX_STRING_LEN];
-        if (getcwd(cwd, MAX_STRING_LEN) != NULL) {
-            /// Insert current working directory in front of relative path
-            /// Requires some copying of strings ...
-            char *buffer = strndup(internal_configfilename, MAX_STRING_LEN);
-            strncpy(internal_configfilename, cwd, MAX_STRING_LEN);
-            size_t p = strlen(internal_configfilename);
-            p += snprintf(internal_configfilename + p, MAX_STRING_LEN - p, "/");
-            strncpy(internal_configfilename + p, buffer, MAX_STRING_LEN - p);
-            free(buffer);
-        }
-    }
+    makeabsolutepath(internal_configfilename);
 
 #ifdef DEBUG
     Error::debug("%sttached to terminal", isatty(1) ? "A" : "NOT a");
@@ -199,6 +201,7 @@ bool init_configuration(const char *configfilename) {
                 snprintf(tempdir, MAX_STRING_LEN - 1, "/tmp");
         }
         replacetildehome(tempdir);
+        makeabsolutepath(tempdir);
 #ifdef DEBUG
         Error::debug("  tempdir = '%s'", tempdir);
 #endif // DEBUG
@@ -218,6 +221,7 @@ bool init_configuration(const char *configfilename) {
             replacevariablenames(logfilename);
         } else
             logfilename[0] = '\0';
+        makeabsolutepath(logfilename);
 #ifdef DEBUG
         Error::debug("  logfilename = '%s'", logfilename);
 #endif // DEBUG
@@ -244,6 +248,7 @@ bool init_configuration(const char *configfilename) {
             snprintf(pidfilename, MAX_STRING_LEN - 1, "${XDG_RUNTIME_DIR}/pbflookup.pid");
         replacetildehome(pidfilename);
         replacevariablenames(pidfilename);
+        makeabsolutepath(pidfilename);
 #ifdef DEBUG
         Error::debug("  pidfilename = '%s'", pidfilename);
 #endif // DEBUG
@@ -254,6 +259,7 @@ bool init_configuration(const char *configfilename) {
             snprintf(osmpbffilename, MAX_STRING_LEN - 1, "${mapname}-latest.osm.pbf");
         replacetildehome(osmpbffilename);
         replacevariablenames(osmpbffilename);
+        makeabsolutepath(osmpbffilename);
 #ifdef DEBUG
         Error::debug("  osmpbffilename = '%s'", osmpbffilename);
 #endif // DEBUG
@@ -265,6 +271,7 @@ bool init_configuration(const char *configfilename) {
             inputextfilename[0] = '\0';
         replacetildehome(inputextfilename);
         replacevariablenames(inputextfilename);
+        makeabsolutepath(inputextfilename);
 #ifdef DEBUG
         Error::debug("  inputextfilename = '%s'", inputextfilename);
 #endif // DEBUG
@@ -275,6 +282,7 @@ bool init_configuration(const char *configfilename) {
             snprintf(stopwordfilename, MAX_STRING_LEN - 1, "stopwords-${mapname}.txt");
         replacetildehome(stopwordfilename);
         replacevariablenames(stopwordfilename);
+        makeabsolutepath(stopwordfilename);
 #ifdef DEBUG
         Error::debug("  stopwordfilename = '%s'", stopwordfilename);
 #endif // DEBUG
@@ -331,6 +339,7 @@ bool init_configuration(const char *configfilename) {
                 snprintf(http_public_files, MAX_STRING_LEN - 1, "public");
             replacetildehome(http_public_files);
             replacevariablenames(http_public_files);
+            makeabsolutepath(http_public_files);
             const size_t http_public_files_len = strlen(http_public_files);
             if (http_public_files[http_public_files_len - 1] == '/') http_public_files[http_public_files_len - 1] = '\0';
 
