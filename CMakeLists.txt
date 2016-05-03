@@ -46,3 +46,12 @@ target_link_libraries(${PROJECT_NAME}
   ${LIBCONFIG_LIBRARIES}
 )
 
+install(TARGETS
+  pbflookup
+  RUNTIME
+  DESTINATION bin
+)
+
+add_custom_target(uninstall
+  COMMAND ${CMAKE_COMMAND} -E remove "${CMAKE_INSTALL_PREFIX}/bin/pbflookup"
+)
