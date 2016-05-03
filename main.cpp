@@ -74,15 +74,24 @@ bool debugged_with_gdb() {
     return status > 0;
 }
 
+bool file_exists_readable(const char *filename) {
+    std::ifstream f(filename);
+    return f.good();
+}
+
 int main(int argc, char *argv[]) {
 #ifdef DEBUG
     Error::debug("DEBUG flag enabled");
 #endif // DEBUG
     init_rand();
 
-    const char *defaultconfigfile = "sweden.config";
-    if (!init_configuration((argc < 2) ? defaultconfigfile : argv[argc - 1])) {
-        Error::err("Cannot continue without properly parsing configuration file");
+    const char *configfile = (argc < 2) ? "sweden.config" : argv[argc - 1];
+    if (!file_exists_readable(configfile)) {
+        Error::err("Provided configuration file '%s' does not exist or is not readable", configfile);
+        return 1;
+    }
+    if (!init_configuration(configfile)) {
+        Error::err("Cannot continue without properly parsing configuration file '%s'", configfile);
         return 1;
     }
 
