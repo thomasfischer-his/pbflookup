@@ -435,6 +435,10 @@ bool symbolsToAscii(std::string &text, size_t &i) {
             text.erase(i, 2);
             --i;
             return true;
+        } else if (next_c == 0xb2) {  /// Power-of-2 symbol
+            text[i] = '2';
+            text.erase(i + 1, 1);
+            return true;
         } else if (next_c == 0xb4) {  /// Acute Accent (spacing character)
             text[i] = '\'';
             text.erase(i + 1, 1);
