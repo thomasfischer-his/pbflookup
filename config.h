@@ -30,6 +30,7 @@ extern char inputextfilename[];
 extern char stopwordfilename[];
 extern unsigned int http_port;
 extern char http_interface[];
+extern char http_public_files[];
 
 extern FILE *logfile; ///< defined in 'error.cpp'
 

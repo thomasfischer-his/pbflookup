@@ -37,6 +37,7 @@ char inputextfilename[MAX_STRING_LEN];
 char stopwordfilename[MAX_STRING_LEN];
 unsigned int http_port;
 char http_interface[MAX_STRING_LEN];
+char http_public_files[MAX_STRING_LEN];
 
 std::vector<struct testset> testsets;
 
@@ -324,9 +325,19 @@ bool init_configuration(const char *configfilename) {
             else
                 snprintf(http_interface, MAX_STRING_LEN - 1, "ANY");
 
+            if (configIfExistsLookup(config, "http_public_files", buffer))
+                strncpy(http_public_files, buffer, MAX_STRING_LEN - 1);
+            else
+                snprintf(http_public_files, MAX_STRING_LEN - 1, "public");
+            replacetildehome(http_public_files);
+            replacevariablenames(http_public_files);
+            const size_t http_public_files_len = strlen(http_public_files);
+            if (http_public_files[http_public_files_len - 1] == '/') http_public_files[http_public_files_len - 1] = '\0';
+
 #ifdef DEBUG
             Error::debug("  http_port = %d", http_port);
             Error::debug("  http_interface = %s", http_interface);
+            Error::debug("  http_public_files = %s/", http_public_files);
 #endif // DEBUG
         } else {
             http_port = 0;
