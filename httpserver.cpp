@@ -16,6 +16,8 @@
 
 #include "httpserver.h"
 
+#include <tuple>
+#include <fstream>
 #include <cstring>
 #include <cstdlib>
 
@@ -214,36 +216,34 @@ public:
         }
 
         char localfilename[maxStringLen];
-        snprintf(localfilename, maxStringLen - 1, "public/%s", filename);
+        snprintf(localfilename, maxStringLen - 1, "%s%s", http_public_files, /** filename starts with slash, tested above */ filename);
 
-        FILE *localfile = valid_filename ? fopen(localfilename, "r") : NULL;
-        if (localfile != NULL) {
-            dprintf(fd, "HTTP/1.1 200 OK\n");
-            const size_t lflen = strlen(localfilename);
-            if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
-                dprintf(fd, "Content-Type: text/css; charset=utf-8\n");
-            else if (lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
-                dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
-            else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'x' && localfilename[lflen - 1] == 't')
-                dprintf(fd, "Content-Type: text/plain; charset=utf-8\n");
-            else
-                dprintf(fd, "Content-Type: application/octet-stream\n");
-            dprintf(fd, "Cache-Control: public\n");
-            dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-
+        std::ifstream localfile(localfilename);
+        if (localfile.good()) {
             /// Important: file size is limited to maxBufferSize
             static char buffer[maxBufferSize];
-            size_t remaining = maxBufferSize - 1;
-            char *cur = buffer;
-            size_t len = fread(cur, remaining, 1, localfile);
-            while (len > 0) {
-                remaining -= len;
-                cur += len;
-                len = fread(cur, remaining, 1, localfile);
-            }
-            dprintf(fd, "\n%s\n", buffer);
+            localfile.read(buffer, maxBufferSize - 2);
 
-            fclose(localfile);
+            if (localfile.gcount() == 0) {
+                Error::warn("Cannot read from file: '%s'", localfilename);
+                writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
+            } else {
+                buffer[localfile.gcount()] = '\0';
+                dprintf(fd, "HTTP/1.1 200 OK\n");
+                const size_t lflen = strlen(localfilename);
+                if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
+                    dprintf(fd, "Content-Type: text/css; charset=utf-8\n");
+                else if (lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
+                    dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+                else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'x' && localfilename[lflen - 1] == 't')
+                    dprintf(fd, "Content-Type: text/plain; charset=utf-8\n");
+                else
+                    dprintf(fd, "Content-Type: application/octet-stream\n");
+                dprintf(fd, "Cache-Control: public\n");
+                dprintf(fd, "Content-Length: %ld\n", localfile.gcount());
+                dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+                dprintf(fd, "\n%s\n", buffer);
+            }
         } else {
             Error::warn("Cannot open file for reading: '%s'", localfilename);
             writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
@@ -604,30 +604,41 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
                 result = ForkChild;
                 close(serverSocket);
 
-                char readbuffer[maxBufferSize], text[maxBufferSize];
-                read(slaveSocket, readbuffer, maxBufferSize);
+                char readbuffer[maxBufferSize];
+                const ssize_t data_size = read(slaveSocket, readbuffer, maxBufferSize);
+                readbuffer[data_size] = '\0'; ///< ensure string termination
+                Error::debug("Received %lu bytes of data", data_size);
 
-                if (readbuffer[0] == 'G' && readbuffer[1] == 'E' && readbuffer[2] == 'T' && readbuffer[3] == ' ') {
-                    char getfilename[maxStringLen];
-                    strncpy(getfilename, readbuffer + 4, maxStringLen - 1);
-                    for (size_t i = 0; i < maxStringLen; ++i)
-                        if (getfilename[i] <= 32 || getfilename[i] >= 128) {
-                            getfilename[i] = '\0';
-                            break;
-                        }
+                if (data_size < 32) {
+                    d->writeHTTPError(slaveSocket, 400);
+                    close(slaveSocket);
+                    Error::err("Too few bytes read from slave socket: %d bytes only", data_size);
+                }
 
-                    if (getfilename[0] == '/' && getfilename[1] == '\0')
+                const std::string readtext(readbuffer);
+                std::string lowercasetext = readtext;
+                utf8tolower(lowercasetext);
+
+                const auto request = d->extractHTTPrequest(readtext);
+                if (!std::get<0>(request)) {
+                    d->writeHTTPError(slaveSocket, 400);
+                    close(slaveSocket);
+                    Error::err("Too few bytes read from slave socket: %d bytes only", data_size);
+                }
+
+                if (std::get<1>(request).method == Private::HTTPrequest::MethodGet) {
+                    const std::string &getfilename = std::get<1>(request).filename;
+                    if (getfilename == "/")
                         /// Serve default search form
                         d->writeFormHTML(slaveSocket);
+                    else if (http_public_files[0] != '\0')
+                        /// If 'http_public_files' is not empty ...
+                        d->deliverFile(slaveSocket, getfilename.c_str());
                     else
-                        d->deliverFile(slaveSocket, getfilename);
-                } else if (readbuffer[0] == 'P' && readbuffer[1] == 'O' && readbuffer[2] == 'S' && readbuffer[3] == 'T' && readbuffer[4] == ' ') {
-                    enum RequestedMime {HTML, JSON, XML};
-                    std::string headerbuffer(readbuffer);
-                    utf8tolower(headerbuffer);
-                    const RequestedMime requestedMime = headerbuffer.find("\naccept: application/json") != std::string::npos ? JSON : ((headerbuffer.find("\naccept: text/xml") != std::string::npos || headerbuffer.find("\naccept: application/xml") != std::string::npos) ? XML : HTML);
-
-                    strncpy(text, strstr(readbuffer, "\ntext=") + 6, maxBufferSize);
+                        d->writeHTTPError(slaveSocket, 404, "Could not serve your request for this file:", getfilename);
+                } else if (std::get<1>(request).method == Private::HTTPrequest::MethodPost) {
+                    const Private::RequestedMimeType requestedMime = d->extractRequestedMimeType(lowercasetext);
+                    const std::string text = d->extractTextToLocalize(lowercasetext);
 
                     d->timerSearch.start();
                     std::vector<Result> results = resultGenerator.findResults(text, ResultGenerator::VerbositySilent);
