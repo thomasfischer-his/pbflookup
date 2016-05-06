@@ -289,10 +289,13 @@ public:
 
     static inline int europeanRoadNumberToIndex(int eRoadNumber) {
         if (eRoadNumber < 40)
+            /// Numbers 4, 6, 10, 12, 14, 16, 18, 20, 22 stay as they are
             return eRoadNumber;
         else if (eRoadNumber < 40 + (int)european_len)
+            /// Numbers 45, 47, 55, 65 (<40+30) become 5, 7, 15, 25
             return eRoadNumber - 40;
         else if (eRoadNumber == 265)
+            /// Number 265 becomes 1
             return 1;
         else {
             Error::warn("Cannot map E%d to a road number index", eRoadNumber);
