@@ -101,13 +101,8 @@ int main(int argc, char *argv[]) {
     /// Use colors only in terminal
     Error::useColor = isatty(1);
 
-    /// std::unique_ptr will take care of destroying the unique instance of
-    /// GlobalObjectManager when this function exists.
-    /// Note: 'gom' is not used correctly. Rather, it will initialize various
-    /// global variables/objects during creation and free those global variables/
-    /// objects during its destruction.
     PidFile pidfile;
-    std::unique_ptr<GlobalObjectManager> gom(new GlobalObjectManager());
+    GlobalObjectManager gom;
 
     if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && wayNames != NULL && relationNames != NULL && swedishTextTree != NULL && sweden != NULL) {
         serverSocket = server_mode() ? socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) : -1;
