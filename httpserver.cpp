@@ -273,11 +273,12 @@ public:
         dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
         dprintf(fd, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
         dprintf(fd, "<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
-        dprintf(fd, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n</script>\n");
+        dprintf(fd, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\nfunction resultMimetypeChanged(combo) {\n  // TODO\n}\n\n");
+        dprintf(fd, "function resultMimetypeChanged(combo) {\n  document.getElementById('queryForm').setAttribute(\"action\",\"/?accept=\"+combo.value);\n}\n</script>\n");
         dprintf(fd, "</head>\n");
         dprintf(fd, "<body>\n");
         dprintf(fd, "<h1>Search for Locations described in Swedish Text</h1>\n");
-        dprintf(fd, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\">\n");
+        dprintf(fd, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\" id=\"queryForm\">\n");
         if (!testsets.empty()) {
             dprintf(fd, "<p>Either select a pre-configured text from this list of %lu examples:\n<select onchange=\"testsetChanged(this)\" id=\"testsets\">\n", testsets.size());
             dprintf(fd, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
@@ -286,8 +287,12 @@ public:
             dprintf(fd, "</select> or &hellip;</p>\n");
         }
         dprintf(fd, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
-        dprintf(fd, "<p><input type=\"submit\" value=\"Find location for text\"></p>\n");
-        dprintf(fd, "</form>\n");
+        dprintf(fd, "<p><input type=\"submit\" value=\"Find location for text\"> and return result as ");
+        dprintf(fd, "<select onchange=\"resultMimetypeChanged(this)\" id=\"resultMimetype\">");
+        dprintf(fd, "<option selected=\"selected\" value=\"text/html\">Website (HTML)</option>");
+        dprintf(fd, "<option value=\"text/xml\">XML</option>");
+        dprintf(fd, "<option value=\"application/json\">JSON</option>");
+        dprintf(fd, "</select></p></form>\n");
         printTimer(fd, &timerServer, NULL);
         dprintf(fd, "</body></html>\n\n\n");
     }
@@ -300,9 +305,9 @@ public:
 
         if (!results.empty()) {
             dprintf(fd, "<html><head><title>PBFLookup: %lu Results</title>\n", results.size());
-            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n</head><body>\n");
+            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n</head>\n<body>\n");
             dprintf(fd, "<h1>Results</h1><p>For the following input, <strong>%lu results</strong> were located:</p>\n", results.size());
-            dprintf(fd, "<p><tt>%s</tt></p>\n", text);
+            dprintf(fd, "<p><tt>%s</tt></p>\n", textToLocalize.c_str());
             dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
 
             dprintf(fd, "<h2>Found Locations</h2>\n");
@@ -324,11 +329,11 @@ public:
                 dprintf(fd, "<img src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
                 dprintf(fd, "<img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
                 dprintf(fd, "<img src=\"https://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" />", zoom, tileX - 1, tileY + 1, zoom, tileX, tileY + 1, zoom, tileX + 1, tileY + 1);
-                std::string hintText = result.origin;
+                std::string hintText = XMLize(result.origin);
                 if (!result.elements.empty()) {
                     hintText += "\n<small><ul>\n";
                     for (const OSMElement &e : result.elements) {
-                        hintText += "\n<li><a target=\"_top\" href=\"";
+                        hintText += "<li><a target=\"_top\" href=\"";
                         const std::string eid = std::to_string(e.id);
                         switch (e.type) {
                         case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">" + e.operator std::string(); break;
@@ -346,11 +351,15 @@ public:
                 dprintf(fd, "</a></td><td>%s</td></tr>\n", hintText.c_str());
             }
             dprintf(fd, "</tbody></table>\n");
+
+            dprintf(fd, "<h2>License</h2>\n");
+            dprintf(fd, "<p>Map data license: &copy; OpenStreetMap contributors, licensed under the <a href=\"http://opendatacommons.org/licenses/odbl/\" target=\"_top\">Open Data Commons Open Database License</a> (OBdL)<br/>Map tiles: OpenStreetMap, licensed under the <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\" target=\"_top\">Creative Commons Attribution-ShareAlike&nbsp;2.0 License</a> (CC BY-SA 2.0)<br/>See <a target=\"_top\" href=\"www.openstreetmap.org/copyright\">www.openstreetmap.org/copyright</a> and <a target=\"_top\" href=\"http://wiki.openstreetmap.org/wiki/Legal_FAQ\">http://wiki.openstreetmap.org/wiki/Legal_FAQ</a> for details.</p>\n");
+
         } else {
             dprintf(fd, "<html><head><title>PBFLookup: No Results</title>\n");
             dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
             dprintf(fd, "<h1>Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>\n");
-            dprintf(fd, "<p><tt>%s</tt></p>\n", text);
+            dprintf(fd, "<p><tt>%s</tt></p>\n", textToLocalize.c_str());
             dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
         }
         printTimer(fd, &timerServer, &timerSearch);
@@ -367,6 +376,7 @@ public:
         dprintf(fd, "{\n");
         timerSearch.elapsed(&cputime, &walltime);
         dprintf(fd, "  \"cputime[ms]\": %.3f,\n", cputime / 1000.0);
+        dprintf(fd, "  \"license\": {\n    \"map\": \"OpenStreetMap contributors, licensed under the Open Data Commons Open Database License (ODbL)\",\n    \"tiles\": \"OpenStreetMap, licensed under the Creative Commons Attribution-ShareAlike 2.0 License (CC BY-SA 2.0)\"\n  },\n");
 
         static const size_t maxCountResults = results.size() > 20 ? 20 : results.size();
         size_t resultCounter = maxCountResults;
@@ -382,6 +392,7 @@ public:
 
             dprintf(fd, "      \"latitude\": %.4lf,\n", lat);
             dprintf(fd, "      \"longitude\": %.4lf,\n", lon);
+            dprintf(fd, "      \"quality\": %.3lf,\n", result.quality);
             dprintf(fd, "      \"scbareacode\": %d,\n", scbarea);
             dprintf(fd, "      \"municipality\": \"%s\",\n", Sweden::nameOfSCBarea(scbarea).c_str());
             dprintf(fd, "      \"county\": \"%s\",\n", Sweden::nameOfSCBarea(scbarea / 100).c_str());
@@ -431,6 +442,7 @@ public:
         dprintf(fd, "<pbflookup>\n");
         timerSearch.elapsed(&cputime, &walltime);
         dprintf(fd, "  <cputime unit=\"ms\">%.3f</cputime>\n", cputime / 1000.0);
+        dprintf(fd, "  <licenses>\n    <license for=\"map\">OpenStreetMap contributors, licensed under the Open Data Commons Open Database License (ODbL)</license>\n    <license for=\"tiles\">OpenStreetMap, licensed under the Creative Commons Attribution-ShareAlike 2.0 License (CC BY-SA 2.0)</license>\n  </licenses>\n");
 
         static const size_t maxCountResults = results.size() > 20 ? 20 : results.size();
         size_t resultCounter = maxCountResults;
@@ -446,6 +458,7 @@ public:
 
             dprintf(fd, "      <latitude format=\"decimal\">%.4lf</latitude>\n", lat);
             dprintf(fd, "      <longitude format=\"decimal\">%.4lf</longitude>\n", lon);
+            dprintf(fd, "      <quality>%.3lf</quality>\n", result.quality);
             dprintf(fd, "      <scbareacode>%d</scbareacode>\n", scbarea);
             dprintf(fd, "      <municipality>%s</municipality>\n", Sweden::nameOfSCBarea(scbarea).c_str());
             dprintf(fd, "      <county>%s</county>\n", Sweden::nameOfSCBarea(scbarea / 100).c_str());
@@ -454,7 +467,7 @@ public:
             const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
             dprintf(fd, "      <image rel=\"tile\">https://%c.tile.openstreetmap.org/%d/%d/%d.png</image>\n", (unsigned char)('a' + resultCounter % 3), zoom, tileX, tileY);
             dprintf(fd, "      <origin>\n");
-            dprintf(fd, "        <description>%s</description>\n", result.origin.c_str());
+            dprintf(fd, "        <description>%s</description>\n", XMLize(result.origin).c_str());
             dprintf(fd, "        <elements>");
             for (const OSMElement &e : result.elements) {
                 switch (e.type) {
