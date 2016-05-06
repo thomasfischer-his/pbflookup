@@ -54,11 +54,8 @@ private:
 
 class PidFile {
 public:
-    PidFile(const char *pidfilename);
+    PidFile();
     ~PidFile();
-
-private:
-    const char *m_pidfilename;
 };
 
 #endif // GLOBAL_OBJECTS_H
