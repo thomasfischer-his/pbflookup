@@ -120,7 +120,7 @@ public:
             return std::make_tuple(false, HTTPrequest());
 
         const std::size_t pos2 = headertext.find(' ', pos1 + 1);
-        if (pos1 == std::string::npos)
+        if (pos2 == std::string::npos)
             return std::make_tuple(false, HTTPrequest());
 
         result.filename = headertext.substr(pos1, pos2 - pos1);
