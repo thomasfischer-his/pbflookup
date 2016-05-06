@@ -297,7 +297,7 @@ public:
         dprintf(fd, "</body></html>\n\n\n");
     }
 
-    void writeResultsHTML(int fd, const char *text, const std::vector<Result> &results) {
+    void writeResultsHTML(int fd, const std::string &textToLocalize, const std::vector<Result> &results) {
         dprintf(fd, "HTTP/1.1 200 OK\n");
         dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
         dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
@@ -366,7 +366,7 @@ public:
         dprintf(fd, "</body></html>\n\n\n");
     }
 
-    void writeResultsJSON(int fd, const char *text, const std::vector<Result> &results) {
+    void writeResultsJSON(int fd, const std::vector<Result> &results) {
         int64_t cputime, walltime;
         dprintf(fd, "HTTP/1.1 200 OK\n");
         dprintf(fd, "Content-Type: application/json; charset=utf-8\n");
@@ -430,7 +430,7 @@ public:
         dprintf(fd, "}\n\n\n");
     }
 
-    void writeResultsXML(int fd, const char *text, const std::vector<Result> &results) {
+    void writeResultsXML(int fd, const std::vector<Result> &results) {
         int64_t cputime, walltime;
         dprintf(fd, "HTTP/1.1 200 OK\n");
         dprintf(fd, "Content-Type: text/xml; charset=utf-8\n");
