@@ -275,26 +275,27 @@ GlobalObjectManager::GlobalObjectManager() {
 }
 
 GlobalObjectManager::~GlobalObjectManager() {
+#define delete_and_set_NULL(a) { delete a; a=NULL; }
     Error::debug("Going to shut down, free'ing memory");
 
     Timer timer;
     timer.start();
     if (swedishTextTree != NULL)
-        delete swedishTextTree;
+        delete_and_set_NULL(swedishTextTree);
     if (node2Coord != NULL)
-        delete node2Coord;
+        delete_and_set_NULL(node2Coord);
     if (nodeNames != NULL)
-        delete nodeNames;
+        delete_and_set_NULL(nodeNames);
     if (wayNames != NULL)
-        delete wayNames;
+        delete_and_set_NULL(wayNames);
     if (relationNames != NULL)
-        delete relationNames;
+        delete_and_set_NULL(relationNames);
     if (wayNodes != NULL)
-        delete wayNodes;
+        delete_and_set_NULL(wayNodes);
     if (relMembers != NULL)
-        delete relMembers;
+        delete_and_set_NULL(relMembers);
     if (sweden != NULL)
-        delete sweden;
+        delete_and_set_NULL(sweden);
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);
     Error::info("Spent CPU time to free memory: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
