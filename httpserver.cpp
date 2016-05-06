@@ -77,6 +77,118 @@ public:
         // TODO
     }
 
+    struct HTTPrequest {
+        enum Method {MethodGet, MethodPost};
+        Method method;
+        std::string filename;
+    };
+
+    std::string XMLize(const std::string &text)const {
+        std::string result = text;
+        for (size_t i = 0; i < result.length(); ++i)
+            if (result[i] == '<') {
+                result[i] = '&';
+                result.insert(i + 1, "lt;");
+                i += 2;
+            } else if (result[i] == '>') {
+                result[i] = '&';
+                result.insert(i + 1, "gt;");
+                i += 2;
+            } else if (result[i] == '&') {
+                result.insert(i + 1, "amp;");
+                i += 3;
+            }
+
+        return result;
+    }
+
+    std::tuple<bool, struct Private::HTTPrequest> extractHTTPrequest(const std::string &headertext) const {
+        Private::HTTPrequest result;
+        if (headertext.substr(0, 4) == "GET ")
+            result.method = HTTPrequest::MethodGet;
+        else if (headertext.substr(0, 5) == "POST ")
+            result.method = HTTPrequest::MethodPost;
+        else
+            return std::make_tuple(false, HTTPrequest());
+
+        std::size_t pos1 = std::string::npos;
+        static const std::size_t max_first_separator_pos = 16;
+        for (pos1 = result.method == HTTPrequest::MethodGet ? 3 : 4; pos1 < max_first_separator_pos && headertext[pos1] == ' '; ++pos1);
+        if (pos1 >= max_first_separator_pos)
+            return std::make_tuple(false, HTTPrequest());
+
+        const std::size_t pos2 = headertext.find(' ', pos1 + 1);
+        if (pos1 == std::string::npos)
+            return std::make_tuple(false, HTTPrequest());
+
+        result.filename = headertext.substr(pos1, pos2 - pos1);
+
+        return std::make_tuple(true, result);
+    }
+
+    /// Requested MIME type for result:
+    ///   HTML: Web page to be viewed in browser, MIME type 'text/html', default
+    ///   JSON: JSON-formatted result, MIME type 'application/json'
+    ///   XML:  XML-formatted result, MIME type 'text/xml'
+    enum RequestedMimeType {HTML = 0, JSON = 1, XML = 2};
+
+    /**
+     * Based on URL and header values, extract requested MIME type for result.
+     * @param Header of HTTP request, already normalized to lower-case
+     * @return requested MIME type, 'HTML' as default if nothing else specified
+     */
+    RequestedMimeType extractRequestedMimeType(const std::string &headertext) const {
+        /// First check URL for '?accept=XXX/YYY'
+        const std::size_t accept_in_url_pos = headertext.find("?accept=");
+        if (accept_in_url_pos != std::string::npos && headertext.find("application/json", accept_in_url_pos + 6) < accept_in_url_pos + 16)
+            return JSON;
+        if (accept_in_url_pos != std::string::npos && headertext.find("text/xml", accept_in_url_pos + 6) < accept_in_url_pos + 16)
+            return XML;
+
+        /// Second check HTTP header for 'accept: XXX/YYY'
+        const std::size_t accept_in_header_pos = headertext.find("\naccept:");
+        if (accept_in_header_pos != std::string::npos && headertext.find("application/json", accept_in_header_pos + 7) < accept_in_header_pos + 18)
+            return JSON;
+        if (accept_in_header_pos != std::string::npos && headertext.find("text/xml", accept_in_header_pos + 7) < accept_in_header_pos + 18)
+            return XML;
+
+        /// No previous case triggered, fall back on HTML
+        return HTML;
+    }
+
+    std::string extractTextToLocalize(const std::string &input) const {
+        const std::size_t newline_text = input.find("\ntext=");
+        if (newline_text != std::string::npos)
+            return input.substr(newline_text + 6);
+        else
+            Error::debug("input= |%s|", input.c_str());
+
+        return std::string();
+    }
+
+    void writeHTTPError(int fd, unsigned int error_code, const std::string &msg = std::string(), const std::string &filename = std::string()) {
+        std::string error_code_message("Unknown Error");
+        if (error_code == 403)
+            error_code_message = "Forbidden";
+        else if (error_code == 404)
+            error_code_message = "Not Found";
+        else if (error_code >= 400 && error_code < 500)
+            error_code_message = "Bad Request";
+        else if (error_code >= 500 && error_code < 600)
+            error_code_message = "Server Error";
+
+        const std::string internal_msg = msg.empty() ? "Could not serve your request." : msg;
+
+        dprintf(fd, "HTTP/1.1 %d %s\n", error_code, error_code_message.c_str());
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+        dprintf(fd, "<html><head><meta charset=\"UTF-8\"><title>PBFLookup: %d &ndash; %s</title></head>\n<body><h1>%d &ndash; %s</h1>\n", error_code, error_code_message.c_str(), error_code, error_code_message.c_str());
+        dprintf(fd, "<p>%s</p>\n", internal_msg.c_str());
+        if (!filename.empty())
+            dprintf(fd, "<pre>%s</pre>\n", filename.c_str());
+        dprintf(fd, "</body></html>\n\n\n");
+    }
+
     void deliverFile(int fd, const char *filename) {
         /// Check for valid filenames
         bool valid_filename = filename[0] == '/'; ///< filename must start with a slash
@@ -133,10 +245,8 @@ public:
 
             fclose(localfile);
         } else {
-            dprintf(fd, "HTTP/1.1 404 Not Found\n");
-            dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
-            dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-            dprintf(fd, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /><title>PBFLookup: 404 &ndash; Not Found</title></head><body><h1>404 &ndash; Not Found</h1><p>Could not serve your request for this file:</p><pre>%s</pre></body></html>\n\n\n", filename);
+            Error::warn("Cannot open file for reading: '%s'", localfilename);
+            writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
         }
     }
 
@@ -547,15 +657,12 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
                     }
 
                     switch (requestedMime) {
-                    case HTML: d->writeResultsHTML(slaveSocket, text, results); break;
-                    case JSON: d->writeResultsJSON(slaveSocket, text, results); break;
-                    case XML: d->writeResultsXML(slaveSocket, text, results); break;
+                    case Private::HTML: d->writeResultsHTML(slaveSocket, text, results); break;
+                    case Private::JSON: d->writeResultsJSON(slaveSocket, results); break;
+                    case Private::XML: d->writeResultsXML(slaveSocket, results); break;
                     }
                 } else {
-                    dprintf(slaveSocket, "HTTP/1.1 400 Bad Request\n");
-                    dprintf(slaveSocket, "Content-Type: text/html; charset=utf-8\n");
-                    dprintf(slaveSocket, "Content-Transfer-Encoding: 8bit\n\n");
-                    dprintf(slaveSocket, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /><title>PBFLookup: 400 &ndash; Bad Request</title></head><body><h1>400 &ndash; Bad Request</h1><p>Could not serve your request.</p></body></html>\n\n\n");
+                    d->writeHTTPError(slaveSocket, 400);
                 }
 
                 close(slaveSocket);
