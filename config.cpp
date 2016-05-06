@@ -16,6 +16,8 @@
 
 #include "config.h"
 
+#include <fstream>
+
 #include <cstring>
 #include <ctime>
 #include <unistd.h>
