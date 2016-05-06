@@ -77,6 +77,9 @@ bool file_exists_readable(const char *filename) {
 }
 
 int main(int argc, char *argv[]) {
+    if (getuid() == 0)
+        Error::err("This program should never be run as root!");
+
 #ifdef DEBUG
     Error::debug("DEBUG flag enabled");
 #endif // DEBUG

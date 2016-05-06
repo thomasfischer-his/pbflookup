@@ -331,6 +331,8 @@ bool init_configuration(const char *configfilename) {
         serverSocket = -1;
         if (config.exists("http_port")) {
             http_port = config.lookup("http_port");
+            if (http_port < 1024)
+                Error::err("http_port is invalid or privileged port (<1024), both are not acceptable");
 
             if (configIfExistsLookup(config, "http_interface", buffer))
                 strncpy(http_interface, buffer, MAX_STRING_LEN - 1);

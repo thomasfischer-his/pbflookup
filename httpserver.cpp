@@ -79,14 +79,26 @@ public:
 
     void deliverFile(int fd, const char *filename) {
         /// Check for valid filenames
-        bool valid_filename = true;
+        bool valid_filename = filename[0] == '/'; ///< filename must start with a slash
         const size_t len = strlen(filename);
         static const char acceptable_chars[] = "0123456789-_./aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxXyYzZ";
         static char needle[] = {'\0', '\0'};
         for (size_t i = 0; valid_filename && i < len; ++i) {
-            if (filename[i] == '.' && i > 0 && filename[i - 1] == '.') valid_filename = false; ///< someone tries to escape confinement
-            needle[0] = filename[i];
-            if (strstr(acceptable_chars, needle) == NULL) valid_filename = false; ///< not an acceptable character
+            if (filename[i] == '.' && i > 0 && filename[i - 1] == '.')
+                valid_filename = false; ///< someone tries to escape confinement
+            else if ((filename[i] & 128) > 0)
+                valid_filename = false; ///< UTF-8 or any other 8-bit filenames not accepted
+            else {
+                needle[0] = filename[i];
+                if (strstr(acceptable_chars, needle) == NULL)
+                    valid_filename = false; ///< not an acceptable character
+            }
+        }
+
+        if (!valid_filename) {
+            Error::warn("Got invalid filename: '%s'", filename);
+            writeHTTPError(fd, 403);
+            return;
         }
 
         char localfilename[maxStringLen];
@@ -464,8 +476,10 @@ void HTTPServer::run() {
             socklen_t sockaddr_in_size = sizeof(struct sockaddr_in);
             struct sockaddr_in their_addr;
             int slaveSocket = accept(serverSocket, (struct sockaddr *) &their_addr, &sockaddr_in_size);
-            if (slaveSocket == -1)
+            if (slaveSocket == -1) {
+                Error::warn("Slave socket is invalid");
                 continue;
+            }
 
             switch (fork()) {
             case -1:
@@ -520,7 +534,7 @@ void HTTPServer::run() {
                                 const Result &innerR = *inner;
                                 const auto d = outerR.coord.distanceLatLon(innerR.coord);
                                 if (d < 1000) {
-                                    /// Less than 1km away? Remove this result;
+                                    /// Less than 1km away? Remove this result!
                                     outer = results.erase(outer);
                                     removedOuter = true;
                                 }
