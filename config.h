@@ -32,7 +32,7 @@ extern unsigned int http_port;
 extern char http_interface[];
 extern char http_public_files[];
 
-extern FILE *logfile; ///< defined in 'error.cpp'
+extern std::ofstream logfile; ///< defined in 'error.cpp'
 
 enum LoggingLevel {LevelDebug = 0, LevelInfo = 1, LevelWarn = 2, LevelError = 3};
 extern LoggingLevel minimumLoggingLevel; ///< defined in 'error.cpp'

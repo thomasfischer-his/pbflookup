@@ -20,6 +20,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <fstream>
+
 /// For std::exit
 #include <cstdlib>
 
@@ -27,7 +29,7 @@
 
 #define MAX_STRING_LEN 1024
 
-FILE *logfile = NULL; ///< declared in 'config.h'
+std::ofstream logfile; ///< declared in 'config.h'
 LoggingLevel minimumLoggingLevel = LevelDebug;
 
 Error::Error()
@@ -56,16 +58,15 @@ void Error::msg(MessageType messageType, const char *format, int color, va_list 
         fprintf(stderr, "\n");
     }
 
-    if (logfile != NULL) {
+    if (logfile.good()) {
         switch (messageType) {
-        case MessageError: fputs("ERR: ", logfile); break;
-        case MessageWarn: fputs("WRN: ", logfile); break;
-        case MessageInfo: fputs("INF: ", logfile); break;
-        case MessageDebug: fputs("DBG: ", logfile); break;
+        case MessageError: logfile << "ERR: "; break;
+        case MessageWarn: logfile << "WRN: "; break;
+        case MessageInfo: logfile << "INF: "; break;
+        case MessageDebug: logfile << "DBG: "; break;
         }
-        fputs(message, logfile);
-        fputs("\n", logfile);
-        fflush(logfile);
+        logfile << message << std::endl;
+        logfile.flush();
     }
 }
 

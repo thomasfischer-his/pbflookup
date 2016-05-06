@@ -225,10 +225,8 @@ bool init_configuration(const char *configfilename) {
 #ifdef DEBUG
         Error::debug("  logfilename = '%s'", logfilename);
 #endif // DEBUG
-        if (logfilename[0] != '\0') {
-            logfile = fopen(logfilename, "w");
-            /// TODO figure out how to close file at program termination
-        }
+        if (logfilename[0] != '\0')
+            logfile.open(logfilename);
 
         minimumLoggingLevel = LevelDebug; ///< default value if nothing else set
         if (configIfExistsLookup(config, "loglevel", buffer)) {
