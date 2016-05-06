@@ -272,10 +272,6 @@ GlobalObjectManager::GlobalObjectManager() {
             Error::err("Loading .osm.pbf file failed");
     } else
         Error::err("Can neither load internal files from /tmp, nor .osm.pbf file");
-
-    /// Once loading from .osm.pbf file or own temporary files is done,
-    /// perform some consistency checks
-    sweden->test();
 }
 
 GlobalObjectManager::~GlobalObjectManager() {
@@ -306,28 +302,34 @@ GlobalObjectManager::~GlobalObjectManager() {
 
 void GlobalObjectManager::load() {
     Timer timer;
-    boost::thread threadLoadSwedishTextTree(loadSwedishTextTree);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadLoadNode2Cood(loadNode2Coord);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadLoadNodeNames(loadNodeNames);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadLoadWayNames(loadWayNames);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadLoadRelationNames(loadRelationNames);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadLoadWayNodes(loadWayNodes);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadLoadRelMem(loadRelMem);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    Error::debug("Waiting for load threads to join");
-    threadLoadSwedishTextTree.join();
-    threadLoadNode2Cood.join();
-    threadLoadNodeNames.join();
-    threadLoadWayNames.join();
-    threadLoadRelationNames.join();
-    threadLoadWayNodes.join();
-    threadLoadRelMem.join();
+    try
+    {
+        boost::thread threadLoadSwedishTextTree(loadSwedishTextTree);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadNode2Cood(loadNode2Coord);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadNodeNames(loadNodeNames);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadWayNames(loadWayNames);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadRelationNames(loadRelationNames);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadWayNodes(loadWayNodes);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadLoadRelMem(loadRelMem);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        Error::debug("Waiting for load threads to join");
+        threadLoadSwedishTextTree.join();
+        threadLoadNode2Cood.join();
+        threadLoadNodeNames.join();
+        threadLoadWayNames.join();
+        threadLoadRelationNames.join();
+        threadLoadWayNodes.join();
+        threadLoadRelMem.join();
+    } catch (std::exception const &ex) {
+        Error::err("Exception during thread processing: %s", ex.what());
+    }
+
     Error::debug("All load threads joined, now loading 'sweden'");
     loadSweden();
     int64_t cputime, walltime;
@@ -337,31 +339,36 @@ void GlobalObjectManager::load() {
 
 void GlobalObjectManager::save() const {
     Timer timer;
-    boost::thread threadSaveSwedishTextTree(saveSwedishTextTree);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveNode2Cood(saveNode2Coord);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveNodeNames(saveNodeNames);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveWayNames(saveWayNames);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveRelationNames(saveRelationNames);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveWayNodes(saveWayNodes);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveRelMem(saveRelMem);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    boost::thread threadSaveSweden(saveSweden);
-    boost::this_thread::sleep(boost::posix_time::milliseconds(100));
-    Error::debug("Waiting for save threads to join");
-    threadSaveSwedishTextTree.join();
-    threadSaveNode2Cood.join();
-    threadSaveNodeNames.join();
-    threadSaveWayNames.join();
-    threadSaveRelationNames.join();
-    threadSaveWayNodes.join();
-    threadSaveRelMem.join();
-    threadSaveSweden.join();
+    try
+    {
+        boost::thread threadSaveSwedishTextTree(saveSwedishTextTree);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveNode2Cood(saveNode2Coord);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveNodeNames(saveNodeNames);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveWayNames(saveWayNames);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveRelationNames(saveRelationNames);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveWayNodes(saveWayNodes);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveRelMem(saveRelMem);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        boost::thread threadSaveSweden(saveSweden);
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+        Error::debug("Waiting for save threads to join");
+        threadSaveSwedishTextTree.join();
+        threadSaveNode2Cood.join();
+        threadSaveNodeNames.join();
+        threadSaveWayNames.join();
+        threadSaveRelationNames.join();
+        threadSaveWayNodes.join();
+        threadSaveRelMem.join();
+        threadSaveSweden.join();
+    } catch (std::exception const &ex) {
+        Error::err("Exception during thread processing: %s", ex.what());
+    }
     Error::debug("All save threads joined");
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);

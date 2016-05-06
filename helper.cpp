@@ -128,7 +128,7 @@ bool handleCombiningDiacriticalMark(std::string &text, size_t i) {
                 text[i - 1] = 0xc3; text[i] = 0xb6;
                 text.erase(i + 1, 1);
                 return true;
-            } else if (textMinusOne == 'o') {
+            } else if (textMinusOne == 'O') {
                 text[i - 1] = 0xc3; text[i] = 0x96;
                 text.erase(i + 1, 1);
                 return true;

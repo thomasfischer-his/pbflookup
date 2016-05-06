@@ -264,7 +264,7 @@ public:
         std::vector<uint64_t> ** **regional;
     } roads;
     static const size_t regional_len;
-    static const int EuropeanRoadNumbers[];
+    static const std::vector<int> EuropeanRoadNumbers;
 
     AdministrativeRegion administrativeRegion;
 
@@ -711,7 +711,7 @@ const int Sweden::Private::INT_RANGE = 0x3fffffff;
 const uint16_t Sweden::Private::terminator16bit = 0xfefe;
 const size_t Sweden::Private::terminatorSizeT = 0xcafebabe;
 const size_t Sweden::Private::regional_len = Sweden::UnknownRoadType - 2;
-const int Sweden::Private::EuropeanRoadNumbers[] = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265, -1};
+const std::vector<int> Sweden::Private::EuropeanRoadNumbers = {4, 6, 10, 12, 14, 16, 18, 20, 22, 45, 47, 55, 65, 265};
 /// Assumption: no regional road number is larger or equal to regional_outer_len * regional_inner_len = 4096
 const size_t Sweden::Private::regional_outer_len = 64;
 const size_t Sweden::Private::regional_inner_len = 64;
@@ -787,7 +787,7 @@ Sweden::Sweden(std::istream &input)
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'E') {
-        for (size_t i = 0; Private::EuropeanRoadNumbers[i] > 0; ++i) {
+        for (size_t i = 0; i < Private::EuropeanRoadNumbers.size(); ++i) {
             size_t count;
             input.read((char *)&count, sizeof(count));
             if (count > reasonableLargeSizeT)
@@ -1028,7 +1028,7 @@ std::ostream &Sweden::write(std::ostream &output) {
 
     chr = 'E';
     output.write((char *)&chr, sizeof(chr));
-    for (size_t i = 0; Private::EuropeanRoadNumbers[i] > 0; ++i) {
+    for (size_t i = 0; i < Private::EuropeanRoadNumbers.size(); ++i) {
         const size_t count = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].size();
         output.write((char *) &count, sizeof(count));
         for (size_t r = 0; r < count; ++r) {
@@ -1495,7 +1495,7 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
     char buffer[STRING_BUFFER_SIZE];
 
     /// European roads
-    for (size_t i = 0; Private::EuropeanRoadNumbers[i] > 0; ++i) {
+    for (size_t i = 0; i < Private::EuropeanRoadNumbers.size(); ++i) {
         const size_t count = d->roads.european[Private::europeanRoadNumberToIndex(d->EuropeanRoadNumbers[i])].size();
         for (size_t r = 0; r < count; ++r) {
             x.clear();
@@ -1694,9 +1694,11 @@ std::vector<uint64_t> Sweden::waysForRoad(RoadType roadType, uint16_t roadNumber
     case Europe:
         if (roadNumber < Private::european_len)
             return d->roads.european[Private::europeanRoadNumberToIndex(roadNumber)];
+        break;
     case National:
         if (roadNumber < Private::national_len)
             return d->roads.national[roadNumber];
+        break;
     default:
     {
         const int idx = (int)roadType - 2;
@@ -1740,7 +1742,7 @@ std::string Sweden::roadTypeToString(Sweden::RoadType roadType) {
 }
 
 Sweden::RoadType Sweden::identifyEroad(uint16_t roadNumber) {
-    for (int i = 0; i < 20 && Private::EuropeanRoadNumbers[i] > 0; ++i)
+    for (std::vector<int>::size_type i = 0; i < Private::EuropeanRoadNumbers.size(); ++i)
         if (Private::EuropeanRoadNumbers[i] == roadNumber)
             return Europe;
     return LanE;
@@ -1751,7 +1753,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
     bestNode = 0;
 
     std::vector<uint64_t> *wayIds = NULL;
-    int lanStartingIndex[Private::regional_len];
+    std::vector<int> lanStartingIndex(Private::regional_len, INT_MAX);
 
     if (road.number <= 0) return road.type; ///< Invalid road number
     if (road.type == UnknownRoadType) return UnknownRoadType; ///< No point in locating unknown road types (FIXME true?)
@@ -1857,7 +1859,7 @@ std::vector<struct Sweden::Road> Sweden::identifyRoads(const std::vector<std::st
             roadNumber = (uint16_t)strtol(cur, &next, 10);
             if (roadNumber > 0 && roadNumber < 9999 && next > cur) {
                 /// If got a valid road number, try interpreting current word's first character as road identifier
-                const char buffer[] = {words[i][0], '\0'};
+                const char buffer[] = {words[i][0], '\0', '\0', '\0'};
                 roadType = d->lettersToRoadType(buffer, roadNumber);
             } else {
                 Error::debug("Not a road number: %s", cur);

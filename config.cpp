@@ -47,9 +47,9 @@ void replacetildehome(char *text) {
     if (text[0] == '~' && text[1] == '/') {
         static const char *home = getenv("HOME");
         static char temp[MAX_STRING_LEN];
-        strncpy(temp, text, MAX_STRING_LEN);
-        strncpy(text, home, MAX_STRING_LEN);
-        strncpy(text + strlen(home), temp + 1, MAX_STRING_LEN - strlen(home));
+        strncpy(temp, text, MAX_STRING_LEN - 1);
+        strncpy(text, home, MAX_STRING_LEN - 1);
+        strncpy(text + strlen(home), temp + 1, MAX_STRING_LEN - strlen(home) - 1);
     }
 }
 
@@ -105,10 +105,12 @@ void replacevariablenames(char *text) {
         snprintf(temp, needle_len + 1, needlepos + 2);
         const char *envvar = getenv(temp);
         const size_t envvarlen = strlen(envvar);
+        if (envvarlen == 0)
+            Error::warn("Environment variable '%s' is empty or not set", temp);
         const size_t prefixlen = needlepos - text;
-        strncpy(temp, text, MAX_STRING_LEN);
-        strncpy(needlepos, envvar, MAX_STRING_LEN - prefixlen);
-        strncpy(needlepos + envvarlen, temp + prefixlen + needle_len + 3, MAX_STRING_LEN - prefixlen - needle_len - 3);
+        strncpy(temp, text, MAX_STRING_LEN - 1);
+        strncpy(needlepos, envvar, MAX_STRING_LEN - prefixlen - 1);
+        strncpy(needlepos + envvarlen, temp + prefixlen + needle_len + 3, MAX_STRING_LEN - prefixlen - needle_len - 4);
 
         /// Continue searching after current replacement
         needlepos = strstr(needlepos + envvarlen, needle_varstart);
@@ -336,12 +338,13 @@ bool init_configuration(const char *configfilename) {
             if (configIfExistsLookup(config, "http_public_files", buffer))
                 strncpy(http_public_files, buffer, MAX_STRING_LEN - 1);
             else
-                snprintf(http_public_files, MAX_STRING_LEN - 1, "public");
+                /// If no 'http_public_files' was defined, do not provide any default
+                http_public_files[0] = '\0';
             replacetildehome(http_public_files);
             replacevariablenames(http_public_files);
             makeabsolutepath(http_public_files);
             const size_t http_public_files_len = strlen(http_public_files);
-            if (http_public_files[http_public_files_len - 1] == '/') http_public_files[http_public_files_len - 1] = '\0';
+            if (http_public_files_len > 1 && http_public_files[http_public_files_len - 1] == '/') http_public_files[http_public_files_len - 1] = '\0';
 
 #ifdef DEBUG
             Error::debug("  http_port = %d", http_port);

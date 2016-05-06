@@ -34,14 +34,12 @@ inline bool ends_with(std::string const &value, std::string const &ending)
 }
 
 void init_rand() {
-    FILE *devrandom = fopen("/dev/urandom", "r");
     unsigned int seed = time(NULL) ^ (getpid() << 8);
-    if (devrandom != NULL) {
-        fread((void *)&seed, sizeof(seed), 1, devrandom);
-        fclose(devrandom);
-    }
 
-    Error::debug("seed=%08x", seed);
+    std::ifstream devrandom("/dev/urandom");
+    if (devrandom.good())
+        devrandom.read((char *)&seed, sizeof(seed));
+
     srand(seed);
 }
 
@@ -60,15 +58,14 @@ bool debugged_with_gdb() {
         const pid_t parent_pid = getppid();
         char procfilename[buffer_size];
         snprintf(procfilename, buffer_size - 1, "/proc/%d/cmdline", parent_pid);
-        FILE *f = fopen(procfilename, "r");
-        if (f != NULL) {
-            char buffer[buffer_size];
-            if (fread(buffer, sizeof(char), buffer_size - 1, f) > 4) {
-                const size_t len = strlen(buffer);
+        std::ifstream procfile(procfilename);
+        if (procfile.good()) {
+            std::string buffer;
+            std::getline(procfile, buffer);
+            const std::string::size_type len = buffer.length();
+            if (!procfile.bad() && len > 4)
                 status = buffer[len] == '\0' && buffer[len - 1] == 'b' && buffer[len - 2] == 'd' && buffer[len - 3] == 'g' && buffer[len - 4] == '/' ? 1 : -1;
-            }
         }
-        fclose(f);
     }
 
     return status > 0;

@@ -49,10 +49,10 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
             } else if (chr == '1') {
                 children[i] = new SwedishTextNode(input);
             } else
-                Error::warn("Expected '0' or '1', got '0x%02x'", chr);
+                Error::err("Expected '0' or '1', got '0x%02x'", chr);
         }
     } else
-        Error::warn("Expected 'N' or 'C', got '0x%02x'", chr);
+        Error::err("Expected 'N' or 'C', got '0x%02x'", chr);
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'n') {
@@ -64,7 +64,7 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
         elements = (OSMElement *)malloc(bytes);
         input.read((char *)elements, bytes);
     } else
-        Error::warn("Expected 'n' or 'i', got '0x%02x'", chr);
+        Error::err("Expected 'n' or 'i', got '0x%02x'", chr);
 }
 
 SwedishTextNode::~SwedishTextNode() {
