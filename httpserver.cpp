@@ -376,7 +376,7 @@ HTTPServer::~HTTPServer() {
     delete d;
 }
 
-void HTTPServer::run() {
+HTTPServer::ProcessIdentity HTTPServer::run() {
     /** Turn off bind address checking, and allow port numbers to be reused
      *  - otherwise the TIME_WAIT phenomenon will prevent binding to these
      *  address.port combinations for (2 * MSL) seconds.
@@ -424,6 +424,7 @@ void HTTPServer::run() {
     const unsigned char a4 = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
     Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a1, a2, a3, a4, htons(serverName.sin_port));
 
+    ProcessIdentity result = ForkParent;
     doexitserver = false;
     /// Install the signal handler for SIGTERM and SIGINT
     struct sigaction s;
@@ -490,6 +491,7 @@ void HTTPServer::run() {
             case 0:
             {
                 /// Child process
+                result = ForkChild;
                 close(serverSocket);
 
                 char readbuffer[maxBufferSize], text[maxBufferSize];
@@ -557,10 +559,11 @@ void HTTPServer::run() {
                 }
 
                 close(slaveSocket);
-                exit(0);
+                break; /// leave while loop
             }
             default: {
                 /// Parent process
+                result = ForkParent; ///< just for redundancy
                 close(slaveSocket);
             }
             }
@@ -571,4 +574,6 @@ void HTTPServer::run() {
 
     /// Restore old signal mask
     sigprocmask(SIG_SETMASK, &oldsigset, NULL);
+
+    return result;
 }

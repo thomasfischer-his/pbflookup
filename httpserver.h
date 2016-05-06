@@ -22,7 +22,9 @@ public:
     HTTPServer();
     ~HTTPServer();
 
-    void run();
+    enum ProcessIdentity {ForkParent, ForkChild };
+
+    ProcessIdentity run();
 
 private:
     class Private;
