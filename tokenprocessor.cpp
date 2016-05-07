@@ -57,7 +57,7 @@ public:
                         node_ids.insert(wn.nodes[i]);
             } else if (element.type == OSMElement::Relation) {
                 RelationMem rm;
-                if (relMembers->retrieve(element.id, rm))
+                if (relMembers->retrieve(element.id, rm)) {
                     for (size_t i = 0; i < rm.num_members; ++i)
                         if (rm.members[i].type == OSMElement::Node)
                             node_ids.insert(rm.members[i].id);
@@ -67,6 +67,7 @@ public:
                                 for (size_t i = 0; i < wn.num_nodes; ++i)
                                     node_ids.insert(wn.nodes[i]);
                         }
+                }
             }
         }
 
