@@ -25,7 +25,6 @@
 #include <sys/socket.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
-#include <unistd.h>
 #include <signal.h>
 
 #include "global.h"
@@ -497,7 +496,7 @@ HTTPServer::~HTTPServer() {
     delete d;
 }
 
-HTTPServer::ProcessIdentity HTTPServer::run() {
+void HTTPServer::run() {
     /** Turn off bind address checking, and allow port numbers to be reused
      *  - otherwise the TIME_WAIT phenomenon will prevent binding to these
      *  address.port combinations for (2 * MSL) seconds.
@@ -545,7 +544,6 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
     const unsigned char a4 = serverName.sin_addr.s_addr == 0x0 ? 1 : (serverName.sin_addr.s_addr >> 24) & 255;
     Error::debug("Try http://%d.%d.%d.%d:%d/ to reach it", a1, a2, a3, a4, htons(serverName.sin_port));
 
-    ProcessIdentity result = ForkParent;
     doexitserver = false;
     /// Install the signal handler for SIGTERM and SIGINT
     struct sigaction s;
@@ -603,75 +601,55 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
                 continue;
             }
 
-            switch (fork()) {
-            case -1:
-            {
-                Error::err("Error while forking");
-                exit(1);
-            }
-            case 0:
-            {
-                /// Child process
-                result = ForkChild;
-                close(serverSocket);
+            char readbuffer[maxBufferSize];
+            const ssize_t data_size = read(slaveSocket, readbuffer, maxBufferSize);
+            readbuffer[data_size] = '\0'; ///< ensure string termination
+            Error::debug("Received %lu bytes of data", data_size);
 
-                char readbuffer[maxBufferSize];
-                const ssize_t data_size = read(slaveSocket, readbuffer, maxBufferSize);
-                readbuffer[data_size] = '\0'; ///< ensure string termination
-                Error::debug("Received %lu bytes of data", data_size);
-
-                if (data_size < 32) {
-                    d->writeHTTPError(slaveSocket, 400);
-                    close(slaveSocket);
-                    Error::err("Too few bytes read from slave socket: %d bytes only", data_size);
-                }
-
-                const std::string readtext(readbuffer);
-                std::string lowercasetext = readtext;
-                utf8tolower(lowercasetext);
-
-                const auto request = d->extractHTTPrequest(readtext);
-                if (!std::get<0>(request)) {
-                    d->writeHTTPError(slaveSocket, 400);
-                    close(slaveSocket);
-                    Error::err("Too few bytes read from slave socket: %d bytes only", data_size);
-                }
-
-                if (std::get<1>(request).method == Private::HTTPrequest::MethodGet) {
-                    const std::string &getfilename = std::get<1>(request).filename;
-                    if (getfilename == "/")
-                        /// Serve default search form
-                        d->writeFormHTML(slaveSocket);
-                    else if (!http_public_files.empty())
-                        d->deliverFile(slaveSocket, getfilename.c_str());
-                    else
-                        d->writeHTTPError(slaveSocket, 404, "Could not serve your request for this file:", getfilename);
-                } else if (std::get<1>(request).method == Private::HTTPrequest::MethodPost) {
-                    const Private::RequestedMimeType requestedMime = d->extractRequestedMimeType(lowercasetext);
-                    const std::string text = d->extractTextToLocalize(lowercasetext);
-
-                    d->timerSearch.start();
-                    const std::vector<Result> results =resultGenerator.findResults(text, 1000, ResultGenerator::VerbositySilent);
-                    d->timerSearch.stop();
-
-                    switch (requestedMime) {
-                    case Private::HTML: d->writeResultsHTML(slaveSocket, text, results); break;
-                    case Private::JSON: d->writeResultsJSON(slaveSocket, results); break;
-                    case Private::XML: d->writeResultsXML(slaveSocket, results); break;
-                    }
-                } else {
-                    d->writeHTTPError(slaveSocket, 400);
-                }
-
+            if (data_size < 32) {
+                d->writeHTTPError(slaveSocket, 400);
                 close(slaveSocket);
-                break; /// leave while loop
+                Error::err("Too few bytes read from slave socket: %d bytes only", data_size);
             }
-            default: {
-                /// Parent process
-                result = ForkParent; ///< just for redundancy
+
+            const std::string readtext(readbuffer);
+            std::string lowercasetext = readtext;
+            utf8tolower(lowercasetext);
+
+            const auto request = d->extractHTTPrequest(readtext);
+            if (!std::get<0>(request)) {
+                d->writeHTTPError(slaveSocket, 400);
                 close(slaveSocket);
+                Error::err("Too few bytes read from slave socket: %d bytes only", data_size);
             }
+
+            if (std::get<1>(request).method == Private::HTTPrequest::MethodGet) {
+                const std::string &getfilename = std::get<1>(request).filename;
+                if (getfilename == "/")
+                    /// Serve default search form
+                    d->writeFormHTML(slaveSocket);
+                else if (!http_public_files.empty())
+                    d->deliverFile(slaveSocket, getfilename.c_str());
+                else
+                    d->writeHTTPError(slaveSocket, 404, "Could not serve your request for this file:", getfilename);
+            } else if (std::get<1>(request).method == Private::HTTPrequest::MethodPost) {
+                const Private::RequestedMimeType requestedMime = d->extractRequestedMimeType(lowercasetext);
+                const std::string text = d->extractTextToLocalize(lowercasetext);
+
+                d->timerSearch.start();
+                const std::vector<Result> results = resultGenerator.findResults(text, 1000, ResultGenerator::VerbositySilent);
+                d->timerSearch.stop();
+
+                switch (requestedMime) {
+                case Private::HTML: d->writeResultsHTML(slaveSocket, text, results); break;
+                case Private::JSON: d->writeResultsJSON(slaveSocket, results); break;
+                case Private::XML: d->writeResultsXML(slaveSocket, results); break;
+                }
+            } else {
+                d->writeHTTPError(slaveSocket, 400);
             }
+
+            close(slaveSocket);
         } else {
             Error::warn("pselect() finished, but no data to process?  errno=%d  select_result=%d", errno, pselect_result);
         }
@@ -680,5 +658,5 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
     /// Restore old signal mask
     sigprocmask(SIG_SETMASK, &oldsigset, NULL);
 
-    return result;
+    return;
 }
