@@ -18,7 +18,6 @@
 
 #include <fstream>
 
-#include <cstring>
 #include <ctime>
 #include <unistd.h>
 
@@ -31,117 +30,70 @@
 
 #define MAX_STRING_LEN 1024
 
-char tempdir[MAX_STRING_LEN];
-char mapname[MAX_STRING_LEN];
-char pidfilename[MAX_STRING_LEN];
-char osmpbffilename[MAX_STRING_LEN];
-char inputextfilename[MAX_STRING_LEN];
-char stopwordfilename[MAX_STRING_LEN];
+std::string tempdir;
+std::string mapname;
+std::string pidfilename;
+std::string osmpbffilename;
+std::string inputextfilename;
+std::string stopwordfilename;
 unsigned int http_port;
-char http_interface[MAX_STRING_LEN];
-char http_public_files[MAX_STRING_LEN];
+std::string http_interface;
+std::string http_public_files;
 
 std::vector<struct testset> testsets;
 
 static time_t current_time;
 
-void replacetildehome(char *text) {
-    if (text[0] == '~' && text[1] == '/') {
+void replacetildehome(std::string &text) {
+    if (text.length() > 2 && text[0] == '~' && text[1] == '/') {
         static const char *home = getenv("HOME");
-        static char temp[MAX_STRING_LEN];
-        strncpy(temp, text, MAX_STRING_LEN - 1);
-        strncpy(text, home, MAX_STRING_LEN - 1);
-        strncpy(text + strlen(home), temp + 1, MAX_STRING_LEN - strlen(home) - 1);
+        text.replace(0, 1, home);
     }
 }
 
-void replacevariablenames(char *text) {
-    static const char needle_mapname[] = "${mapname}";
-    char *needlepos = strstr(text, needle_mapname);
-    if (needlepos != NULL) {
-        static char temp[MAX_STRING_LEN];
-        strncpy(temp, text, MAX_STRING_LEN);
-        const size_t prefixlen = needlepos - text;
-        const size_t mapnamelen = strlen(mapname);
-        static const size_t variablelen = strlen(needle_mapname);
-        strncpy(needlepos, mapname, MAX_STRING_LEN - prefixlen);
-        strncpy(needlepos + mapnamelen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
-    }
+void replacevariablenames(std::string &text) {
+    static  char timestamp[64];
+    strftime(timestamp, 64 - 1, "%Y%m%d-%H%M%S-", localtime(&current_time));
+    const std::vector<std::pair<std::string, std::string>> replace_map = {std::make_pair("${mapname}", mapname), std::make_pair("${tempdir}", tempdir), std::make_pair("${timestamp}", timestamp + std::to_string(getpid()))};
 
-    static const char needle_tempdir[] = "${tempdir}";
-    needlepos = strstr(text, needle_tempdir);
-    if (needlepos != NULL) {
-        static char temp[MAX_STRING_LEN];
-        strncpy(temp, text, MAX_STRING_LEN);
-        const size_t prefixlen = needlepos - text;
-        const size_t tempdirlen = strlen(tempdir);
-        static const size_t variablelen = strlen(needle_tempdir);
-        strncpy(needlepos, tempdir, MAX_STRING_LEN - prefixlen);
-        strncpy(needlepos + tempdirlen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
-    }
-
-    if (current_time != (time_t)(-1)) {
-        static const char needle_timestamp[] = "${timestamp}";
-        needlepos = strstr(text, needle_timestamp);
-        if (needlepos != NULL) {
-            static char temp[MAX_STRING_LEN], timestamp[MAX_STRING_LEN];
-            strftime(timestamp, MAX_STRING_LEN, "%Y%m%d-%H%M%S", localtime(&current_time));
-            snprintf(timestamp + 15, MAX_STRING_LEN - 15, "-%d", getpid());
-            strncpy(temp, text, MAX_STRING_LEN);
-            const size_t prefixlen = needlepos - text;
-            const size_t timestamplen = strlen(timestamp);
-            static const size_t variablelen = strlen(needle_timestamp);
-            strncpy(needlepos, timestamp, MAX_STRING_LEN - prefixlen);
-            strncpy(needlepos + timestamplen, temp + prefixlen + variablelen, MAX_STRING_LEN - prefixlen - variablelen);
+    for (const auto &mapping : replace_map) {
+        size_t needle_pos = std::string::npos;
+        while ((needle_pos = text.find(mapping.first)) != std::string::npos) {
+            text = text.substr(0, needle_pos) + mapping.second + text.substr(needle_pos + mapping.first.length());
         }
     }
 
     /// Find an replace environment variables
     static const char *needle_varstart = "${";
     static const char *needle_varend = "}";
-    needlepos = strstr(text, needle_varstart);
-    while (needlepos != NULL) {
-        static char temp[MAX_STRING_LEN];
-        const char *needleend = strstr(needlepos, needle_varend);
-        const size_t needle_len = needleend - needlepos - 2;
-        snprintf(temp, needle_len + 1, needlepos + 2);
-        const char *envvar = getenv(temp);
-        const size_t envvarlen = strlen(envvar);
-        if (envvarlen == 0)
-            Error::warn("Environment variable '%s' is empty or not set", temp);
-        const size_t prefixlen = needlepos - text;
-        strncpy(temp, text, MAX_STRING_LEN - 1);
-        strncpy(needlepos, envvar, MAX_STRING_LEN - prefixlen - 1);
-        strncpy(needlepos + envvarlen, temp + prefixlen + needle_len + 3, MAX_STRING_LEN - prefixlen - needle_len - 4);
-
-        /// Continue searching after current replacement
-        needlepos = strstr(needlepos + envvarlen, needle_varstart);
+    size_t needle_varstart_pos = std::string::npos;
+    while ((needle_varstart_pos = text.find(needle_varstart)) != std::string::npos) {
+        size_t needle_varend_pos = text.find(needle_varend, needle_varstart_pos + 1);
+        if (needle_varend_pos == std::string::npos)
+            Error::err("Cannot replace environment variable, invalid synatx in '%s'", text.c_str());
+        const std::string envname = text.substr(needle_varstart_pos + 2, needle_varend_pos - needle_varstart_pos - 2);
+        const char *envvar = getenv(envname.c_str());
+        if (envvar == NULL || envvar[0] == '\0') {
+            Error::warn("Environment variable '%s' is empty or not set", envname.c_str());
+            text = text.substr(0, needle_varstart_pos) + text.substr(needle_varend_pos + 1);
+        } else
+            text = text.substr(0, needle_varstart_pos) + envvar + text.substr(needle_varend_pos + 1);
     }
 }
 
-void makeabsolutepath(char *text) {
-    if (text != NULL && text[0] != '\0' && text[0] != '/') {
+void makeabsolutepath(std::string &text) {
+    if (!text.empty() && text[0] != '/') {
         char cwd[MAX_STRING_LEN];
-        if (getcwd(cwd, MAX_STRING_LEN) != NULL) {
+        if (getcwd(cwd, MAX_STRING_LEN - 1) != NULL) {
             /// Insert current working directory in front of relative path
             /// Requires some copying of strings ...
-            char *buffer = strndup(text, MAX_STRING_LEN);
-            const size_t len = snprintf(text, MAX_STRING_LEN - 1, "%s/%s", cwd, buffer);
-            text[len] = '\0';
-            free(buffer);
+            text.insert(0, "/").insert(0, cwd);
         }
     }
 }
 
 bool init_configuration(const char *configfilename) {
-    memset(tempdir, 0, MAX_STRING_LEN);
-    memset(mapname, 0, MAX_STRING_LEN);
-    memset(pidfilename, 0, MAX_STRING_LEN);
-    memset(osmpbffilename, 0, MAX_STRING_LEN);
-    memset(inputextfilename, 0, MAX_STRING_LEN);
-    memset(stopwordfilename, 0, MAX_STRING_LEN);
     http_port = 0;
-    memset(http_interface, 0, MAX_STRING_LEN);
 
     /**
      * Modify given configuration filename:
@@ -149,14 +101,13 @@ bool init_configuration(const char *configfilename) {
      * - Resolve a relative path into an absolute one
      *   based on the current working directory
      */
-    char internal_configfilename[MAX_STRING_LEN];
-    strncpy(internal_configfilename, configfilename, MAX_STRING_LEN - 1);
+    std::string internal_configfilename(configfilename);
     replacetildehome(internal_configfilename);
     makeabsolutepath(internal_configfilename);
 
 #ifdef DEBUG
     Error::debug("%sttached to terminal", isatty(1) ? "A" : "NOT a");
-    Error::info("Loading configuration file '%s'", internal_configfilename);
+    Error::info("Loading configuration file '%s'", internal_configfilename.c_str());
 #endif // DEBUG
 
     time(&current_time);///< get and memorize current time
@@ -166,129 +117,103 @@ bool init_configuration(const char *configfilename) {
     /// Tell libconfig that the main configuration file's directory
     /// should be used as base for '@include' statements with
     /// relative paths.
-    const char *lastslash = rindex(internal_configfilename, '/');
-    if (lastslash != NULL) {
-        char temp[MAX_STRING_LEN];
-        temp[0] = '\0';
-        size_t len = lastslash - internal_configfilename;
-        if (len > MAX_STRING_LEN - 2) len = MAX_STRING_LEN - 2; ///< Prevent exceeding 'temp's size
-        strncpy(temp, internal_configfilename, len);
-        temp[len] = '\0';
-        if (temp[0] == '\0') {
-            /// Configuration file's location is / (very unusual)
-            temp[0] = '/'; temp[1] = '\0';
-        }
-        Error::debug("Including directory '%s' when searching for config files", temp);
+    const size_t lastslash_pos = internal_configfilename.rfind('/');
+    if (lastslash_pos != std::string::npos && lastslash_pos > 1) {
+        const std::string include_dir = internal_configfilename.substr(0, lastslash_pos);
+        Error::debug("Including directory '%s' when searching for config files", include_dir.c_str());
         /// For details see
         /// http://www.hyperrealm.com/libconfig/libconfig_manual.html#index-setIncludeDir-on-Config
-        config.setIncludeDir(temp);
+        config.setIncludeDir(include_dir.c_str());
     }
 
     try
     {
+        std::string str_buffer;
+
         /// libconfig::lookupValue should, according to its documentation, simply
         /// return 'false' if a key is not found, but it still throws an exception.
         /// To cover for this case, first check if a key exists before attempting
         /// to retrieve its value.
 #define configIfExistsLookup(config, key, variable) (config.exists(key) && config.lookupValue(key, variable))
 
-        const char *buffer;
-        config.readFile(internal_configfilename);
+        config.readFile(internal_configfilename.c_str());
 
-        if (configIfExistsLookup(config, "tempdir", buffer))
-            strncpy(tempdir, buffer, MAX_STRING_LEN - 1);
-        else {
+        if (!configIfExistsLookup(config, "tempdir", tempdir)) {
             const char *envtempdir = getenv("TEMPDIR");
             if (envtempdir != NULL && envtempdir[0] != '\0')
-                strncpy(tempdir, envtempdir, MAX_STRING_LEN - 1);
+                tempdir = envtempdir;
             else
-                snprintf(tempdir, MAX_STRING_LEN - 1, "/tmp");
+                tempdir = "/tmp";
         }
         replacetildehome(tempdir);
         makeabsolutepath(tempdir);
 #ifdef DEBUG
-        Error::debug("  tempdir = '%s'", tempdir);
+        Error::debug("  tempdir = '%s'", tempdir.c_str());
 #endif // DEBUG
 
-        if (configIfExistsLookup(config, "mapname", buffer))
-            strncpy(mapname, buffer, MAX_STRING_LEN - 1);
-        else
-            snprintf(mapname, MAX_STRING_LEN - 1, "sweden");
+        if (!configIfExistsLookup(config, "mapname", mapname))
+            mapname = "sweden";
 #ifdef DEBUG
-        Error::debug("  mapname = '%s'", mapname);
+        Error::debug("  mapname = '%s'", mapname.c_str());
 #endif // DEBUG
 
-        static char logfilename[MAX_STRING_LEN];
-        if (configIfExistsLookup(config, "logfile", buffer)) {
-            strncpy(logfilename, buffer, MAX_STRING_LEN - 1);
-            replacetildehome(logfilename);
-            replacevariablenames(logfilename);
-        } else
-            logfilename[0] = '\0';
+        std::string logfilename;
+        if (!configIfExistsLookup(config, "logfile", logfilename))
+            logfilename.clear();
+        replacetildehome(logfilename);
+        replacevariablenames(logfilename);
         makeabsolutepath(logfilename);
 #ifdef DEBUG
-        Error::debug("  logfilename = '%s'", logfilename);
+        Error::debug("  logfilename = '%s'", logfilename.c_str());
 #endif // DEBUG
-        if (logfilename[0] != '\0')
+        if (!logfilename.empty())
             logfile.open(logfilename);
 
         minimumLoggingLevel = LevelDebug; ///< default value if nothing else set
-        if (configIfExistsLookup(config, "loglevel", buffer)) {
-            if (buffer[0] == 'd' && buffer[1] == 'e' && buffer[2] == 'b')
+        if (configIfExistsLookup(config, "loglevel", str_buffer) && str_buffer.length() > 3) {
+            if (str_buffer[0] == 'd' && str_buffer[1] == 'e' && str_buffer[2] == 'b')
                 minimumLoggingLevel = LevelDebug;
-            else if (buffer[0] == 'i' && buffer[1] == 'n' && buffer[2] == 'f')
+            else if (str_buffer[0] == 'i' && str_buffer[1] == 'n' && str_buffer[2] == 'f')
                 minimumLoggingLevel = LevelInfo;
-            else if (buffer[0] == 'w' && buffer[1] == 'a' && buffer[2] == 'r')
+            else if (str_buffer[0] == 'w' && str_buffer[1] == 'a' && str_buffer[2] == 'r')
                 minimumLoggingLevel = LevelWarn;
-            else if (buffer[0] == 'e' && buffer[1] == 'r' && buffer[2] == 'r')
+            else if (str_buffer[0] == 'e' && str_buffer[1] == 'r' && str_buffer[2] == 'r')
                 minimumLoggingLevel = LevelError;
         }
 
-        if (configIfExistsLookup(config, "pidfile", buffer))
-            strncpy(pidfilename, buffer, MAX_STRING_LEN - 1);
-        else
-            snprintf(pidfilename, MAX_STRING_LEN - 1, "${XDG_RUNTIME_DIR}/pbflookup.pid");
+        if (!configIfExistsLookup(config, "pidfile", pidfilename))
+            pidfilename = "${XDG_RUNTIME_DIR}/pbflookup.pid";
         replacetildehome(pidfilename);
         replacevariablenames(pidfilename);
         makeabsolutepath(pidfilename);
 #ifdef DEBUG
-        Error::debug("  pidfilename = '%s'", pidfilename);
+        Error::debug("  pidfilename = '%s'", pidfilename.c_str());
 #endif // DEBUG
 
-        if (configIfExistsLookup(config, "osmpbffilename", buffer))
-            strncpy(osmpbffilename, buffer, MAX_STRING_LEN - 1);
-        else if (mapname[0] != '\0')
-            snprintf(osmpbffilename, MAX_STRING_LEN - 1, "${mapname}-latest.osm.pbf");
-        else
-            Error::err("No filename for .osm.pbf file set and cannot determine automatically");
+        if (!configIfExistsLookup(config, "osmpbffilename", osmpbffilename)) {
+            if (!mapname.empty())
+                osmpbffilename = mapname + "-latest.osm.pbf";
+            else
+                Error::err("No filename for .osm.pbf file set and cannot determine automatically");
+        }
         replacetildehome(osmpbffilename);
         replacevariablenames(osmpbffilename);
         makeabsolutepath(osmpbffilename);
 #ifdef DEBUG
-        Error::debug("  osmpbffilename = '%s'", osmpbffilename);
+        Error::debug("  osmpbffilename = '%s'", osmpbffilename.c_str());
 #endif // DEBUG
 
-        if (configIfExistsLookup(config, "inputextfilename", buffer))
-            strncpy(inputextfilename, buffer, MAX_STRING_LEN - 1);
-        else
-            /// If no 'inputextfilename' was defined, do not provide any default
-            inputextfilename[0] = '\0';
-        replacetildehome(inputextfilename);
-        replacevariablenames(inputextfilename);
-        makeabsolutepath(inputextfilename);
-#ifdef DEBUG
-        Error::debug("  inputextfilename = '%s'", inputextfilename);
-#endif // DEBUG
-
-        if (configIfExistsLookup(config, "stopwordfilename", buffer))
-            strncpy(stopwordfilename, buffer, MAX_STRING_LEN - 1);
-        else
-            snprintf(stopwordfilename, MAX_STRING_LEN - 1, "stopwords-${mapname}.txt");
+        if (!configIfExistsLookup(config, "stopwordfilename", stopwordfilename)) {
+            if (!mapname.empty())
+                stopwordfilename = "stopwords-" + mapname + ".txt";
+            else
+                Error::err("No filename for stopword file set and cannot determine automatically");
+        }
         replacetildehome(stopwordfilename);
         replacevariablenames(stopwordfilename);
         makeabsolutepath(stopwordfilename);
 #ifdef DEBUG
-        Error::debug("  stopwordfilename = '%s'", stopwordfilename);
+        Error::debug("  stopwordfilename = '%s'", stopwordfilename.c_str());
 #endif // DEBUG
 
         testsets.clear();
@@ -313,12 +238,9 @@ bool init_configuration(const char *configfilename) {
                             ts.text = testsetSetting.lookup("text").c_str();
                             /// "svgoutputfilename" is optional, so tolerate if it is not set
                             if (configIfExistsLookup(config, "svgoutputfilename", ts.svgoutputfilename)) {
-                                // FIXME can we do better than converting std::string -> char* -> std::string ?
-                                static char filename[MAX_STRING_LEN];
-                                strncpy(filename, ts.svgoutputfilename.c_str(), MAX_STRING_LEN);
-                                replacetildehome(filename);
-                                replacevariablenames(filename);
-                                ts.svgoutputfilename = std::string(filename);
+                                replacetildehome(ts.svgoutputfilename);
+                                replacevariablenames(ts.svgoutputfilename);
+                                makeabsolutepath(ts.svgoutputfilename);
                             }
                             Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
                             testsets.push_back(ts);
@@ -334,26 +256,22 @@ bool init_configuration(const char *configfilename) {
             if (http_port < 1024)
                 Error::err("http_port is invalid or privileged port (<1024), both are not acceptable");
 
-            if (configIfExistsLookup(config, "http_interface", buffer))
-                strncpy(http_interface, buffer, MAX_STRING_LEN - 1);
-            else
-                snprintf(http_interface, MAX_STRING_LEN - 1, "ANY");
+            if (!configIfExistsLookup(config, "http_interface", http_interface))
+                http_interface = "ANY";
 
-            if (configIfExistsLookup(config, "http_public_files", buffer))
-                strncpy(http_public_files, buffer, MAX_STRING_LEN - 1);
-            else
+            if (!configIfExistsLookup(config, "http_public_files", http_public_files))
                 /// If no 'http_public_files' was defined, do not provide any default
-                http_public_files[0] = '\0';
+                http_public_files.clear();
             replacetildehome(http_public_files);
             replacevariablenames(http_public_files);
             makeabsolutepath(http_public_files);
-            const size_t http_public_files_len = strlen(http_public_files);
+            const size_t http_public_files_len = http_public_files.length();
             if (http_public_files_len > 1 && http_public_files[http_public_files_len - 1] == '/') http_public_files[http_public_files_len - 1] = '\0';
 
 #ifdef DEBUG
             Error::debug("  http_port = %d", http_port);
-            Error::debug("  http_interface = %s", http_interface);
-            Error::debug("  http_public_files = %s/", http_public_files);
+            Error::debug("  http_interface = %s", http_interface.c_str());
+            Error::debug("  http_public_files = %s/", http_public_files.c_str());
 #endif // DEBUG
         } else {
             http_port = 0;

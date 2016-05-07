@@ -40,20 +40,18 @@ Sweden *sweden = NULL; ///< declared in 'globalobjects.h'
 
 
 void loadSwedishTextTree() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping text to element ids)", filenamebuffer);
-    std::ifstream swedishtexttreefile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".texttree";
+    Error::debug("Reading from '%s' (mapping text to element ids)", filename.c_str());
+    std::ifstream swedishtexttreefile(filename);
     swedishTextTree = new SwedishTextTree(swedishtexttreefile);
     swedishtexttreefile.close();
 }
 
 void saveSwedishTextTree() {
-    char filenamebuffer[1024];
     if (swedishTextTree != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping text to element ids)", filenamebuffer);
-        std::ofstream swedishtexttreefile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".texttree";
+        Error::debug("Writing to '%s' (mapping text to element ids)", filename.c_str());
+        std::ofstream swedishtexttreefile(filename);
         swedishTextTree->write(swedishtexttreefile);
         swedishtexttreefile.close();
     } else
@@ -61,10 +59,9 @@ void saveSwedishTextTree() {
 }
 
 void loadNode2Coord() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping nodes to coordinates)", filenamebuffer);
-    std::ifstream node2CoordFile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".n2c";
+    Error::debug("Reading from '%s' (mapping nodes to coordinates)", filename.c_str());
+    std::ifstream node2CoordFile(filename);
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(node2CoordFile);
@@ -72,11 +69,10 @@ void loadNode2Coord() {
 }
 
 void saveNode2Coord() {
-    char filenamebuffer[1024];
     if (node2Coord != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.n2c", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping nodes to coordinates)", filenamebuffer);
-        std::ofstream node2CoordFile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".n2c";
+        Error::debug("Writing to '%s' (mapping nodes to coordinates)", filename.c_str());
+        std::ofstream node2CoordFile(filename);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(node2CoordFile);
@@ -86,10 +82,9 @@ void saveNode2Coord() {
 }
 
 void loadNodeNames() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping nodes to their names)", filenamebuffer);
-    std::ifstream nnfile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".nn";
+    Error::debug("Reading from '%s' (mapping nodes to their names)", filename.c_str());
+    std::ifstream nnfile(filename);
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(nnfile);
@@ -97,11 +92,10 @@ void loadNodeNames() {
 }
 
 void saveNodeNames() {
-    char filenamebuffer[1024];
     if (nodeNames != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.nn", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping nodes to their names)", filenamebuffer);
-        std::ofstream nnfile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".nn";
+        Error::debug("Writing to '%s' (mapping nodes to their names)", filename.c_str());
+        std::ofstream nnfile(filename);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(nnfile);
@@ -111,10 +105,9 @@ void saveNodeNames() {
 }
 
 void loadWayNames() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.wn", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping ways to their names)", filenamebuffer);
-    std::ifstream wnfile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".wn";
+    Error::debug("Reading from '%s' (mapping ways to their names)", filename.c_str());
+    std::ifstream wnfile(filename);
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(wnfile);
@@ -122,11 +115,10 @@ void loadWayNames() {
 }
 
 void saveWayNames() {
-    char filenamebuffer[1024];
     if (wayNames != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.wn", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping ways to their names)", filenamebuffer);
-        std::ofstream wnfile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".wn";
+        Error::debug("Writing to '%s' (mapping ways to their names)", filename.c_str());
+        std::ofstream wnfile(filename);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(wnfile);
@@ -136,10 +128,9 @@ void saveWayNames() {
 }
 
 void loadRelationNames() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.rn", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping relations to their names)", filenamebuffer);
-    std::ifstream rnfile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".rn";
+    Error::debug("Reading from '%s' (mapping relations to their names)", filename.c_str());
+    std::ifstream rnfile(filename);
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(rnfile);
@@ -147,11 +138,10 @@ void loadRelationNames() {
 }
 
 void saveRelationNames() {
-    char filenamebuffer[1024];
     if (wayNames != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.rn", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping relations to their names)", filenamebuffer);
-        std::ofstream rnfile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".rn";
+        Error::debug("Writing to '%s' (mapping relations to their names)", filename.c_str());
+        std::ofstream rnfile(filename);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(rnfile);
@@ -161,10 +151,9 @@ void saveRelationNames() {
 }
 
 void loadWayNodes() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping ways to nodes they span over)", filenamebuffer);
-    std::ifstream wayNodeFile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".w2n";
+    Error::debug("Reading from '%s' (mapping ways to nodes they span over)", filename.c_str());
+    std::ifstream wayNodeFile(filename);
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(wayNodeFile);
@@ -172,11 +161,10 @@ void loadWayNodes() {
 }
 
 void saveWayNodes() {
-    char filenamebuffer[1024];
     if (wayNodes != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.w2n", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping ways to nodes they span over)", filenamebuffer);
-        std::ofstream wayNodeFile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".w2n";
+        Error::debug("Writing to '%s' (mapping ways to nodes they span over)", filename.c_str());
+        std::ofstream wayNodeFile(filename);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(wayNodeFile);
@@ -186,20 +174,18 @@ void saveWayNodes() {
 }
 
 void loadRelMem() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
-    Error::debug("Reading from '%s' (mapping relations to their members)", filenamebuffer);
-    std::ifstream relmemfile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".relmem";
+    Error::debug("Reading from '%s' (mapping relations to their members)", filename.c_str());
+    std::ifstream relmemfile(filename);
     relMembers = new IdTree<RelationMem>(relmemfile);
     relmemfile.close();
 }
 
 void saveRelMem() {
-    char filenamebuffer[1024];
     if (relMembers != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.relmem", tempdir, mapname);
-        Error::debug("Writing to '%s' (mapping relations to their members)", filenamebuffer);
-        std::ofstream relmemfile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".relmem";
+        Error::debug("Writing to '%s' (mapping relations to their members)", filename.c_str());
+        std::ofstream relmemfile(filename);
         relMembers->write(relmemfile);
         relmemfile.close();
     } else
@@ -212,10 +198,9 @@ void saveRelMem() {
  * initialized.
  */
 void loadSweden() {
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
-    Error::debug("Reading from '%s'", filenamebuffer);
-    std::ifstream swedenfile(filenamebuffer);
+    const std::string filename = tempdir + "/" + mapname + ".sweden";
+    Error::debug("Reading from '%s'", filename.c_str());
+    std::ifstream swedenfile(filename);
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(swedenfile);
@@ -223,11 +208,10 @@ void loadSweden() {
 }
 
 void saveSweden() {
-    char filenamebuffer[1024];
     if (sweden != NULL) {
-        snprintf(filenamebuffer, 1024, "%s/%s.sweden", tempdir, mapname);
-        Error::debug("Writing to '%s'", filenamebuffer);
-        std::ofstream swedenfile(filenamebuffer);
+        const std::string filename = tempdir + "/" + mapname + ".sweden";
+        Error::debug("Writing to '%s'", filename.c_str());
+        std::ofstream swedenfile(filename);
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(swedenfile);
@@ -246,9 +230,8 @@ GlobalObjectManager::GlobalObjectManager() {
     relationNames = NULL;
     sweden = NULL;
 
-    char filenamebuffer[1024];
-    snprintf(filenamebuffer, 1024, "%s/%s.texttree", tempdir, mapname);
-    if (testNonEmptyFile(filenamebuffer)) {
+    const std::string filename = tempdir + "/" + mapname + ".texttree";
+    if (testNonEmptyFile(filename)) {
         load();
     } else if (testNonEmptyFile(osmpbffilename)) {
         std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
@@ -392,7 +375,7 @@ bool GlobalObjectManager::testNonEmptyFile(const std::string &filename, unsigned
 
 PidFile::PidFile()
 {
-    if (pidfilename[0] == '\0') {
+    if (pidfilename.empty()) {
         /// Invalid pidfilename
         Error::err("Invalid pidfilename");
         return /*false*/;
@@ -401,21 +384,21 @@ PidFile::PidFile()
     std::ofstream pidfile(pidfilename);
     if (!pidfile.good()) {
         /// Cannot open/write to pidfile
-        Error::err("Cannot open/write to pidfile: %s", pidfilename);
+        Error::err("Cannot open/write to pidfile: %s", pidfilename.c_str());
     }
 
     const int pid = getpid();
     pidfile << pid << std::endl;
     if (!pidfile.good()) {
         /// Could not write number to pidfile
-        Error::err("Could not write number to pidfile: %s", pidfilename);
+        Error::err("Could not write number to pidfile: %s", pidfilename.c_str());
     }
 
     pidfile.close();
 
-    Error::info("Created PID file in '%s', PID is %d", pidfilename, pid);
+    Error::info("Created PID file in '%s', PID is %d", pidfilename.c_str(), pid);
 }
 
 PidFile::~PidFile() {
-    unlink(pidfilename);
+    unlink(pidfilename.c_str());
 }

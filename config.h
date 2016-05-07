@@ -22,15 +22,14 @@
 
 struct Coord;
 
-extern char tempdir[];
-extern char mapname[];
-extern char pidfilename[];
-extern char osmpbffilename[];
-extern char inputextfilename[];
-extern char stopwordfilename[];
+extern std::string tempdir;
+extern std::string mapname;
+extern std::string pidfilename;
+extern std::string osmpbffilename;
+extern std::string stopwordfilename;
 extern unsigned int http_port;
-extern char http_interface[];
-extern char http_public_files[];
+extern std::string http_interface;
+extern std::string http_public_files;
 
 extern std::ofstream logfile; ///< defined in 'error.cpp'
 

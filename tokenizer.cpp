@@ -36,14 +36,14 @@ private:
 
     std::vector<std::string> stopwords;
 
-    void load_stopwords(const char *stopwordfilename) {
+    void load_stopwords() {
         stopwords.clear();
 
         /// Stopword file has to be sorted with
         ///   LC_ALL=C sort -u ...
         std::ifstream stopwordsfile(stopwordfilename);
         if (stopwordsfile.is_open()) {
-            Error::info("Reading stopword file: %s", stopwordfilename);
+            Error::info("Reading stopword file: %s", stopwordfilename.c_str());
             std::string line;
             while (getline(stopwordsfile, line)) {
                 if (line[0] == 0 || line[0] == '#') continue; ///< skip empty lines and comments
@@ -51,7 +51,7 @@ private:
             }
             stopwordsfile.close();
         } else
-            Error::warn("Could not open stopword file: %s", stopwordfilename);
+            Error::warn("Could not open stopword file: %s", stopwordfilename.c_str());
     }
 
 public:
@@ -59,7 +59,7 @@ public:
 
     Private(Tokenizer *parent)
         : p(parent) {
-        load_stopwords(stopwordfilename);
+        load_stopwords();
     }
 
     ~Private() {

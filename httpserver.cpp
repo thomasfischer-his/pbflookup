@@ -215,9 +215,7 @@ public:
             return;
         }
 
-        char localfilename[maxStringLen];
-        snprintf(localfilename, maxStringLen - 1, "%s%s", http_public_files, /** filename starts with slash, tested above */ filename);
-
+        const std::string localfilename = http_public_files + filename;
         std::ifstream localfile(localfilename);
         if (localfile.good()) {
             /// Important: file size is limited to maxBufferSize
@@ -225,12 +223,12 @@ public:
             localfile.read(buffer, maxBufferSize - 2);
 
             if (localfile.gcount() == 0) {
-                Error::warn("Cannot read from file: '%s'", localfilename);
+                Error::warn("Cannot read from file: '%s'", localfilename.c_str());
                 writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
             } else {
                 buffer[localfile.gcount()] = '\0';
                 dprintf(fd, "HTTP/1.1 200 OK\n");
-                const size_t lflen = strlen(localfilename);
+                const size_t lflen = localfilename.length();
                 if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
                     dprintf(fd, "Content-Type: text/css; charset=utf-8\n");
                 else if (lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
@@ -245,7 +243,7 @@ public:
                 dprintf(fd, "\n%s\n", buffer);
             }
         } else {
-            Error::warn("Cannot open file for reading: '%s'", localfilename);
+            Error::warn("Cannot open file for reading: '%s'", localfilename.c_str());
             writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
         }
     }
@@ -515,16 +513,16 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
     serverName.sin_family = AF_INET;
     serverName.sin_port = htons(http_port);
     /// An interface name like 'LOCAL', 'local', 'LOOP', or 'loop' means INADDR_LOOPBACK
-    if (((http_interface[0] | 0x20) == 'l' && (http_interface[1] | 0x20) == 'o' && (http_interface[2] | 0x20) == 'c' && (http_interface[3] | 0x20) == 'a' && (http_interface[4] | 0x20) == 'l')
-            || ((http_interface[0] | 0x20) == 'l' && (http_interface[1] | 0x20) == 'o' && (http_interface[2] | 0x20) == 'o' && (http_interface[3] | 0x20) == 'p'))
+    if ((http_interface.length() == 5 && (http_interface[0] | 0x20) == 'l' && (http_interface[1] | 0x20) == 'o' && (http_interface[2] | 0x20) == 'c' && (http_interface[3] | 0x20) == 'a' && (http_interface[4] | 0x20) == 'l')
+            || (http_interface.length() >= 4 && (http_interface[0] | 0x20) == 'l' && (http_interface[1] | 0x20) == 'o' && (http_interface[2] | 0x20) == 'o' && (http_interface[3] | 0x20) == 'p'))
         serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     else
         /// An interface name like 'ANY' or 'any' means INADDR_ANY
-        if ((http_interface[0] | 0x20) == 'a' && (http_interface[1] | 0x20) == 'n' && (http_interface[2] | 0x20) == 'y')
+        if (http_interface.length() == 3 && (http_interface[0] | 0x20) == 'a' && (http_interface[1] | 0x20) == 'n' && (http_interface[2] | 0x20) == 'y')
             serverName.sin_addr.s_addr = htonl(INADDR_ANY);
         else {
-            if (inet_aton(http_interface, &serverName.sin_addr) == 0) {
-                Error::warn("Provided http_interface '%s' is invalid, using local loopback instead", http_interface);
+            if (inet_aton(http_interface.c_str(), &serverName.sin_addr) == 0) {
+                Error::warn("Provided http_interface '%s' is invalid, using local loopback instead", http_interface.c_str());
                 serverName.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
             }
         }
@@ -644,8 +642,7 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
                     if (getfilename == "/")
                         /// Serve default search form
                         d->writeFormHTML(slaveSocket);
-                    else if (http_public_files[0] != '\0')
-                        /// If 'http_public_files' is not empty ...
+                    else if (!http_public_files.empty())
                         d->deliverFile(slaveSocket, getfilename.c_str());
                     else
                         d->writeHTTPError(slaveSocket, 404, "Could not serve your request for this file:", getfilename);
