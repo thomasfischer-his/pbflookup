@@ -311,11 +311,16 @@ void GlobalObjectManager::load() {
         threadLoadWayNodes.join();
         threadLoadRelMem.join();
     } catch (std::exception const &ex) {
-        Error::err("Exception during thread processing: %s", ex.what());
+        Error::err("Exception during thread processing while loading from files: %s", ex.what());
     }
 
     Error::debug("All load threads joined, now loading 'sweden'");
-    loadSweden();
+    try
+    {
+        loadSweden();
+    } catch (std::exception const &ex) {
+        Error::err("Exception during loading data from files: %s", ex.what());
+    }
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);
     Error::info("Spent CPU time to read files: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
@@ -351,7 +356,7 @@ void GlobalObjectManager::save() const {
         threadSaveRelMem.join();
         threadSaveSweden.join();
     } catch (std::exception const &ex) {
-        Error::err("Exception during thread processing: %s", ex.what());
+        Error::err("Exception during thread processing while saving to files: %s", ex.what());
     }
     Error::debug("All save threads joined");
     int64_t cputime, walltime;
