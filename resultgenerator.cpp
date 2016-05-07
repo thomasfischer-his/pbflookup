@@ -32,7 +32,7 @@ ResultGenerator::~ResultGenerator() {
     delete tokenProcessor;
 }
 
-std::vector<Result> ResultGenerator::findResults(const std::string &text, ResultGenerator::Verbosity verbosity) {
+std::vector<Result> ResultGenerator::findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity) {
     std::vector<Result> results;
     Timer timer;
     int64_t cputime, walltime;
@@ -189,6 +189,32 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, Result
             }
         }
     }
+
+
+    if (!results.empty()) {
+        /// Sort results by quality (highest first)
+        std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
+            return a.quality > b.quality;
+        });
+        if (duplicateProximity > 0)
+            /// Remove results close to even better results
+            for (auto outer = results.begin(); outer != results.end();) {
+                bool removedOuter = false;
+                const Result &outerR = *outer;
+                for (auto inner = results.begin(); !removedOuter && inner != outer && inner != results.end(); ++inner) {
+                    const Result &innerR = *inner;
+                    const auto d = outerR.coord.distanceLatLon(innerR.coord);
+                    if (d < duplicateProximity) {
+                        /// Less than x meters away? Remove this result!
+                        outer = results.erase(outer);
+                        removedOuter = true;
+                    }
+                }
+                if (!removedOuter)
+                    ++outer;
+            }
+    }
+
 
     return results;
 }

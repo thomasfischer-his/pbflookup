@@ -42,7 +42,7 @@ public:
     ResultGenerator();
     ~ResultGenerator();
 
-    std::vector<Result> findResults(const std::string &text, ResultGenerator::Verbosity verbosity);
+    std::vector<Result> findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity);
 
 private:
     Tokenizer *tokenizer;

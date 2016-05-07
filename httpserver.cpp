@@ -651,31 +651,8 @@ HTTPServer::ProcessIdentity HTTPServer::run() {
                     const std::string text = d->extractTextToLocalize(lowercasetext);
 
                     d->timerSearch.start();
-                    std::vector<Result> results = resultGenerator.findResults(text, ResultGenerator::VerbositySilent);
+                    const std::vector<Result> results =resultGenerator.findResults(text, 1000, ResultGenerator::VerbositySilent);
                     d->timerSearch.stop();
-
-                    if (!results.empty()) {
-                        /// Sort results by quality (highest first)
-                        std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
-                            return a.quality > b.quality;
-                        });
-                        /// Remove results close to even better results
-                        for (auto outer = results.begin(); outer != results.end();) {
-                            bool removedOuter = false;
-                            const Result &outerR = *outer;
-                            for (auto inner = results.begin(); !removedOuter && inner != outer && inner != results.end(); ++inner) {
-                                const Result &innerR = *inner;
-                                const auto d = outerR.coord.distanceLatLon(innerR.coord);
-                                if (d < 1000) {
-                                    /// Less than 1km away? Remove this result!
-                                    outer = results.erase(outer);
-                                    removedOuter = true;
-                                }
-                            }
-                            if (!removedOuter)
-                                ++outer;
-                        }
-                    }
 
                     switch (requestedMime) {
                     case Private::HTML: d->writeResultsHTML(slaveSocket, text, results); break;

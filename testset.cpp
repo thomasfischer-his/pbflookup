@@ -39,7 +39,7 @@ void Testset::run() {
             sweden->drawRoads(*svgwriter);
         }
 
-        std::vector<Result> results = resultGenerator.findResults(it->text, ResultGenerator::VerbosityTalking);
+        std::vector<Result> results = resultGenerator.findResults(it->text, 0, ResultGenerator::VerbosityTalking);
 
         if (!results.empty()) {
             /// Sort results by quality (highest first)
