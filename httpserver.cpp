@@ -242,10 +242,16 @@ public:
                 const size_t lflen = localfilename.length();
                 if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
                     dprintf(fd, "Content-Type: text/css; charset=utf-8\n");
-                else if (lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
+                else if ((lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
+                         || (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'h' && localfilename[lflen - 2] == 't' && localfilename[lflen - 1] == 'm'))
                     dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
                 else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'x' && localfilename[lflen - 1] == 't')
                     dprintf(fd, "Content-Type: text/plain; charset=utf-8\n");
+                else if ((lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'j' && localfilename[lflen - 3] == 'p' && localfilename[lflen - 2] == 'e' && localfilename[lflen - 1] == 'g')
+                         || (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'j' && localfilename[lflen - 2] == 'p' && localfilename[lflen - 1] == 'g'))
+                    dprintf(fd, "Content-Type: image/jpeg; charset=utf-8\n");
+                else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'p' && localfilename[lflen - 2] == 'n' && localfilename[lflen - 1] == 'g')
+                    dprintf(fd, "Content-Type: image/png; charset=utf-8\n");
                 else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'i' && localfilename[lflen - 2] == 'c' && localfilename[lflen - 1] == 'o')
                     dprintf(fd, "Content-Type: image/x-icon; charset=utf-8\n");
                 else
