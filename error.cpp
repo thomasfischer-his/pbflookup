@@ -42,20 +42,21 @@ bool Error::useColor = true;
 /// Prints a formatted message to stdout, optionally color coded
 void Error::msg(MessageType messageType, const char *format, int color, va_list args) {
     /// Skip messages where level is lower than minimum logging level
-    if ((int)messageType < (int)minimumLoggingLevel) return;
 
     static char message[MAX_STRING_LEN];
-
     vsnprintf(message, MAX_STRING_LEN, format, args);
 
-    if (useColor) {
-        fprintf(stderr, "\x1b[0;%dm", color);
-    }
-    fputs(message, stderr);
-    if (useColor) {
-        fprintf(stderr, "\x1b[0m\n");
-    } else {
-        fprintf(stderr, "\n");
+    if ((int)messageType >= (int)minimumLoggingLevel) {
+        ;
+        if (useColor) {
+            fprintf(stderr, "\x1b[0;%dm", color);
+        }
+        fputs(message, stderr);
+        if (useColor) {
+            fprintf(stderr, "\x1b[0m\n");
+        } else {
+            fprintf(stderr, "\n");
+        }
     }
 
     if (logfile.good()) {
