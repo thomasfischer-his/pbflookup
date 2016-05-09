@@ -1,0 +1,25 @@
+h1 {
+	color: #036;
+	background: #def;
+}
+
+h2 {
+	background: #eee;
+}
+
+h3 {
+	color: #333;
+}
+
+img {
+	margin: 0px;
+	padding: 0px;
+}
+
+@media screen and (max-width: 1500px) {
+	/* Only for very large screens do not disable extra tiles */
+	img.extratile {
+		display: none;
+		border: 1px solid red
+	}
+}
