@@ -176,18 +176,18 @@ public:
         else if (error_code >= 400 && error_code < 500)
             error_code_message = "Bad Request";
         else if (error_code >= 500 && error_code < 600)
-            error_code_message = "Server Error";
+            error_code_message = "Internal Server Error";
 
         const std::string internal_msg = msg.empty() ? "Could not serve your request." : msg;
 
         dprintf(fd, "HTTP/1.1 %d %s\n", error_code, error_code_message.c_str());
         dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
         dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-        dprintf(fd, "<html><head><meta charset=\"UTF-8\"><title>PBFLookup: %d &ndash; %s</title></head>\n<body><h1>%d &ndash; %s</h1>\n", error_code, error_code_message.c_str(), error_code, error_code_message.c_str());
+        dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %d &ndash; %s</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body><h1>%d &ndash; %s</h1>\n", error_code, error_code_message.c_str(), error_code, error_code_message.c_str());
         dprintf(fd, "<p>%s</p>\n", internal_msg.c_str());
         if (!filename.empty())
             dprintf(fd, "<pre>%s</pre>\n", filename.c_str());
-        dprintf(fd, "</body></html>\n\n\n");
+        dprintf(fd, "</body>\n</html>\n\n");
     }
 
     void deliverFile(int fd, const char *filename) {
@@ -220,12 +220,13 @@ public:
             /// Important: file size is limited to maxBufferSize
             static char buffer[maxBufferSize];
             localfile.read(buffer, maxBufferSize - 2);
+            const size_t data_count = localfile.gcount();
+            buffer[data_count] = '\0';
 
-            if (localfile.gcount() == 0) {
+            if (data_count < 4 /** less than 4 Bytes doesn't sound right ... */) {
                 Error::warn("Cannot read from file: '%s'", localfilename.c_str());
                 writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
             } else {
-                buffer[localfile.gcount()] = '\0';
                 dprintf(fd, "HTTP/1.1 200 OK\n");
                 const size_t lflen = localfilename.length();
                 if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
@@ -234,12 +235,15 @@ public:
                     dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
                 else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'x' && localfilename[lflen - 1] == 't')
                     dprintf(fd, "Content-Type: text/plain; charset=utf-8\n");
+                else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'i' && localfilename[lflen - 2] == 'c' && localfilename[lflen - 1] == 'o')
+                    dprintf(fd, "Content-Type: image/x-icon; charset=utf-8\n");
                 else
                     dprintf(fd, "Content-Type: application/octet-stream\n");
                 dprintf(fd, "Cache-Control: public\n");
-                dprintf(fd, "Content-Length: %ld\n", localfile.gcount());
+                dprintf(fd, "Content-Length: %ld\n", data_count);
                 dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-                dprintf(fd, "\n%s\n", buffer);
+                write(fd, buffer, data_count);
+                dprintf(fd, "\n");
             }
         } else {
             Error::warn("Cannot open file for reading: '%s'", localfilename.c_str());
@@ -268,11 +272,11 @@ public:
         dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
         dprintf(fd, "Cache-Control: public\n");
         dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-        dprintf(fd, "<html><head><link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
-        dprintf(fd, "<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
-        dprintf(fd, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\nfunction resultMimetypeChanged(combo) {\n  // TODO\n}\n\n");
+        dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
+        dprintf(fd, "<meta charset=\"UTF-8\">\n<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
+        dprintf(fd, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n");
         dprintf(fd, "function resultMimetypeChanged(combo) {\n  document.getElementById('queryForm').setAttribute(\"action\",\"/?accept=\"+combo.value);\n}\n</script>\n");
-        dprintf(fd, "</head>\n");
+        dprintf(fd, "<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n");
         dprintf(fd, "<body>\n");
         dprintf(fd, "<h1>Search for Locations described in Swedish Text</h1>\n");
         dprintf(fd, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\" id=\"queryForm\">\n");
@@ -291,7 +295,7 @@ public:
         dprintf(fd, "<option value=\"application/json\">JSON</option>");
         dprintf(fd, "</select></p></form>\n");
         printTimer(fd, &timerServer, NULL);
-        dprintf(fd, "</body></html>\n\n\n");
+        dprintf(fd, "</body>\n</html>\n\n");
     }
 
     void writeResultsHTML(int fd, const std::string &textToLocalize, const std::vector<Result> &results) {
@@ -301,10 +305,10 @@ public:
         dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
 
         if (!results.empty()) {
-            dprintf(fd, "<html><head><title>PBFLookup: %lu Results</title>\n", results.size());
-            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n</head>\n<body>\n");
+            dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %lu Results</title>\n", results.size());
+            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body>\n");
             dprintf(fd, "<h1>Results</h1><p>For the following input, <strong>%lu results</strong> were located:</p>\n", results.size());
-            dprintf(fd, "<p><tt>%s</tt></p>\n", textToLocalize.c_str());
+            dprintf(fd, "<p><tt>%s</tt></p>\n", XMLize(textToLocalize).c_str());
             dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
 
             dprintf(fd, "<h2>Found Locations</h2>\n");
@@ -353,14 +357,14 @@ public:
             dprintf(fd, "<p>Map data license: &copy; OpenStreetMap contributors, licensed under the <a href=\"http://opendatacommons.org/licenses/odbl/\" target=\"_top\">Open Data Commons Open Database License</a> (OBdL)<br/>Map tiles: OpenStreetMap, licensed under the <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\" target=\"_top\">Creative Commons Attribution-ShareAlike&nbsp;2.0 License</a> (CC BY-SA 2.0)<br/>See <a target=\"_top\" href=\"www.openstreetmap.org/copyright\">www.openstreetmap.org/copyright</a> and <a target=\"_top\" href=\"http://wiki.openstreetmap.org/wiki/Legal_FAQ\">http://wiki.openstreetmap.org/wiki/Legal_FAQ</a> for details.</p>\n");
 
         } else {
-            dprintf(fd, "<html><head><title>PBFLookup: No Results</title>\n");
-            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" /></head>\n<body>\n");
+            dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: No Results</title>\n");
+            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body>\n");
             dprintf(fd, "<h1>Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>\n");
-            dprintf(fd, "<p><tt>%s</tt></p>\n", textToLocalize.c_str());
+            dprintf(fd, "<p><tt>%s</tt></p>\n", XMLize(textToLocalize).c_str());
             dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
         }
         printTimer(fd, &timerServer, &timerSearch);
-        dprintf(fd, "</body></html>\n\n\n");
+        dprintf(fd, "</body>\n</html>\n\n");
     }
 
     void writeResultsJSON(int fd, const std::vector<Result> &results) {
