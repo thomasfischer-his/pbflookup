@@ -9,7 +9,7 @@ The software makes use of a number of third-party libraries, including:
 * [Protocol Buffers](https://developers.google.com/protocol-buffers/) -- Google's data interchange format. Most Linux distributions offer packages for this library under the name `protobuf`. Any recent version should be sufficient.
 * [zlib](http://www.zlib.net/) -- a standard (de)compression library. Often already installed as numerous programs make use of this library. Any recent version should be sufficient.
 * [Boost](http://www.boost.org/) -- a versatile collection of C++ libraries. Like zlib, this library is often installed due to its widespread use. Any recent version should be sufficient.
-* [libconfig](http://www.hyperrealm.com/libconfig/) -- a library for 	processing of structured configuration files. Most distributions provide packages for version 1.5 or later.
+* [libconfig](http://www.hyperrealm.com/libconfig/) -- a library for 	processing of structured configuration files. Most distributions (except for Debian stable) provide packages for version 1.5 or later.
 * [OSMPBF](https://github.com/scrosby/OSM-binary) -- a Java/C library to read and write OpenStreetMap PBF files. Unfortunately, there is no stable, official release which contains the changes/features required by PBFLookup. Please use the master branch at [Thomas Fischer's fork](https://github.com/thomasfischer-his/OSM-binary) for the time being. At the time of writing, distributions do not ship packages for this library.
 
 For those C/C++ libraries, headers must be installed. For some Linux distributions, this may require to install each package's accompanying `-dev` (development) package.
