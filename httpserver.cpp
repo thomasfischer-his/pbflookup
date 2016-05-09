@@ -665,15 +665,17 @@ void HTTPServer::run() {
             struct sockaddr_in their_addr;
             int slaveSocket = accept(serverSocket, (struct sockaddr *) &their_addr, &sockaddr_in_size);
             if (slaveSocket == -1) {
-                Error::warn("Slave socket is invalid");
+                Error::warn("Slave socket is invalid from %d.%d.%d.%d", their_addr.sin_addr.s_addr & 255, (their_addr.sin_addr.s_addr >> 8) & 255, (their_addr.sin_addr.s_addr >> 16) & 255, (their_addr.sin_addr.s_addr >> 24) & 255);
                 continue;
-            }
+            } else
+                Error::info("Incoming connection from %d.%d.%d.%d", their_addr.sin_addr.s_addr & 255, (their_addr.sin_addr.s_addr >> 8) & 255, (their_addr.sin_addr.s_addr >> 16) & 255, (their_addr.sin_addr.s_addr >> 24) & 255);
 
             if (countNumberSlaveSockets < maxNumberSlaveSockets) {
                 size_t idx = INT_MAX;
                 for (idx = 0; idx < maxNumberSlaveSockets; ++idx)
                     if (slaveConnections[idx].socket < 0) break;
                 if (idx >= maxNumberSlaveSockets) {
+                    Error::warn("Too many slave connections (%d)", maxNumberSlaveSockets);
                     d->writeHTTPError(slaveSocket, 500);
                     close(slaveSocket);
                 } else {
