@@ -44,7 +44,7 @@ void Error::msg(MessageType messageType, const char *format, int color, va_list 
     /// Skip messages where level is lower than minimum logging level
 
     static char message[MAX_STRING_LEN];
-    vsnprintf(message, MAX_STRING_LEN, format, args);
+    vsnprintf(message, MAX_STRING_LEN - 1, format, args);
 
     if ((int)messageType >= (int)minimumLoggingLevel) {
         ;
