@@ -194,7 +194,7 @@ public:
         dprintf(fd, "HTTP/1.1 %d %s\n", error_code, error_code_message.c_str());
         dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
         dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-        dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %d &ndash; %s</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body><h1>%d &ndash; %s</h1>\n", error_code, error_code_message.c_str(), error_code, error_code_message.c_str());
+        dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %d &ndash; %s</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body><h1><img src=\"/pbflookup-favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />%d &ndash; %s</h1>\n", error_code, error_code_message.c_str(), error_code, error_code_message.c_str());
         dprintf(fd, "<p>%s</p>\n", internal_msg.c_str());
         if (!filename.empty())
             dprintf(fd, "<pre>%s</pre>\n", filename.c_str());
@@ -295,7 +295,7 @@ public:
         dprintf(fd, "function resultMimetypeChanged(combo) {\n  document.getElementById('queryForm').setAttribute(\"action\",\"/?accept=\"+combo.value);\n}\n</script>\n");
         dprintf(fd, "<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n");
         dprintf(fd, "<body>\n");
-        dprintf(fd, "<h1>Search for Locations described in Swedish Text</h1>\n");
+        dprintf(fd, "<h1><img src=\"/pbflookup-favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Search for Locations described in Swedish Text</h1>\n");
         dprintf(fd, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\" id=\"queryForm\">\n");
         if (!testsets.empty()) {
             dprintf(fd, "<p>Either select a pre-configured text from this list of %lu examples:\n<select onchange=\"testsetChanged(this)\" id=\"testsets\">\n", testsets.size());
@@ -324,7 +324,7 @@ public:
         if (!results.empty()) {
             dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %lu Results</title>\n", results.size());
             dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body>\n");
-            dprintf(fd, "<h1>Results</h1><p>For the following input, <strong>%lu results</strong> were located:</p>\n", results.size());
+            dprintf(fd, "<h1><img src=\"/pbflookup-favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>For the following input, <strong>%lu results</strong> were located:</p>\n", results.size());
             dprintf(fd, "<p><tt>%s</tt></p>\n", XMLize(textToLocalize).c_str());
             dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
 
@@ -376,7 +376,7 @@ public:
         } else {
             dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: No Results</title>\n");
             dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/pbflookup-favicon.ico\" />\n</head>\n<body>\n");
-            dprintf(fd, "<h1>Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>\n");
+            dprintf(fd, "<h1><img src=\"/pbflookup-favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>\n");
             dprintf(fd, "<p><tt>%s</tt></p>\n", XMLize(textToLocalize).c_str());
             dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
         }
