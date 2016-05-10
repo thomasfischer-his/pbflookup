@@ -51,7 +51,7 @@ private:
             }
             stopwordsfile.close();
         } else
-            Error::warn("Could not open stopword file: %s", stopwordfilename.c_str());
+            Error::err("Could not open stopword file: %s", stopwordfilename.c_str());
     }
 
 public:
