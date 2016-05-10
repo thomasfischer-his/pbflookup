@@ -340,8 +340,8 @@ public:
                 const double lat = Coord::toLatitude(result.coord.y);
                 const std::vector<int> m = sweden->insideSCBarea(result.coord);
                 const int scbarea = m.empty() ? 0 : m.front();
-                dprintf(fd, "<tr><td>lat= %.4lf<br/>lon= %.4lf<br/>near %s, %s</td>", lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
                 static const int zoom = 15;
+                dprintf(fd, "<tr><td><a href=\"https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">lat= %.4lf<br/>lon= %.4lf</a><br/>near %s, %s</td>", lat, lon, zoom, lat, lon, lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
                 dprintf(fd, "<td><a href=\"https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
                 const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
                 dprintf(fd, "<img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
