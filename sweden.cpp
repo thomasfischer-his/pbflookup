@@ -235,16 +235,6 @@ private:
 
     Sweden *p;
 
-    struct Land {
-        Land(const std::string &_label)
-            : label(_label) {}
-        Land() {}
-
-        std::string label;
-        std::map<int, std::string> municipalities;
-    };
-    std::map<int, Land> lands;
-
 public:
     static const uint16_t terminator16bit;
     static const size_t terminatorSizeT;
@@ -598,43 +588,6 @@ public:
         }
     }
 
-    void loadSCBcodeNames() {
-        char filenamebuffer[STRING_BUFFER_SIZE];
-        snprintf(filenamebuffer, STRING_BUFFER_SIZE, "%s/git/pbflookup/scb-lan-kommuner-kod.csv", getenv("HOME"));
-        std::ifstream fp(filenamebuffer, std::ifstream::in | std::ifstream::binary);
-        if (fp) {
-            std::map<int, Land>::iterator nextLand = lands.begin();
-            std::string codeStr;
-            while (std::getline(fp, codeStr, ';')) {
-                const int code = std::stoi(codeStr);
-                std::string label;
-                std::getline(fp, label);
-
-                if (code >= 100) {
-                    /// Municipality
-                    const int land = code / 100;
-                    lands[land].municipalities.insert(lands[land].municipalities.begin(), std::pair<int, std::string>(code, label));
-                } else if (code > 0) {
-                    /// Land
-                    Land land(label);
-                    nextLand = lands.insert(nextLand, std::pair<int, Land>(code, land));
-                } else
-                    Error::err("Invalid code for label '%s'", label.c_str());
-            }
-            fp.close();
-        } else
-            Error::err("Could not open list of muncipalities and lands: %s", filenamebuffer);
-    }
-
-    void dumpSCBcodeNames()const {
-        for (std::map<int, Land>::const_iterator itLand = lands.cbegin(); itLand != lands.cend(); ++itLand) {
-            Error::info("Land=%02i %s", (*itLand).first, (*itLand).second.label.c_str());
-            for (std::map<int, std::string>::const_iterator itMun = (*itLand).second.municipalities.cbegin(); itMun != (*itLand).second.municipalities.cend(); ++itMun) {
-                Error::info("  Municipality=%04i %s", (*itMun).first, (*itMun).second.c_str());
-            }
-        }
-    }
-
     void closestWayNodeToCoord(int x, int y, uint64_t wayId, uint64_t &resultNodeId, int64_t &minSqDistance) {
         resultNodeId = 0;
         minSqDistance = INT64_MAX;
@@ -751,14 +704,12 @@ Sweden::Road::operator std::string() const {
 Sweden::Sweden()
     : d(new Sweden::Private(this))
 {
-    d->loadSCBcodeNames();
+    /// nothing
 }
 
 Sweden::Sweden(std::istream &input)
     : d(new Sweden::Private(this))
 {
-    d->loadSCBcodeNames();
-
     char chr = '\0';
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'S') {
@@ -886,10 +837,6 @@ Sweden::Sweden(std::istream &input)
 Sweden::~Sweden()
 {
     delete d;
-}
-
-void Sweden::dump() const {
-    d->dumpSCBcodeNames();
 }
 
 void Sweden::test() {

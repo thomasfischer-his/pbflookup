@@ -50,7 +50,6 @@ public:
     explicit Sweden(std::istream &input);
     ~Sweden();
 
-    void dump() const;
     void test();
 
     std::ostream &write(std::ostream &output);
