@@ -183,8 +183,13 @@ bool init_configuration(const char *configfilename) {
                 minimumLoggingLevel = LevelError;
         }
 
-        if (!configIfExistsLookup(config, "pidfile", pidfilename))
-            pidfilename = "${XDG_RUNTIME_DIR}/pbflookup.pid";
+        if (!configIfExistsLookup(config, "pidfile", pidfilename)) {
+            const char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
+            if (xdg_runtime_dir != NULL)
+                pidfilename = xdg_runtime_dir + "/pbflookup.pid";
+            else
+                pidfilename = "${tempdir}/pbflookup.pid"
+            }
         replacetildehome(pidfilename);
         replacevariablenames(pidfilename);
         makeabsolutepath(pidfilename);
