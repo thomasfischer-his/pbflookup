@@ -186,10 +186,10 @@ bool init_configuration(const char *configfilename) {
         if (!configIfExistsLookup(config, "pidfile", pidfilename)) {
             const char *xdg_runtime_dir = getenv("XDG_RUNTIME_DIR");
             if (xdg_runtime_dir != NULL)
-                pidfilename = xdg_runtime_dir + "/pbflookup.pid";
+                pidfilename = std::string(xdg_runtime_dir) + "/pbflookup.pid";
             else
-                pidfilename = "${tempdir}/pbflookup.pid"
-            }
+                pidfilename = "${tempdir}/pbflookup.pid";
+        }
         replacetildehome(pidfilename);
         replacevariablenames(pidfilename);
         makeabsolutepath(pidfilename);
