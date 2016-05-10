@@ -1,6 +1,5 @@
 h1 {
-	color: #036;
-	background: #def;
+	background: #eee;
 }
 
 h2 {
@@ -16,10 +15,7 @@ img {
 	padding: 0px;
 }
 
-@media screen and (max-width: 1500px) {
-	/* Only for very large screens do not disable extra tiles */
-	img.extratile {
-		display: none;
-		border: 1px solid red
-	}
+/* Disable extra tiles even if in HTML code */
+img.extratile {
+	display: none;
 }
