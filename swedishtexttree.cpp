@@ -250,9 +250,11 @@ SwedishTextTree::code_word SwedishTextTree::to_code_word(const char *input)  con
     unsigned char prev_c = 0;
     for (unsigned int i = 0; i < len; ++i) {
         const unsigned char c = (unsigned char)input[i];
-        if (c < 0x20) /// break at newline or similar
+        if (c < 0x20) {
+            /// break at newline or similar
+            Error::warn("Control character unexpected when mapping text to code word");
             break;
-        if (c == 0xc3) {
+        } else if (c == 0xc3) {
             prev_c = c;
             continue;
         }
