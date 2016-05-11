@@ -78,7 +78,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 
 
     if (verbosity > VerbositySilent) {
-        Error::info("=== Testing for plces inside administrative boundaries ===");
+        Error::info("=== Testing for places inside administrative boundaries ===");
         timer.start();
     }
     const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
