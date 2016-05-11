@@ -173,18 +173,18 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
           * perform well for the testset.
           * The list needs to be generalized
           */
-        "bil", "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "bruk", "b\xc3\xa5""de",
-        "center", "centrala", "city",
+        "bil", "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "bruk", "b\xc3\xa5""de", "by",
+        "center", "centrala", "centrum", "city",
         "dahl" /** such as in 'Dahl Sverige' */,
         "g\xc3\xa5rd", "g\xc3\xb6ta",
         "hamn", "halv", "hitta", "hos", "hus", "h\xc3\xb6jd",
-        "kl" /** as used for time: 'kl. 14' */, "km", "kommun",
+        "kl" /** as used for time: 'kl. 14' */, "km", "kommun", "kyrka"
         "l\xc3\xa4n",
         "m\xc3\xa4n",
         "plats", "platsen", "pris",
         "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
-        "ser", "sp\xc3\xa5r", "station", "svea", "sverige", "s\xc3\xa5g",
-        "tid", "tillf\xc3\xa4llig", "torg", "torget",
+        "sankt", "ser", "slott", "sp\xc3\xa5r", "stad", "staden", "station", "svea", "sverige", "s\xc3\xa5g",
+        "tf" /** tillfällig */, "tid", "tillf\xc3\xa4llig", "torg", "torget",
         "vi", "via", "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
         "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
