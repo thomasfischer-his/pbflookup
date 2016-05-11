@@ -19,3 +19,8 @@ img {
 img.extratile {
 	display: none;
 }
+
+table {
+	border-collapse: separate;
+	border-spacing: 2em;
+}
