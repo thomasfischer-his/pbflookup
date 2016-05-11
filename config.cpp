@@ -260,7 +260,7 @@ bool init_configuration(const char *configfilename) {
         serverSocket = -1;
         if (config.exists("http_port")) {
             http_port = config.lookup("http_port");
-            if (http_port < 1024)
+            if (http_port < 1024 || http_port > 65535)
                 Error::err("http_port is invalid or privileged port (<1024), both are not acceptable");
 
             if (!configIfExistsLookup(config, "http_interface", http_interface))
