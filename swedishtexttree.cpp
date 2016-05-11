@@ -162,7 +162,7 @@ bool SwedishTextTree::insert(const std::string &input, const OSMElement &element
 
 bool SwedishTextTree::internal_insert(const char *word, const OSMElement &element) {
     ++_size;
-    std::vector<unsigned int> code = code_word(word);
+    code_word code = to_code_word(word);
     if (code.empty())
         return false;
 
@@ -217,7 +217,7 @@ bool SwedishTextTree::internal_insert(const char *word, const OSMElement &elemen
 }
 
 std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings warnings) {
-    std::vector<unsigned int> code = code_word(word);
+    code_word code = to_code_word(word);
     std::vector<OSMElement> result;
 
     SwedishTextNode *cur = root;
@@ -263,13 +263,13 @@ size_t SwedishTextTree::size() const {
     return _size;
 }
 
-std::vector<unsigned int> SwedishTextTree::code_word(const char *word)  const {
+SwedishTextTree::code_word SwedishTextTree::to_code_word(const char *input)  const {
     std::vector<unsigned int> result;
 
-    const unsigned int len = strlen(word);
+    const unsigned int len = strlen(input);
     unsigned char prev_c = 0;
     for (unsigned int i = 0; i < len; ++i) {
-        const unsigned char c = (unsigned char)word[i];
+        const unsigned char c = (unsigned char)input[i];
         if (c < 0x20) /// break at newline or similar
             break;
         if (c == 0xc3) {

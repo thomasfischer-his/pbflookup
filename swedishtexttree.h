@@ -44,6 +44,7 @@ public:
     static const unsigned int default_num_indices;
 
 private:
+    typedef std::vector<unsigned int> code_word;
     static const int code_word_sep;
     static const int code_unknown;
 
@@ -52,7 +53,7 @@ private:
 
     bool internal_insert(const char *word, const OSMElement &element);
 
-    std::vector<unsigned int> code_word(const char *word) const;
+    code_word to_code_word(const char *word) const;
     unsigned int code_char(const unsigned char &prev_c, const unsigned char &c) const;
 };
 
