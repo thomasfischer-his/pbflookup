@@ -27,8 +27,6 @@ const int SwedishTextTree::code_unknown = SwedishTextTree::num_codes - 1;
 
 SwedishTextNode::SwedishTextNode() {
     children = NULL;
-    elements_size = 0;
-    elements = NULL;
 }
 
 SwedishTextNode::SwedishTextNode(std::istream &input) {
@@ -55,14 +53,17 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
         Error::err("Expected 'N' or 'C', got '0x%02x'", chr);
 
     input.read((char *)&chr, sizeof(chr));
+    elements.clear();
     if (chr == 'n') {
-        elements_size = 0;
-        elements = NULL;
+        /// No elements to process
     } else if (chr == 'i') {
-        input.read((char *)&elements_size, sizeof(elements_size));
-        const size_t bytes = elements_size * sizeof(OSMElement);
-        elements = (OSMElement *)malloc(bytes);
-        input.read((char *)elements, bytes);
+        size_t count = 0;
+        input.read((char *)&count, sizeof(count));
+        for (size_t i = 0; i < count; ++i) {
+            OSMElement element;
+            input.read((char *)&element, sizeof(OSMElement));
+            elements.push_back(element);
+        }
     } else
         Error::err("Expected 'n' or 'i', got '0x%02x'", chr);
 }
@@ -73,7 +74,6 @@ SwedishTextNode::~SwedishTextNode() {
             if (children[i] != NULL) delete children[i];
         free(children);
     }
-    if (elements != NULL) free(elements);
 }
 
 std::ostream &SwedishTextNode::write(std::ostream &output) {
@@ -96,14 +96,18 @@ std::ostream &SwedishTextNode::write(std::ostream &output) {
         }
     }
 
-    if (elements == NULL) {
+    if (elements.empty()) {
         chr = 'n';
         output.write((char *)&chr, sizeof(chr));
     } else {
         chr = 'i';
         output.write((char *)&chr, sizeof(chr));
-        output.write((char *)&elements_size, sizeof(elements_size));
-        output.write((char *)elements, elements_size * sizeof(OSMElement));
+        const size_t count = elements.size();
+        output.write((char *)&count, sizeof(count));
+        for (size_t i = 0; i < count; ++i) {
+            const OSMElement &element = elements[i];
+            output.write((char *)&element, sizeof(OSMElement));
+        }
     }
 
     return output;
@@ -189,29 +193,7 @@ bool SwedishTextTree::internal_insert(const char *word, const OSMElement &elemen
         cur = next;
     }
 
-    if (cur->elements == NULL) {
-        cur->elements = (OSMElement *)calloc(default_num_indices, sizeof(OSMElement));
-        if (cur->elements == NULL) {
-            Error::err("Could not allocate memory for cur->elements");
-            return false;
-        }
-        cur->elements_size = default_num_indices;
-    }
-    unsigned int idx = 1;
-    while (idx < cur->elements_size && cur->elements[idx].id != 0) ++idx;
-    if (idx >= cur->elements_size) {
-        const size_t new_size = cur->elements_size + default_num_indices;
-        OSMElement *new_array = (OSMElement *)calloc(new_size, sizeof(OSMElement));
-        if (new_array == NULL) {
-            Error::err("Could not allocate memory for new_array");
-            return false;
-        }
-        memcpy(new_array, cur->elements, (cur->elements_size)*sizeof(OSMElement));
-        free(cur->elements);
-        cur->elements = new_array;
-        cur->elements_size = new_size;
-    }
-    cur->elements[idx] = element;
+    cur->elements.push_back(element);
 
     return true;
 }
@@ -244,7 +226,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
 
     if (cur == NULL)
         return result; ///< empty
-    if (cur->elements_size == 0 || cur->elements == NULL) {
+    if (cur->elements.empty()) {
 #ifdef DEBUG
         if (warnings & WarningWordNotInTree)
             Error::debug("SwedishTextTree did not find valid leaf for word %s", word);
@@ -252,9 +234,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
         return result; ///< empty
     }
 
-    for (unsigned int idx = 1; idx < cur->elements_size && cur->elements[idx].id != 0; ++idx) {
-        result.push_back(cur->elements[idx]);
-    }
+    std::copy(cur->elements.cbegin(), cur->elements.cend(), std::back_inserter(result));
 
     return result;
 }

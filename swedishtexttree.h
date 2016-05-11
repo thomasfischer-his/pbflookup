@@ -65,8 +65,7 @@ struct SwedishTextNode {
     std::ostream &write(std::ostream &output);
 
     SwedishTextNode **children;
-    size_t elements_size;
-    OSMElement *elements;
+    std::vector<OSMElement> elements;
 };
 
 #endif // SWEDISHTEXTTREE_H
