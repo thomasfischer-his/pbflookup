@@ -111,7 +111,10 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
         if (line[0] == '\0' || line[0] == '#') continue; ///< skip empty lines and comments
         d->input_lines.push_back(line); ///< store line for future reference
 
-        tokenize_line(line, words, multiplicity);
+        bool warnings = false;
+        tokenize_input(line, words, multiplicity, &warnings);
+        if (warnings)
+            Error::warn("Got tokenizer warnings");
     }
 
     words.erase(std::remove_if(words.begin(), words.end(), [this](const std::string & word) {
@@ -230,10 +233,11 @@ std::string Tokenizer::input_text() const {
     return result;
 }
 
-size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings) {
+size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings) {
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
     if (warnings != NULL) *warnings = false;
 
+    size_t number_of_words_added = 0;
     std::string internal_line = line;
     utf8tolower(internal_line);
     std::unordered_set<std::string> known_words;
@@ -284,12 +288,14 @@ size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string
         } else if (!lastword.empty()) {
             /// Character is a 'gap' character and the current word is not empty
             /// Current word is not a stop word
-            if (multiplicity == Duplicates)
+            if (multiplicity == Duplicates) {
                 /// If duplicates are allowed, memorize word
                 words.push_back(lastword);
-            else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+                ++number_of_words_added;
+            } else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
                 /// If no duplicates are allowed and word is not yet know, memorize it
                 words.push_back(lastword);
+                ++number_of_words_added;
                 known_words.insert(lastword);
             }
 
@@ -300,15 +306,17 @@ size_t Tokenizer::tokenize_line(const std::string &line, std::vector<std::string
     }
     if (!lastword.empty()) {
         /// Very last word in line is not empty
-        if (multiplicity == Duplicates)
+        if (multiplicity == Duplicates) {
             /// If duplicates are allowed, memorize word
             words.push_back(lastword);
-        else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
+            ++number_of_words_added;
+        } else if (multiplicity == Unique && known_words.find(lastword) == known_words.end()) {
             /// If no duplicates are allowed and word is not yet know, memorize it
             words.push_back(lastword);
+            ++number_of_words_added;
             known_words.insert(lastword);
         }
     }
 
-    return words.size();
+    return number_of_words_added;
 }

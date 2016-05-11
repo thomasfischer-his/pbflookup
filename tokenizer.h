@@ -43,7 +43,25 @@ public:
 
     std::string input_text() const;
 
-    static size_t tokenize_line(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings = NULL);
+    /**
+     * For a given input text, extract individual words in this input and
+     * add found words into the words vector. Using the multiplicity parameter,
+     * it can be controlled if duplicates may get added to the words vector
+     * or if each word may be added only once even if its occurrs multiple
+     * times in the input text.
+     * As the input text may contain unsupported UTF-8 sequences, the optional
+     * warnings parameter may be used to track if such warnings occurred.
+     *
+     * The words vector pass as reference parameter will be neither cleared,
+     * nor will strings already in the vector be removed or modified.
+     *
+     * @param input Input text to process
+     * @param words List where found words will be added to.
+     * @param multiplicity Controls how duplicate words in input will be handled
+     * @param warnings Optional parameter to learn if unsupported UTF-8 sequences occurred
+     * @return Number of words added to the words vector
+     */
+    static size_t tokenize_input(const std::string &input, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings = NULL);
 
 private:
     class Private;
