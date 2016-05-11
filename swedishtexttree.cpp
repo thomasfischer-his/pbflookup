@@ -147,7 +147,7 @@ bool SwedishTextTree::insert(const std::string &input, const OSMElement &element
                 char *cur = buffer;
                 for (int i = 0; i < s; ++i) {
                     const char *cstr = words[start + i].c_str();
-                    strncpy(cur, cstr, buffer_len - (cur - buffer));
+                    strncpy(cur, cstr, buffer_len - (cur - buffer) - 2);
                     cur += strlen(cstr);
                     if (i + 1 < s) {
                         /// space in between
