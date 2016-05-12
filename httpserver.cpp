@@ -273,70 +273,77 @@ public:
         }
     }
 
-    void printTimer(int fd, Timer *timerServer, Timer *timerSearch) {
+    void printTimer(std::ostringstream &html_stream, Timer *timerServer, Timer *timerSearch) {
         int64_t cputime, walltime;
         if (timerServer != NULL) {
-            dprintf(fd, "<h2>Consumed Time</h2>\n");
+            html_stream << "<h2>Consumed Time</h2>" << std::endl;
             if (timerSearch != NULL) {
-                dprintf(fd, "<h3>Search</h3>\n");
+                html_stream << "<h3>Search</h3>" << std::endl;
                 timerSearch->elapsed(&cputime, &walltime);
-                dprintf(fd, "<p>CPU Time: %.1f&thinsp;ms<br/>", cputime / 1000.0);
-                dprintf(fd, "Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
+                html_stream << "<p>CPU Time: " << (cputime / 1000.0) << "&thinsp;ms<br/>";
+                html_stream << "Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>\n";
             }
-            dprintf(fd, "<h3>HTTP Server</h3>\n");
+            html_stream << "<h3>HTTP Server</h3>" << std::endl;
             timerServer->elapsed(&cputime, &walltime);
-            dprintf(fd, "<p>Wall Time: %.1f&thinsp;ms</p>\n", walltime / 1000.0);
+            html_stream << "<p>Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>" << std::endl;;
         }
     }
 
     void writeFormHTML(int fd) {
+        std::ostringstream html_stream;
+        html_stream << "<!DOCTYPE html>" << std::endl << "<html>" << std::endl << "<head>" << std::endl << "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />" << std::endl;
+        html_stream << "<meta charset=\"UTF-8\">" << std::endl << "<title>PBFLookup: Search for Locations described in Swedish Text</title>" << std::endl;
+        html_stream << "<script type=\"text/javascript\">" << std::endl << "function testsetChanged(combo) {" << std::endl << "  document.getElementById('textarea').value=combo.value;" << std::endl << "}" << std::endl;
+        html_stream << "function resultMimetypeChanged(combo) {" << std::endl << "  document.getElementById('queryForm').setAttribute(\"action\",\"/?accept=\"+combo.value);" << std::endl << "}" << std::endl << "</script>" << std::endl;
+        html_stream << "<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl << "</head>" << std::endl;
+        html_stream << "<body>" << std::endl;
+        html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Search for Locations described in Swedish Text</h1>" << std::endl;
+        html_stream << "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\" id=\"queryForm\">" << std::endl;
+        if (!testsets.empty()) {
+            html_stream << "<p>Either select a pre-configured text from this list of " << testsets.size() << " examples:" << std::endl << "<select onchange=\"testsetChanged(this)\" id=\"testsets\">" << std::endl;
+            html_stream << "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>";
+            for (const struct testset &t : testsets)
+                html_stream << "<option value=\"" << t.text << "\">" << t.name << "</option>";
+            html_stream << "</select> or &hellip;</p>" << std::endl;
+        }
+        html_stream << "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>" << std::endl;
+        html_stream << "<p><input type=\"submit\" value=\"Find location for text\"> and return result as ";
+        html_stream << "<select onchange=\"resultMimetypeChanged(this)\" id=\"resultMimetype\">";
+        html_stream << "<option selected=\"selected\" value=\"text/html\">Website (HTML)</option>";
+        html_stream << "<option value=\"text/xml\">XML</option>";
+        html_stream << "<option value=\"application/json\">JSON</option>";
+        html_stream << "</select></p></form>" << std::endl;
+        printTimer(html_stream, &timerServer, NULL);
+        html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
+
+        const auto html_code = html_stream.str();
+        const auto html_code_size = html_code.length();
+
         dprintf(fd, "HTTP/1.1 200 OK\n");
         dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
         dprintf(fd, "Cache-Control: public\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-        dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n");
-        dprintf(fd, "<meta charset=\"UTF-8\">\n<title>PBFLookup: Search for Locations described in Swedish Text</title>\n");
-        dprintf(fd, "<script type=\"text/javascript\">\nfunction testsetChanged(combo) {\n  document.getElementById('textarea').value=combo.value;\n}\n");
-        dprintf(fd, "function resultMimetypeChanged(combo) {\n  document.getElementById('queryForm').setAttribute(\"action\",\"/?accept=\"+combo.value);\n}\n</script>\n");
-        dprintf(fd, "<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n</head>\n");
-        dprintf(fd, "<body>\n");
-        dprintf(fd, "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Search for Locations described in Swedish Text</h1>\n");
-        dprintf(fd, "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\" id=\"queryForm\">\n");
-        if (!testsets.empty()) {
-            dprintf(fd, "<p>Either select a pre-configured text from this list of %lu examples:\n<select onchange=\"testsetChanged(this)\" id=\"testsets\">\n", testsets.size());
-            dprintf(fd, "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>");
-            for (const struct testset &t : testsets)
-                dprintf(fd, "<option value=\"%s\">%s</option>", t.text.c_str(), t.name.c_str());
-            dprintf(fd, "</select> or &hellip;</p>\n");
-        }
-        dprintf(fd, "<p>Enter a Swedish text to localize:<br/><textarea name=\"text\" id=\"textarea\" cols=\"60\" rows=\"8\" placeholder=\"Write your Swedish text here\"></textarea></p>\n");
-        dprintf(fd, "<p><input type=\"submit\" value=\"Find location for text\"> and return result as ");
-        dprintf(fd, "<select onchange=\"resultMimetypeChanged(this)\" id=\"resultMimetype\">");
-        dprintf(fd, "<option selected=\"selected\" value=\"text/html\">Website (HTML)</option>");
-        dprintf(fd, "<option value=\"text/xml\">XML</option>");
-        dprintf(fd, "<option value=\"application/json\">JSON</option>");
-        dprintf(fd, "</select></p></form>\n");
-        printTimer(fd, &timerServer, NULL);
-        dprintf(fd, "</body>\n</html>\n\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\n");
+        dprintf(fd, "Content-Length: %ld\n", html_code_size);
+        dprintf(fd, "\n%s\n\n", html_code.c_str());
     }
 
     void writeResultsHTML(int fd, const std::string &textToLocalize, const std::vector<Result> &results) {
-        dprintf(fd, "HTTP/1.1 200 OK\n");
-        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
-        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+        std::ostringstream html_stream;
+        html_stream << "<!DOCTYPE html>" << std::endl << "<html>" << std::endl << "<head>" << std::endl << "<meta charset=\"UTF-8\">" << std::endl;
+        html_stream << "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />" << std::endl << "<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl;
 
         if (!results.empty()) {
-            dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %lu Results</title>\n", results.size());
-            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n</head>\n<body>\n");
-            dprintf(fd, "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>For the following input, <strong>%lu results</strong> were located:</p>\n", results.size());
-            dprintf(fd, "<p><tt>%s</tt></p>\n", XMLize(textToLocalize).c_str());
-            dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
+            html_stream << "<title>PBFLookup: " << results.size() << " Results</title>" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
+            html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>For the following input, <strong>" << results.size() << " results</strong> were located:</p>" << std::endl;
+            html_stream << "<p><tt>" << XMLize(textToLocalize) << "</tt></p>" << std::endl;
+            html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
 
-            dprintf(fd, "<h2>Found Locations</h2>\n");
-            dprintf(fd, "<p>Number of results: %lu</p>\n", results.size());
-            dprintf(fd, "<table id=\"results\">\n<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>\n<tbody>\n");
+            html_stream << "<h2>Found Locations</h2>" << std::endl;
             static const size_t maxCountResults = 20;
+            html_stream << "<p>Number of results: " << results.size();
+            if (results.size() > maxCountResults) html_stream << " (not all shown)";
+            html_stream <<     "</p>" << std::endl;
+            html_stream << "<table id=\"results\">" << std::endl << "<thead><tr><th>Coordinates</th><th>Link to OpenStreetMap</th><th>Hint on Result</th></thead>" << std::endl << "<tbody>" << std::endl;
             size_t resultCounter = maxCountResults;
             for (const Result &result : results) {
                 if (--resultCounter <= 0) break; ///< Limit number of results
@@ -346,47 +353,54 @@ public:
                 const std::vector<int> m = sweden->insideSCBarea(result.coord);
                 const int scbarea = m.empty() ? 0 : m.front();
                 static const int zoom = 15;
-                dprintf(fd, "<tr><td><a href=\"https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">lat= %.4lf<br/>lon= %.4lf</a><br/>near %s, %s</td>", lat, lon, zoom, lat, lon, lat, lon, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
-                dprintf(fd, "<td><a href=\"https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf\" target=\"_blank\">", lat, lon, zoom, lat, lon);
+                html_stream << "<tr><td><a href=\"https://www.openstreetmap.org/?mlat=" << lat << "&amp;mlon=" << lon << "#map=" << zoom << "/" << lat << "/" << lon << "\" target=\"_blank\">lat= " << lat << "<br/>lon= " << lon << "</a><br/>near " << Sweden::nameOfSCBarea(scbarea) << ", " << Sweden::nameOfSCBarea(scbarea / 100) << "</td>";
+                html_stream << "<td><a href=\"https://www.openstreetmap.org/?mlat=" << lat << "&amp;mlon=" << lon << "#map=" << zoom << "/" << lat << "/" << lon << "\" target=\"_blank\">";
                 const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
-                dprintf(fd, "<img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY - 1, zoom, tileX, tileY - 1, zoom, tileX + 1, tileY - 1);
-                dprintf(fd, "<img class=\"extratile\" src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://b.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><br/>", zoom, tileX - 1, tileY, zoom, tileX, tileY, zoom, tileX + 1, tileY);
-                dprintf(fd, "<img class=\"extratile\" src=\"https://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://c.tile.openstreetmap.org/%d/%d/%d.png\" width=\"256\" height=\"256\" />", zoom, tileX - 1, tileY + 1, zoom, tileX, tileY + 1, zoom, tileX + 1, tileY + 1);
-                std::string hintText = XMLize(result.origin);
+                unsigned char load_balancer = 'a' + (resultCounter % 3);
+                html_stream << "<img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/" << zoom << "/" << (tileX - 1) << "/" << (tileY - 1) << ".png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/" << zoom << "/" << tileX << "/" << (tileY - 1) << ".png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://a.tile.openstreetmap.org/" << zoom << "/" << (tileX + 1) << "/" << (tileY - 1) << ".png\" width=\"256\" height=\"256\" /><br/>";
+                html_stream << "<img class=\"extratile\" src=\"https://b.tile.openstreetmap.org/" << zoom << "/" << (tileX - 1) << "/" << tileY << ".png\" width=\"256\" height=\"256\" /><img src=\"https://" << load_balancer << ".tile.openstreetmap.org/" << zoom << "/" << tileX << "/" << tileY << ".png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://b.tile.openstreetmap.org/" << zoom << "/" << (tileX + 1) << "/" << tileY << ".png\" width=\"256\" height=\"256\" /><br/>";
+                html_stream << "<img class=\"extratile\" src=\"https://c.tile.openstreetmap.org/" << zoom << "/" << (tileX - 1) << "/" << (tileY + 1) << ".png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://c.tile.openstreetmap.org/" << zoom << "/" << tileX << "/" << (tileY + 1) << ".png\" width=\"256\" height=\"256\" /><img class=\"extratile\" src=\"https://c.tile.openstreetmap.org/" << zoom << "/" << (tileX + 1) << "/" << (tileY + 1) << ".png\" width=\"256\" height=\"256\" />";
+                html_stream << "</a></td><td>" << XMLize(result.origin);
                 if (!result.elements.empty()) {
-                    hintText += "\n<small><ul>\n";
+                    html_stream << std::endl << "<small><ul>" << std::endl;
                     for (const OSMElement &e : result.elements) {
-                        hintText += "<li><a target=\"_top\" href=\"";
+                        html_stream << "<li><a target=\"_top\" href=\"";
                         const std::string eid = std::to_string(e.id);
                         switch (e.type) {
-                        case OSMElement::Node: hintText += "https://www.openstreetmap.org/node/" + eid + "\">" + e.operator std::string(); break;
-                        case OSMElement::Way: hintText += "https://www.openstreetmap.org/way/" + eid + "\">" + e.operator std::string(); break;
-                        case OSMElement::Relation: hintText += "https://www.openstreetmap.org/relation/" + eid + "\">" + e.operator std::string(); break;
-                        case OSMElement::UnknownElementType: hintText += "https://www.openstreetmap.org/\">Unknown element type with id " + eid; break;
+                        case OSMElement::Node: html_stream << "https://www.openstreetmap.org/node/" + eid + "\">" << e.operator std::string(); break;
+                        case OSMElement::Way: html_stream << "https://www.openstreetmap.org/way/" + eid + "\">" << e.operator std::string(); break;
+                        case OSMElement::Relation: html_stream << "https://www.openstreetmap.org/relation/" + eid + "\">" << e.operator std::string(); break;
+                        case OSMElement::UnknownElementType: html_stream << "https://www.openstreetmap.org/\">Unknown element type with id " << eid; break;
                         }
                         const std::string name = e.name();
                         if (!name.empty())
-                            hintText += " (" + e.name() + ")";
-                        hintText += "</a></li>\n";
+                            html_stream << " (" + e.name() + ")";
+                        html_stream << "</a></li>" << std::endl;
                     }
-                    hintText += "</ul></small>";
+                    html_stream << "</ul></small>";
                 }
-                dprintf(fd, "</a></td><td>%s</td></tr>\n", hintText.c_str());
             }
-            dprintf(fd, "</tbody></table>\n");
-
-            dprintf(fd, "<h2>License</h2>\n");
-            dprintf(fd, "<p>Map data license: &copy; OpenStreetMap contributors, licensed under the <a href=\"http://opendatacommons.org/licenses/odbl/\" target=\"_top\">Open Data Commons Open Database License</a> (OBdL)<br/>Map tiles: OpenStreetMap, licensed under the <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\" target=\"_top\">Creative Commons Attribution-ShareAlike&nbsp;2.0 License</a> (CC BY-SA 2.0)<br/>See <a target=\"_top\" href=\"www.openstreetmap.org/copyright\">www.openstreetmap.org/copyright</a> and <a target=\"_top\" href=\"http://wiki.openstreetmap.org/wiki/Legal_FAQ\">http://wiki.openstreetmap.org/wiki/Legal_FAQ</a> for details.</p>\n");
-
+            html_stream << "</tbody></table>" << std::endl;
+            html_stream << "<h2>License</h2>" << std::endl;
+            html_stream << "<p>Map data license: &copy; OpenStreetMap contributors, licensed under the <a href=\"http://opendatacommons.org/licenses/odbl/\" target=\"_top\">Open Data Commons Open Database License</a> (OBdL)<br/>Map tiles: OpenStreetMap, licensed under the <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\" target=\"_top\">Creative Commons Attribution-ShareAlike&nbsp;2.0 License</a> (CC BY-SA 2.0)<br/>See <a target=\"_top\" href=\"www.openstreetmap.org/copyright\">www.openstreetmap.org/copyright</a> and <a target=\"_top\" href=\"http://wiki.openstreetmap.org/wiki/Legal_FAQ\">http://wiki.openstreetmap.org/wiki/Legal_FAQ</a> for details.</p>" << std::endl;
         } else {
-            dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: No Results</title>\n");
-            dprintf(fd, "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n</head>\n<body>\n");
-            dprintf(fd, "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>\n");
-            dprintf(fd, "<p><tt>%s</tt></p>\n", XMLize(textToLocalize).c_str());
-            dprintf(fd, "<p><a href=\".\">New search</a></p>\n");
+            html_stream << "<title>PBFLookup: No Results</title>" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
+            html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>" << std::endl;
+            html_stream << "<p><tt>%s</tt></p>" << std::endl, XMLize(textToLocalize).c_str();
+            html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
         }
-        printTimer(fd, &timerServer, &timerSearch);
-        dprintf(fd, "</body>\n</html>\n\n");
+        printTimer(html_stream, &timerServer, &timerSearch);
+        html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
+
+        const auto html_code = html_stream.str();
+        const auto html_code_size = html_code.length();
+
+        dprintf(fd, "HTTP/1.1 200 OK\n");
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\n");
+        dprintf(fd, "Content-Length: %ld\n", html_code_size);
+        dprintf(fd, "\n%s\n\n", html_code.c_str());
     }
 
     void writeResultsJSON(int fd, const std::vector<Result> &results) {
