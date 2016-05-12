@@ -28,6 +28,9 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
 #include "global.h"
 #include "globalobjects.h"
 #include "timer.h"
@@ -209,14 +212,21 @@ public:
         const std::string internal_msg = msg.empty() ? "Could not serve your request." : msg;
         Error::debug("Sending HTTP status %d: %s", error_code, error_code_message.c_str());
 
-        dprintf(fd, "HTTP/1.1 %d %s\n", error_code, error_code_message.c_str());
-        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
-        dprintf(fd, "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"UTF-8\">\n<title>PBFLookup: %d &ndash; %s</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n</head>\n<body><h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />%d &ndash; %s</h1>\n", error_code, error_code_message.c_str(), error_code, error_code_message.c_str());
-        dprintf(fd, "<p>%s</p>\n", internal_msg.c_str());
+        std::ostringstream html_stream;
+        html_stream << "<!DOCTYPE html>" << std::endl << "<html>" << std::endl << "<head>" << std::endl << "<meta charset=\"UTF-8\">\n<title>PBFLookup: " << error_code << " &ndash; " << error_code_message << "</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n</head>\n<body><h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />";
+        html_stream << "<p>" << internal_msg << "</p>" << std::endl;
         if (!filename.empty())
-            dprintf(fd, "<pre>%s</pre>\n", filename.c_str());
-        dprintf(fd, "</body>\n</html>\n\n");
+            html_stream << "<pre>" << filename << "</pre>" << std::endl;
+        html_stream << "</body>" << std::endl << "</html>" << std::endl;
+
+        const auto html_code = html_stream.str();
+        const auto html_code_size = html_code.length();
+
+        dprintf(fd, "HTTP/1.1 %d %s\r\n", error_code, error_code_message.c_str());
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\r\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
+        dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
+        dprintf(fd, "\r\n%s\r\n\r\n", html_code.c_str());
     }
 
     void deliverFile(int fd, const char *filename) {
@@ -256,29 +266,29 @@ public:
                 Error::warn("Cannot read from file: '%s'", localfilename.c_str());
                 writeHTTPError(fd, 404, "Could not serve your request for this file:", filename);
             } else {
-                dprintf(fd, "HTTP/1.1 200 OK\n");
+                dprintf(fd, "HTTP/1.1 200 OK\r\n");
                 const size_t lflen = localfilename.length();
                 if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'c' && localfilename[lflen - 2] == 's' && localfilename[lflen - 1] == 's')
-                    dprintf(fd, "Content-Type: text/css; charset=utf-8\n");
+                    dprintf(fd, "Content-Type: text/css; charset=utf-8\r\n");
                 else if ((lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'h' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'm' && localfilename[lflen - 1] == 'l')
                          || (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'h' && localfilename[lflen - 2] == 't' && localfilename[lflen - 1] == 'm'))
-                    dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
+                    dprintf(fd, "Content-Type: text/html; charset=utf-8\r\n");
                 else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 't' && localfilename[lflen - 2] == 'x' && localfilename[lflen - 1] == 't')
-                    dprintf(fd, "Content-Type: text/plain; charset=utf-8\n");
+                    dprintf(fd, "Content-Type: text/plain; charset=utf-8\r\n");
                 else if ((lflen > 6 && localfilename[lflen - 5] == '.' && localfilename[lflen - 4] == 'j' && localfilename[lflen - 3] == 'p' && localfilename[lflen - 2] == 'e' && localfilename[lflen - 1] == 'g')
                          || (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'j' && localfilename[lflen - 2] == 'p' && localfilename[lflen - 1] == 'g'))
-                    dprintf(fd, "Content-Type: image/jpeg; charset=utf-8\n");
+                    dprintf(fd, "Content-Type: image/jpeg; charset=utf-8\r\n");
                 else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'p' && localfilename[lflen - 2] == 'n' && localfilename[lflen - 1] == 'g')
-                    dprintf(fd, "Content-Type: image/png; charset=utf-8\n");
+                    dprintf(fd, "Content-Type: image/png; charset=utf-8\r\n");
                 else if (lflen > 5 && localfilename[lflen - 4] == '.' && localfilename[lflen - 3] == 'i' && localfilename[lflen - 2] == 'c' && localfilename[lflen - 1] == 'o')
-                    dprintf(fd, "Content-Type: image/x-icon; charset=utf-8\n");
+                    dprintf(fd, "Content-Type: image/x-icon; charset=utf-8\r\n");
                 else
-                    dprintf(fd, "Content-Type: application/octet-stream\n");
-                dprintf(fd, "Cache-Control: public\n");
-                dprintf(fd, "Content-Length: %ld\n", data_count);
-                dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
+                    dprintf(fd, "Content-Type: application/octet-stream\r\n");
+                dprintf(fd, "Cache-Control: public\r\n");
+                dprintf(fd, "Content-Length: %ld\r\n", data_count);
+                dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n\r\n");
                 write(fd, buffer, data_count);
-                dprintf(fd, "\n");
+                dprintf(fd, "\r\n");
             }
         } else {
             Error::warn("Cannot open file for reading: '%s'", localfilename.c_str());
@@ -332,12 +342,12 @@ public:
         const auto html_code = html_stream.str();
         const auto html_code_size = html_code.length();
 
-        dprintf(fd, "HTTP/1.1 200 OK\n");
-        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
-        dprintf(fd, "Cache-Control: public\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n");
-        dprintf(fd, "Content-Length: %ld\n", html_code_size);
-        dprintf(fd, "\n%s\n\n", html_code.c_str());
+        dprintf(fd, "HTTP/1.1 200 OKv\n");
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\r\n");
+        dprintf(fd, "Cache-Control: publicv\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
+        dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
+        dprintf(fd, "\r\n%s\r\n\r\n", html_code.c_str());
     }
 
     void writeResultsHTML(int fd, const std::string &textToLocalize, const std::vector<Result> &results) {
@@ -404,139 +414,154 @@ public:
             html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
         }
         printTimer(html_stream, &timerServer, &timerSearch);
-        html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
+        html_stream << "</body>" << std::endl << "</html>";
 
         const auto html_code = html_stream.str();
         const auto html_code_size = html_code.length();
 
-        dprintf(fd, "HTTP/1.1 200 OK\n");
-        dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
-        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n");
-        dprintf(fd, "Content-Length: %ld\n", html_code_size);
-        dprintf(fd, "\n%s\n\n", html_code.c_str());
+        dprintf(fd, "HTTP/1.1 200 OKv\n");
+        dprintf(fd, "Content-Type: text/html; charset=utf-8\r\n");
+        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\r\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
+        dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
+        dprintf(fd, "\r\n%s\r\n\r\n", html_code.c_str());
     }
 
     void writeResultsJSON(int fd, const std::vector<Result> &results) {
         int64_t cputime, walltime;
-        dprintf(fd, "HTTP/1.1 200 OK\n");
-        dprintf(fd, "Content-Type: application/json; charset=utf-8\n");
-        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
 
-        dprintf(fd, "{\n");
+        std::ostringstream html_stream;
+        html_stream << "{" << std::endl;
         timerSearch.elapsed(&cputime, &walltime);
-        dprintf(fd, "  \"cputime[ms]\": %.3f,\n", cputime / 1000.0);
-        dprintf(fd, "  \"license\": {\n    \"map\": \"OpenStreetMap contributors, licensed under the Open Data Commons Open Database License (ODbL)\",\n    \"tiles\": \"OpenStreetMap, licensed under the Creative Commons Attribution-ShareAlike 2.0 License (CC BY-SA 2.0)\"\n  },\n");
+        html_stream << "  \"cputime[ms]\": " << (cputime / 1000.0) << "," << std::endl;
+        html_stream << "  \"license\": {\n    \"map\": \"OpenStreetMap contributors, licensed under the Open Data Commons Open Database License (ODbL)\",\n    \"tiles\": \"OpenStreetMap, licensed under the Creative Commons Attribution-ShareAlike 2.0 License (CC BY-SA 2.0)\"\n  }," << std::endl;
 
         static const size_t maxCountResults = results.size() > 20 ? 20 : results.size();
         size_t resultCounter = maxCountResults;
-        dprintf(fd, "  \"results\": [\n");
+        html_stream << "  \"results\": [" << std::endl;
         for (const Result &result : results) {
             if (--resultCounter <= 0) break; ///< Limit number of results
-            dprintf(fd, "    {\n");
+            html_stream << "    {" << std::endl;
 
             const double lon = Coord::toLongitude(result.coord.x);
             const double lat = Coord::toLatitude(result.coord.y);
             const std::vector<int> m = sweden->insideSCBarea(result.coord);
             const int scbarea = m.empty() ? 0 : m.front();
 
-            dprintf(fd, "      \"latitude\": %.4lf,\n", lat);
-            dprintf(fd, "      \"longitude\": %.4lf,\n", lon);
-            dprintf(fd, "      \"quality\": %.3lf,\n", result.quality);
-            dprintf(fd, "      \"scbareacode\": %d,\n", scbarea);
-            dprintf(fd, "      \"municipality\": \"%s\",\n", Sweden::nameOfSCBarea(scbarea).c_str());
-            dprintf(fd, "      \"county\": \"%s\",\n", Sweden::nameOfSCBarea(scbarea / 100).c_str());
+            html_stream << "      \"latitude\": " << lat << "," << std::endl;
+            html_stream << "      \"longitude\": " << lon << "," << std::endl;
+            html_stream << "      \"quality\": " << result.quality << "," << std::endl;
+            html_stream << "      \"scbareacode\": " << scbarea << "," << std::endl;
+            html_stream << "      \"municipality\": \"" << Sweden::nameOfSCBarea(scbarea) << "\"," << std::endl;
+            html_stream << "      \"county\": \"" << Sweden::nameOfSCBarea(scbarea / 100) << "\"," << std::endl;
             static const int zoom = 13;
-            dprintf(fd, "      \"url\": \"https://www.openstreetmap.org/?mlat=%.5lf&mlon=%.5lf#map=%d/%.5lf/%.5lf\",\n", lat, lon, zoom, lat, lon);
+            html_stream << "      \"url\": \"https://www.openstreetmap.org/?mlat=" << lat << "&mlon=" << lon << "#map=" << zoom << "/" << lat << "/" << lon << "\"," << std::endl;
             const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
-            dprintf(fd, "      \"image\": \"https://%c.tile.openstreetmap.org/%d/%d/%d.png\",\n", (unsigned char)('a' + resultCounter % 3), zoom, tileX, tileY);
-            dprintf(fd, "      \"origin\": {\n");
-            dprintf(fd, "        \"description\": \"%s\",\n", result.origin.c_str());
-            dprintf(fd, "        \"elements\": [");
+            html_stream << "      \"image\": \"https://" << (unsigned char)('a' + resultCounter % 3) << ".tile.openstreetmap.org/" << zoom << "/" << tileX << "/" << tileY << ".png\"," << std::endl;
+            html_stream << "      \"origin\": {" << std::endl;
+            std::string jsonified = result.origin;
+            boost::replace_all(jsonified, "\"", "'"); ///< replace all double quotation marks with single ones
+            html_stream << "        \"description\": \"" << jsonified << "\"," << std::endl;
+            html_stream << "        \"elements\": [";
             bool first = true;
             for (const OSMElement &e : result.elements) {
                 if (!first)
-                    dprintf(fd, ",");
+                    html_stream << ",";
                 switch (e.type) {
-                case OSMElement::Node: dprintf(fd, "\n          \"node/%lu\"", e.id); break;
-                case OSMElement::Way: dprintf(fd, "\n          \"way/%lu\"", e.id); break;
-                case OSMElement::Relation: dprintf(fd, "\n          \"relation/%lu\"", e.id); break;
+                case OSMElement::Node: html_stream << std::endl << "          \"node/" << e.id << "\""; break;
+                case OSMElement::Way: html_stream << std::endl << "          \"way/" << e.id << "\""; break;
+                case OSMElement::Relation: html_stream << std::endl << "          \"relation/" << e.id << "\""; break;
                 default: {
                     /// ignore everything else
                 }
                 }
                 first = false;
             }
-            dprintf(fd, "\n        ]\n");
-            dprintf(fd, "      }\n");
+            html_stream << std::endl << "        ]" << std::endl;
+            html_stream << "      }" << std::endl;
 
             if (resultCounter <= 1)
-                dprintf(fd, "    }\n");
+                html_stream << "    }" << std::endl;
             else
-                dprintf(fd, "    },\n");
+                html_stream << "    }," << std::endl;
         }
-        dprintf(fd, "  ]\n");
+        html_stream << "  ]" << std::endl;
+        html_stream << "}";
 
-        dprintf(fd, "}\n\n\n");
+        const auto html_code = html_stream.str();
+        const auto html_code_size = html_code.length();
+
+        dprintf(fd, "HTTP/1.1 200 OK\r\n");
+        dprintf(fd, "Content-Type: application/json; charset=utf-8v\n");
+        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\r\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
+        dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
+        dprintf(fd, "\r\n%s\r\n\r\n", html_code.c_str());
     }
 
     void writeResultsXML(int fd, const std::vector<Result> &results) {
         int64_t cputime, walltime;
-        dprintf(fd, "HTTP/1.1 200 OK\n");
-        dprintf(fd, "Content-Type: text/xml; charset=utf-8\n");
-        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\n");
-        dprintf(fd, "Content-Transfer-Encoding: 8bit\n\n");
 
-        dprintf(fd, "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n");
+        std::ostringstream html_stream;
+        html_stream << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>" << std::endl;
 
-        dprintf(fd, "<pbflookup>\n");
+        html_stream << "<pbflookup>" << std::endl;
         timerSearch.elapsed(&cputime, &walltime);
-        dprintf(fd, "  <cputime unit=\"ms\">%.3f</cputime>\n", cputime / 1000.0);
-        dprintf(fd, "  <licenses>\n    <license for=\"map\">OpenStreetMap contributors, licensed under the Open Data Commons Open Database License (ODbL)</license>\n    <license for=\"tiles\">OpenStreetMap, licensed under the Creative Commons Attribution-ShareAlike 2.0 License (CC BY-SA 2.0)</license>\n  </licenses>\n");
+        html_stream << "  <cputime unit=\"ms\">" << (cputime / 1000.0) << "</cputime>" << std::endl;
+        html_stream << "  <licenses>" << std::endl << "    <license for=\"map\">OpenStreetMap contributors, licensed under the Open Data Commons Open Database License (ODbL)</license>" << std::endl << "    <license for=\"tiles\">OpenStreetMap, licensed under the Creative Commons Attribution-ShareAlike 2.0 License (CC BY-SA 2.0)</license>" << std::endl << "  </licenses>" << std::endl;
 
         static const size_t maxCountResults = results.size() > 20 ? 20 : results.size();
         size_t resultCounter = maxCountResults;
-        dprintf(fd, "  <results>\n");
+        html_stream << "  <results>" << std::endl;
         for (const Result &result : results) {
             if (--resultCounter <= 0) break; ///< Limit number of results
-            dprintf(fd, "    <result>\n");
+            html_stream << "    <result>" << std::endl;
 
             const double lon = Coord::toLongitude(result.coord.x);
             const double lat = Coord::toLatitude(result.coord.y);
             const std::vector<int> m = sweden->insideSCBarea(result.coord);
             const int scbarea = m.empty() ? 0 : m.front();
 
-            dprintf(fd, "      <latitude format=\"decimal\">%.4lf</latitude>\n", lat);
-            dprintf(fd, "      <longitude format=\"decimal\">%.4lf</longitude>\n", lon);
-            dprintf(fd, "      <quality>%.3lf</quality>\n", result.quality);
-            dprintf(fd, "      <scbareacode>%d</scbareacode>\n", scbarea);
-            dprintf(fd, "      <municipality>%s</municipality>\n", Sweden::nameOfSCBarea(scbarea).c_str());
-            dprintf(fd, "      <county>%s</county>\n", Sweden::nameOfSCBarea(scbarea / 100).c_str());
+            html_stream << "      <latitude format=\"decimal\">" << lat << "</latitude>" << std::endl;
+            html_stream << "      <longitude format=\"decimal\">" << lon << "</longitude>" << std::endl;
+            html_stream << "      <quality>" << result.quality << "</quality>" << std::endl;
+            html_stream << "      <scbareacode>" << scbarea << "</scbareacode>" << std::endl;
+            html_stream << "      <municipality>" << Sweden::nameOfSCBarea(scbarea) << "</municipality>" << std::endl;
+            html_stream << "      <county>" << Sweden::nameOfSCBarea(scbarea / 100) << "</county>" << std::endl;
             static const int zoom = 13;
-            dprintf(fd, "      <url rel=\"openstreetmap\">https://www.openstreetmap.org/?mlat=%.5lf&amp;mlon=%.5lf#map=%d/%.5lf/%.5lf</url>\n", lat, lon, zoom, lat, lon);
+            html_stream << "      <url rel=\"openstreetmap\">https://www.openstreetmap.org/?mlat=" << lat << "&amp;mlon=" << lon << "#map=" << zoom << "/" << lat << "/" << lon << "</url>" << std::endl;
             const int tileX = long2tilex(lon, zoom), tileY = lat2tiley(lat, zoom);
-            dprintf(fd, "      <image rel=\"tile\">https://%c.tile.openstreetmap.org/%d/%d/%d.png</image>\n", (unsigned char)('a' + resultCounter % 3), zoom, tileX, tileY);
-            dprintf(fd, "      <origin>\n");
-            dprintf(fd, "        <description>%s</description>\n", XMLize(result.origin).c_str());
-            dprintf(fd, "        <elements>");
+            html_stream << "      <image rel=\"tile\">https://" << (unsigned char)('a' + resultCounter % 3) << ".tile.openstreetmap.org/" << zoom << "/" << tileX << "/" << tileY << ".png</image>" << std::endl;
+            html_stream << "      <origin>" << std::endl;
+            html_stream << "        <description>" << XMLize(result.origin) << "</description>" << std::endl;
+            html_stream << "        <elements>";
             for (const OSMElement &e : result.elements) {
                 switch (e.type) {
-                case OSMElement::Node: dprintf(fd, "\n          <node>%lu</node>", e.id); break;
-                case OSMElement::Way: dprintf(fd, "\n          <way>%lu</way>", e.id); break;
-                case OSMElement::Relation: dprintf(fd, "\n          <relation>%lu</relation>", e.id); break;
+                case OSMElement::Node: html_stream << std::endl << "          <node>" << e.id << "</node>"; break;
+                case OSMElement::Way: html_stream << std::endl << "          <way>" << e.id << "</way>"; break;
+                case OSMElement::Relation: html_stream << std::endl << "          <relation>" << e.id << "</relation>"; break;
                 default: {
                     /// ignore everything else
                 }
                 }
             }
-            dprintf(fd, "\n        </elements>\n");
-            dprintf(fd, "      </origin>\n");
-            dprintf(fd, "    </result>\n");
+            html_stream << std::endl << "        </elements>" << std::endl;
+            html_stream << "      </origin>" << std::endl;
+            html_stream << "    </result>" << std::endl;
         }
-        dprintf(fd, "  </results>\n");
+        html_stream << "  </results>" << std::endl;
 
-        dprintf(fd, "</pbflookup>\n\n\n");
+        html_stream << "</pbflookup>";
+
+        const auto html_code = html_stream.str();
+        const auto html_code_size = html_code.length();
+
+        dprintf(fd, "HTTP/1.1 200 OK\r\n");
+        dprintf(fd, "Content-Type: text/xml; charset=utf-8\r\n");
+        dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\r\n");
+        dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
+        dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
+        dprintf(fd, "\r\n%s\r\n\r\n", html_code.c_str());
     }
 
     static bool case_insensitive_strequal(const char *a, const char *b, const size_t len) {
