@@ -1754,7 +1754,7 @@ Sweden::RoadType Sweden::closestRoadNodeToCoord(int x, int y, const Sweden::Road
         }
         if (minSqDistance < INT64_MAX && bestNode > 0) {
             distance = sqrt(minSqDistance) / 10.0 + .5;
-            Error::debug("Closest node of road %s %d to x=%d,y=%d is node %llu at distance %.1f km", roadTypeToString(road.type).c_str(), road.number, x, y, bestNode, distance / 1000.0);
+            Error::debug("Closest node of road %s to x=%d,y=%d is node %llu at distance %.1f km", road.operator std::string().c_str(), x, y, bestNode, distance / 1000.0);
         } else
             bestNode = 0;
     }

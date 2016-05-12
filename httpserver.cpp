@@ -120,6 +120,7 @@ public:
 
     std::tuple<bool, struct Private::HTTPrequest> extractHTTPrequest(const std::string &headertext) const {
         Private::HTTPrequest result;
+        /// Determine requests method (GET or POST)
         if (headertext.substr(0, 4) == "GET ")
             result.method = HTTPrequest::MethodGet;
         else if (headertext.substr(0, 5) == "POST ")
@@ -127,16 +128,18 @@ public:
         else
             return std::make_tuple(false, HTTPrequest());
 
+        /// Determine requests filename
+        /// First, find first non-whitespace character after method string
         std::size_t pos1 = std::string::npos;
         static const std::size_t max_first_separator_pos = 16;
         for (pos1 = result.method == HTTPrequest::MethodGet ? 3 : 4; pos1 < max_first_separator_pos && headertext[pos1] == ' '; ++pos1);
         if (pos1 >= max_first_separator_pos)
             return std::make_tuple(false, HTTPrequest());
-
+        /// Second, find end of filename, denoted by whitespace
         const std::size_t pos2 = headertext.find(' ', pos1 + 1);
         if (pos2 == std::string::npos)
             return std::make_tuple(false, HTTPrequest());
-
+        /// Finally, extract filename
         result.filename = headertext.substr(pos1, pos2 - pos1);
 
         return std::make_tuple(true, result);
