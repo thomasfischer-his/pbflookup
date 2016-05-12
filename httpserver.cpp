@@ -169,6 +169,18 @@ public:
         return HTML;
     }
 
+    void print_socket_status(const int socket) {
+        int error = 0;
+        socklen_t len = sizeof(error);
+        const int retval = getsockopt(socket, SOL_SOCKET, SO_ERROR, &error, &len);
+        if (retval != 0)
+            Error::warn("Error getting error code for socket %d: %s", socket, strerror(retval));
+        if (error != 0)
+            Error::warn("Socket %d: error: %s", socket, strerror(error));
+        if (retval == 0 && error == 0)
+            Error::debug("Socket %d seems to be health");
+    }
+
     std::string extractTextToLocalize(const std::string &input) const {
         const std::size_t newline_text = input.find("\ntext=");
         if (newline_text != std::string::npos)
@@ -348,6 +360,7 @@ public:
             size_t resultCounter = maxCountResults;
             for (const Result &result : results) {
                 if (--resultCounter <= 0) break; ///< Limit number of results
+                Error::debug("Printing HTML code for result: %s", result.origin.c_str());
 
                 const double lon = Coord::toLongitude(result.coord.x);
                 const double lat = Coord::toLatitude(result.coord.y);
@@ -775,16 +788,21 @@ void HTTPServer::run() {
                             d->writeFormHTML(slaveConnections[i].socket);
                         else if (!http_public_files.empty())
                             d->deliverFile(slaveConnections[i].socket, getfilename.c_str());
-                        else
+                        else {
+                            Error::warn("Don't know how to serve request for file '%s'", getfilename.c_str());
                             d->writeHTTPError(slaveConnections[i].socket, 404, "Could not serve your request for this file:", getfilename);
                     } else if (std::get<1>(request).method == Private::HTTPrequest::MethodPost) {
                         const Private::RequestedMimeType requestedMime = d->extractRequestedMimeType(lowercasetext);
                         const std::string text = d->extractTextToLocalize(lowercasetext);
 
+                        d->print_socket_status(slaveConnections[i].socket);
+
                         d->timerSearch.start();
                         const std::vector<Result> results = text.length() > 3 ? resultGenerator.findResults(text, 1000, ResultGenerator::VerbositySilent) : std::vector<Result>();
                         d->timerSearch.stop();
                         Error::debug("%d results", results.size());
+
+                        d->print_socket_status(slaveConnections[i].socket);
 
                         switch (requestedMime) {
                         case Private::HTML: d->writeResultsHTML(slaveConnections[i].socket, text, results); break;
@@ -792,6 +810,7 @@ void HTTPServer::run() {
                         case Private::XML: d->writeResultsXML(slaveConnections[i].socket, results); break;
                         }
                     } else {
+                        Error::warn("Unknown/unsupported HTTP method");
                         d->writeHTTPError(slaveConnections[i].socket, 400);
                     }
 
