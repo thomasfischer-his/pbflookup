@@ -180,7 +180,11 @@ public:
 
     void writeHTTPError(int fd, unsigned int error_code, const std::string &msg = std::string(), const std::string &filename = std::string()) {
         std::string error_code_message("Unknown Error");
-        if (error_code == 403)
+        if (error_code == 100)
+            error_code_message = "Continue";
+        else if (error_code > 100 && error_code < 200)
+            error_code_message = "Informational 1xx";
+        else if (error_code == 403)
             error_code_message = "Forbidden";
         else if (error_code == 404)
             error_code_message = "Not Found";
@@ -190,6 +194,7 @@ public:
             error_code_message = "Internal Server Error";
 
         const std::string internal_msg = msg.empty() ? "Could not serve your request." : msg;
+        Error::debug("Sending HTTP status %d: %s", error_code, error_code_message.c_str());
 
         dprintf(fd, "HTTP/1.1 %d %s\n", error_code, error_code_message.c_str());
         dprintf(fd, "Content-Type: text/html; charset=utf-8\n");
