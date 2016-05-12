@@ -95,13 +95,14 @@ Tokenizer::~Tokenizer() {
     delete d;
 }
 
-int Tokenizer::read_words(const std::string &text, std::vector<std::string> &words, Multiplicity multiplicity) {
-    std::stringstream ss(text);
-    return read_words(ss, words, multiplicity);
+std::vector<std::string> Tokenizer::read_words(const std::string &text, Multiplicity multiplicity) {
+    std::istringstream ss(text);
+    return read_words(ss, multiplicity);
 }
 
-int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, Multiplicity multiplicity) {
+std::vector<std::string> Tokenizer::read_words(std::istream &input, Multiplicity multiplicity) {
     std::string line;
+    std::vector<std::string> words;
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
     std::unordered_set<std::string> known_words;
     d->input_lines.clear();
@@ -128,7 +129,7 @@ int Tokenizer::read_words(std::istream &input, std::vector<std::string> &words, 
                 ));
     }), words.end());
 
-    return words.size();
+    return words;
 }
 
 void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
@@ -158,7 +159,7 @@ void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
     }
 }
 
-int Tokenizer::generate_word_combinations(const std::vector<std::string> &words, std::vector<std::string> &combinations, const size_t words_per_combination, const Multiplicity multiplicity) {
+std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination, const Multiplicity multiplicity) {
     /// There are words that are often part of a valid name, but by itself
     /// are rather meaningless, i.e. cause too many false hits:
     static const std::unordered_set<std::string> blacklistedSingleWords = {
@@ -190,7 +191,7 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
         "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
     };
 
-    combinations.clear();
+    std::vector<std::string> combinations;
     std::unordered_set<std::string> known_combinations;
 
     for (int s = min(words_per_combination, words.size()); s >= 1; --s) {
@@ -221,7 +222,7 @@ int Tokenizer::generate_word_combinations(const std::vector<std::string> &words,
     if (multiplicity == Unique && !known_combinations.empty() && combinations.empty())
         std::copy(known_combinations.cbegin(), known_combinations.cend(), std::back_inserter(combinations));
 
-    return combinations.size();
+    return combinations;
 }
 
 std::string Tokenizer::input_text() const {

@@ -28,6 +28,7 @@
 #include <unistd.h>
 
 #include <stack>
+#include <sstream>
 
 #include "swedishtexttree.h"
 #include "config.h"

@@ -40,10 +40,9 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     int64_t cputime, walltime;
 
     timer.start();
-    std::vector<std::string> words, word_combinations;
-    tokenizer->read_words(text, words, Tokenizer::Duplicates);
+    std::vector<std::string> words = tokenizer->read_words(text, Tokenizer::Duplicates);
     tokenizer->add_grammar_cases(words);
-    tokenizer->generate_word_combinations(words, word_combinations, 3 /** TODO configurable */, Tokenizer::Unique);
+    const std::vector<std::string> word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */, Tokenizer::Unique);
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to tokenize text of length %d: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", text.length(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
