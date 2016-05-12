@@ -16,6 +16,8 @@
 
 #include "resultgenerator.h"
 
+#include <algorithm>
+
 #include "tokenizer.h"
 #include "tokenprocessor.h"
 #include "globalobjects.h"

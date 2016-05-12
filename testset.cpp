@@ -16,6 +16,8 @@
 
 #include "testset.h"
 
+#include <algorithm>
+
 #include "global.h"
 #include "globalobjects.h"
 #include "config.h"
