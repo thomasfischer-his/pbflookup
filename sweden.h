@@ -50,8 +50,6 @@ public:
     explicit Sweden(std::istream &input);
     ~Sweden();
 
-    void test();
-
     std::ostream &write(std::ostream &output);
 
     bool nodeInsideRelationRegion(uint64_t nodeId, uint64_t relationId);
