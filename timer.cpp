@@ -66,17 +66,21 @@ void Timer::elapsed(int64_t *elapsed_cpu, int64_t *elapsed_wall) {
         return;
     }
 
-    struct timespec now_cpu;
-    if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu) == 0) {
-        const int64_t now_us = (int64_t)now_cpu.tv_sec * 1000000 + now_cpu.tv_nsec / 1000;
-        const int64_t previous_us = (int64_t)previous_cpu.tv_sec * 1000000 + previous_cpu.tv_nsec / 1000;
-        if (elapsed_cpu != NULL) *elapsed_cpu = now_us - previous_us;
-    } else if (elapsed_cpu != NULL)
-        *elapsed_cpu = -1;
+    if (elapsed_cpu != NULL) {
+        struct timespec now_cpu;
+        if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu) == 0) {
+            const int64_t now_us = (int64_t)now_cpu.tv_sec * 1000000 + now_cpu.tv_nsec / 1000;
+            const int64_t previous_us = (int64_t)previous_cpu.tv_sec * 1000000 + previous_cpu.tv_nsec / 1000;
+            *elapsed_cpu = now_us - previous_us;
+        } else
+            *elapsed_cpu = -1;
+    }
 
-    struct timeval now_wall, result_wall;
-    if (gettimeofday(&now_wall, NULL) == 0 && timeval_subtract(&result_wall, &now_wall, &previous_wall) == 0) {
-        if (elapsed_wall != NULL) *elapsed_wall = (int64_t)result_wall.tv_sec * 1000000 + result_wall.tv_usec;
-    } else if (elapsed_wall != NULL)
-        *elapsed_wall = -1;
+    if (elapsed_wall != NULL) {
+        struct timeval now_wall, result_wall;
+        if (gettimeofday(&now_wall, NULL) == 0 && timeval_subtract(&result_wall, &now_wall, &previous_wall) == 0) {
+            *elapsed_wall = (int64_t)result_wall.tv_sec * 1000000 + result_wall.tv_usec;
+        } else
+            *elapsed_wall = -1;
+    }
 }
