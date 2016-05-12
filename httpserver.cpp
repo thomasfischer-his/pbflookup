@@ -93,6 +93,7 @@ public:
         // TODO
     }
 
+    enum HTTPstate {NeedMoreData, Bad, Good};
     struct HTTPrequest {
         enum Method {MethodUnknown = 0, MethodGet = 1, MethodPost = 2};
         Method method;
@@ -125,7 +126,7 @@ public:
         return result;
     }
 
-    std::tuple<bool, struct Private::HTTPrequest> extractHTTPrequest(const std::string &headertext) const {
+    std::tuple<HTTPstate, struct Private::HTTPrequest> extractHTTPrequest(const std::string &headertext) const {
         Private::HTTPrequest result;
         /// Determine requests method (GET or POST)
         if (headertext.substr(0, 4) == "GET ")
@@ -133,7 +134,7 @@ public:
         else if (headertext.substr(0, 5) == "POST ")
             result.method = HTTPrequest::MethodPost;
         else
-            return std::make_tuple(false, HTTPrequest());
+            return std::make_tuple(Bad, HTTPrequest());
 
         /// Determine requests filename
         /// First, find first non-whitespace character after method string
@@ -141,11 +142,11 @@ public:
         static const std::size_t max_first_separator_pos = 16;
         for (pos1 = result.method == HTTPrequest::MethodGet ? 3 : 4; pos1 < max_first_separator_pos && headertext[pos1] == ' '; ++pos1);
         if (pos1 >= max_first_separator_pos)
-            return std::make_tuple(false, HTTPrequest());
+            return std::make_tuple(Bad, HTTPrequest());
         /// Second, find end of filename, denoted by whitespace
         const std::size_t pos2 = headertext.find(' ', pos1 + 1);
         if (pos2 == std::string::npos)
-            return std::make_tuple(false, HTTPrequest());
+            return std::make_tuple(Bad, HTTPrequest());
         /// Finally, extract filename
         result.filename = headertext.substr(pos1, pos2 - pos1);
 
@@ -167,12 +168,22 @@ public:
         }
 
         if (result.content_length > 0) {
-            /// There has been a content-length field and its value equals received payload data
-            return std::make_tuple((int)(headertext.length()) - result.content_start == result.content_length, result);
-        } else if (result.method > HTTPrequest::MethodUnknown)
-            return std::make_tuple(result.content_start != -1 && blank_line_counter >= (int)result.method /** numeric value of Method coincides with number of expected blank lines */, result);
-        else
-            return std::make_tuple(false, result); ///< Unknown Method, request always ends
+            /// There has been a content-length field
+
+            if (result.content_length > (int)maxBufferSize - 1 && headertext.length() >= maxBufferSize - 3)
+                /// Buffer is already full, no need to receive more
+                return std::make_tuple(Good, result);
+
+            /// Do we need to receive more data?
+            const int delta = (int)(headertext.length()) - result.content_start - result.content_length;
+            const HTTPstate state = delta < 0 ? NeedMoreData : (delta > 0 ? Bad : Good);
+            return std::make_tuple(state, result);
+        } else if (result.method > HTTPrequest::MethodUnknown) {
+            /// Numeric value of Method coincides with number of expected blank lines
+            const HTTPstate state = blank_line_counter < (int)result.method ? NeedMoreData : Good;
+            return std::make_tuple(state, result);
+        } else
+            return std::make_tuple(Bad, result); ///< Unknown Method, request always ends
     }
 
     /// Requested MIME type for result:
@@ -809,11 +820,14 @@ void HTTPServer::run() {
 
                     const std::string readtext(slaveConnections[i].data);
                     const auto request = d->extractHTTPrequest(readtext);
-                    if (!std::get<0>(request)) {
+                    if (std::get<0>(request) == Private::Bad) {
                         Error::warn("Failed to extract HTTP request from text '%s'", readtext.c_str());
                         d->writeHTTPError(slaveConnections[i].socket, 400);
                         close(slaveConnections[i].socket);
                         slaveConnections[i].socket = -1;
+                        continue;
+                    } else if (std::get<0>(request) == Private::NeedMoreData) {
+                        /// More data expected
                         continue;
                     }
 
