@@ -225,7 +225,7 @@ public:
         if (error != 0)
             Error::warn("Socket %d: error: %s", socket, strerror(error));
         if (retval == 0 && error == 0)
-            Error::debug("Socket %d seems to be health");
+            Error::debug("Socket %d seems to be healthy", socket);
     }
 
     std::string extractTextToLocalize(const std::string &input) const {
@@ -401,7 +401,7 @@ public:
 
         if (!results.empty()) {
             html_stream << "<title>PBFLookup: " << results.size() << " Results</title>" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
-            html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>For the following input, <strong>" << results.size() << " results</strong> were located:</p>" << std::endl;
+            html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>For the following input of " << textToLocalize.length() << "&nbsp;Bytes, <strong>" << results.size() << " results</strong> were located:</p>" << std::endl;
             html_stream << "<p><tt>" << XMLize(textToLocalize) << "</tt></p>" << std::endl;
             html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
 
@@ -790,7 +790,7 @@ void HTTPServer::run() {
                         }
                     } else if (data_size == 0) {
                         /// Remote peer closed connection, so do we, too
-                        Error::warn("Remote peer closed connection (errno=%d)", errno);
+                        Error::info("Remote peer closed connection on socket %d, doing the same on this end (errno=%d)", slaveConnections[i].socket, errno);
                         close(slaveConnections[i].socket);
                         slaveConnections[i].socket = -1;
                         continue;
