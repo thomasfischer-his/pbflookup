@@ -94,9 +94,16 @@ public:
     }
 
     struct HTTPrequest {
-        enum Method {MethodGet, MethodPost};
+        enum Method {MethodUnknown = 0, MethodGet = 1, MethodPost = 2};
         Method method;
+        int content_length;
+        int content_start;
         std::string filename;
+
+        HTTPrequest()
+            : method(MethodUnknown), content_length(0), content_start(-1) {
+            /// nothing
+        }
     };
 
     std::string XMLize(const std::string &text)const {
@@ -142,7 +149,30 @@ public:
         /// Finally, extract filename
         result.filename = headertext.substr(pos1, pos2 - pos1);
 
-        return std::make_tuple(true, result);
+        unsigned int blank_line_counter = 0;
+        for (std::size_t p = pos2; p < headertext.length() - 3; ++p) {
+            if (blank_line_counter == 0 && p < headertext.length() - 16) {
+                const std::string needle = headertext.substr(p, 16);
+                if (boost::iequals(needle, "content-length: ")) {
+                    result.content_length = strtol(headertext.substr(p + 16, 6).c_str(), NULL, 10);
+                    if (errno != 0) result.content_length = 0;
+                }
+            }
+
+            if (headertext[p] == 0x0d && headertext[p + 1] == 0x0a && headertext[p + 2] == 0x0d && headertext[p + 3] == 0x0a) {
+                ++blank_line_counter;
+                if (result.content_start == -1)
+                    result.content_start = p + 4;
+            }
+        }
+
+        if (result.content_length > 0) {
+            /// There has been a content-length field and its value equals received payload data
+            return std::make_tuple((int)(headertext.length()) - result.content_start == result.content_length, result);
+        } else if (result.method > HTTPrequest::MethodUnknown)
+            return std::make_tuple(result.content_start != -1 && blank_line_counter >= (int)result.method /** numeric value of Method coincides with number of expected blank lines */, result);
+        else
+            return std::make_tuple(false, result); ///< Unknown Method, request always ends
     }
 
     /// Requested MIME type for result:
@@ -566,49 +596,6 @@ public:
         dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
         dprintf(fd, "\r\n%s\r\n\r\n", html_code.c_str());
     }
-
-    static bool case_insensitive_strequal(const char *a, const char *b, const size_t len) {
-        for (size_t i = 0; i < len; ++i) {
-            if (a[i] == 0x0 || b[i] == 0x0) return true; /// one of both strings terminate, must have been equal so far
-            if ((a[i] & 128) > 0 || (b[i] & 128) > 0) return false; /// 8-bit, must be UTF-8 or alike, not supported
-            if ((a[i] | 0x20) != (b[i] | 0x20)) return false; /// two characters do not match
-        }
-        /// No issues so far, strings must be equal
-        return true;
-    }
-
-    static bool atEndOfHTTPrequest(const char *data, const size_t len) {
-        enum RequestType {Unknown = 0, GET = 1, POST = 2};
-        RequestType rt = Unknown;
-        size_t content_length = 0;
-        size_t first_blank_line_pos = 0, blank_line_counter = 0;
-        for (size_t p = 1; p < len - 3; ++p) {
-            if (blank_line_counter == 0) {
-                if (p < len - 6 && case_insensitive_strequal(data + p, " get /", 6))
-                    rt = GET;
-                if (p < len - 7 && case_insensitive_strequal(data + p, " post /", 7))
-                    rt = POST;
-                else if (p < len - 16 && case_insensitive_strequal(data + p, "content-length: ", 16)) {
-                    content_length = strtol(data + p + 16, NULL, 10);
-                    if (errno != 0) content_length = 0;
-                }
-            }
-
-            if (data[p] == 0x0d && data[p + 1] == 0x0a && data[p + 2] == 0x0d && data[p + 3] == 0x0a) {
-                ++blank_line_counter;
-                if (first_blank_line_pos == 0)
-                    first_blank_line_pos = p;
-            }
-        }
-
-        if (content_length > 0) {
-            /// There has been a content-length field and its value equals received payload data
-            return len - first_blank_line_pos - 4 == content_length;
-        } else if (rt > Unknown)
-            return first_blank_line_pos > 0 && content_length >= (int)rt /** numeric value of RequestType coincides with number of expected blank lines */;
-        else
-            return true; ///< Unknown RequestType, always ends
-    }
 };
 
 HTTPServer::HTTPServer()
@@ -687,7 +674,7 @@ void HTTPServer::run() {
 
     ResultGenerator resultGenerator;
     static const size_t maxNumberSlaveSockets = 64;
-    size_t countNumberSlaveSockets = 0;
+    size_t numberOfUsedSlaveSockets = 0;
     HTTPServer::Private::SlaveConnection slaveConnections[maxNumberSlaveSockets];
 
     Error::info("Press Ctrl+C or send SIGTERM or SIGINT to pid %d", getpid());
@@ -737,25 +724,46 @@ void HTTPServer::run() {
             } else
                 Error::info("Incoming connection from %d.%d.%d.%d", their_addr.sin_addr.s_addr & 255, (their_addr.sin_addr.s_addr >> 8) & 255, (their_addr.sin_addr.s_addr >> 16) & 255, (their_addr.sin_addr.s_addr >> 24) & 255);
 
-            if (countNumberSlaveSockets < maxNumberSlaveSockets) {
-                size_t idx = INT_MAX;
-                for (idx = 0; idx < maxNumberSlaveSockets; ++idx)
-                    if (slaveConnections[idx].socket < 0) break;
-                if (idx >= maxNumberSlaveSockets) {
-                    Error::warn("Too many slave connections (%d)", maxNumberSlaveSockets);
-                    d->writeHTTPError(slaveSocket, 500);
-                    close(slaveSocket);
-                } else {
-                    slaveConnections[idx].socket = slaveSocket;
-                    slaveConnections[idx].data[0] = '\0';
-                    slaveConnections[idx].pos = 0;
-                }
+            size_t idx = INT_MAX;
+            for (idx = 0; idx < maxNumberSlaveSockets; ++idx)
+                if (slaveConnections[idx].socket < 0) break;
+            if (idx >= maxNumberSlaveSockets) {
+                Error::warn("Too many slave connections (max=%d)", maxNumberSlaveSockets);
+                d->writeHTTPError(slaveSocket, 500);
+                close(slaveSocket);
+            } else {
+                slaveConnections[idx].socket = slaveSocket;
+                slaveConnections[idx].data[0] = '\0';
+                slaveConnections[idx].pos = 0;
             }
         } else {
-            for (size_t i = 0; i < maxNumberSlaveSockets; ++i)
+            size_t localNumberOfUsedSlaveSockets = 0;
+            for (size_t i = 0; i < maxNumberSlaveSockets; ++i) {
+                if (slaveConnections[i].socket >= 0) {
+                    Error::info("Testing socket %d (i=%d)", slaveConnections[i].socket, i);
+                    d->print_socket_status(slaveConnections[i].socket);
+                    ++localNumberOfUsedSlaveSockets;
+                }
                 if (slaveConnections[i].socket >= 0 && FD_ISSET(slaveConnections[i].socket, &readfds)) {
-                    ssize_t data_size = recv(slaveConnections[i].socket, slaveConnections[i].data + slaveConnections[i].pos, maxBufferSize - slaveConnections[i].pos - 1, MSG_DONTWAIT);
-                    if (data_size == -1) {
+                    d->print_socket_status(slaveConnections[i].socket);
+
+                    const ssize_t max_data_size = maxBufferSize - slaveConnections[i].pos - 1;
+                    if (max_data_size == 0) {
+                        Error::warn("Buffer is full, cannot store data, just discarding it...");
+                        d->writeHTTPError(slaveConnections[i].socket, 500);
+                        close(slaveConnections[i].socket);
+                        slaveConnections[i].socket = -1;
+                        continue;
+                    } else
+                        Error::debug("Accepting buffer has size %d", max_data_size);
+                    ssize_t data_size = recv(slaveConnections[i].socket, slaveConnections[i].data + slaveConnections[i].pos, max_data_size, MSG_DONTWAIT);
+                    if (data_size > 0 && data_size == max_data_size) {
+                        Error::warn("Just received enough data to completely fill buffer for slave socket: %lu Bytes", data_size);
+                    }
+
+                    d->print_socket_status(slaveConnections[i].socket);
+
+                    if (data_size < 0) {
                         /// Some error to handle ...
                         if (errno == EAGAIN || errno == EWOULDBLOCK) {
                             /// Try again later
@@ -763,51 +771,61 @@ void HTTPServer::run() {
                             continue;
                         } else {
                             /// Other unspecific error
-                            Error::warn("Got errno=%d", errno);
+                            Error::warn("Got errno=%d when receiving data", errno);
                             d->writeHTTPError(slaveConnections[i].socket, 500);
                             close(slaveConnections[i].socket);
                             slaveConnections[i].socket = -1;
                             continue;
                         }
+                    } else if (data_size == 0) {
+                        /// Remote peer closed connection, so do we, too
+                        Error::warn("Remote peer closed connection (errno=%d)", errno);
+                        close(slaveConnections[i].socket);
+                        slaveConnections[i].socket = -1;
+                        continue;
                     }
+                    /// else: data_size > 0
 
-                    if (data_size > 0) {
-                        /// Some data has been received, more may come
-                        slaveConnections[i].pos += data_size;
-                        slaveConnections[i].data[slaveConnections[i].pos] = '\0'; ///< ensure string termination
-                        Error::debug("Received %lu bytes of data in total on socket %u", slaveConnections[i].pos, slaveConnections[i].socket);
-
-                        /// If not auto-detecting end-of-request (two newlines), wait for more data
-                        if (Private::atEndOfHTTPrequest(slaveConnections[i].data, slaveConnections[i].pos))
-                            Error::debug("Auto-detecting end-of-request");
-                        else
-                            continue;
-                    }
-
+                    /// Some data has been received, more may come
+                    slaveConnections[i].pos += data_size;
+                    Error::info("Just received %lu bytes of data on socket %u", data_size, slaveConnections[i].socket);
                     /// Remember number of bytes received
                     data_size = slaveConnections[i].pos;
-                    /// A valid request should have some minimum number of bytes
-                    if (data_size < 4 /** less than 4 Bytes doesn't sound right ... */) {
-                        d->writeHTTPError(slaveConnections[i].socket, 400);
-                        close(slaveConnections[i].socket);
-                        slaveConnections[i].socket = -1;
-                        Error::warn("Too few bytes read from slave socket: %d bytes only", data_size);
-                        continue;
-                    } else
-                        Error::debug("Processing %d Bytes", data_size);
+                    slaveConnections[i].data[data_size] = '\0'; ///< ensure string termination
+
+                    if (data_size == maxBufferSize - 1) {
+                        /// Buffer is full
+                        Error::debug("Slave socket's buffer is full");
+                        /// Try to erase partial words at the end if there are any
+                        for (size_t p = data_size; p > maxBufferSize - 64; --p) {
+                            if (slaveConnections[i].data[p] <= 0x20 || slaveConnections[i].data[p] == '.' || slaveConnections[i].data[p] == ',' || slaveConnections[i].data[p] == ':' || slaveConnections[i].data[p] == '!' || slaveConnections[i].data[p] == '?' || slaveConnections[i].data[p] == ';' || slaveConnections[i].data[p] == '-') {
+                                slaveConnections[i].data[p] = '\0';
+                                data_size = p;
+                                break;
+                            } else
+                                slaveConnections[i].data[p] = '\0';
+                        }
+                    }
 
                     const std::string readtext(slaveConnections[i].data);
-                    std::string lowercasetext = readtext;
-                    utf8tolower(lowercasetext);
-
                     const auto request = d->extractHTTPrequest(readtext);
                     if (!std::get<0>(request)) {
+                        Error::warn("Failed to extract HTTP request from text '%s'", readtext.c_str());
                         d->writeHTTPError(slaveConnections[i].socket, 400);
                         close(slaveConnections[i].socket);
                         slaveConnections[i].socket = -1;
-                        Error::warn("Too few bytes read from slave socket: %d bytes only", data_size);
                         continue;
                     }
+
+                    /// A valid request should have some minimum number of bytes
+                    if (data_size < 4 /** less than 4 Bytes doesn't sound right ... */) {
+                        Error::warn("Too few bytes read from slave socket: %d bytes only", data_size);
+                        d->writeHTTPError(slaveConnections[i].socket, 400);
+                        close(slaveConnections[i].socket);
+                        slaveConnections[i].socket = -1;
+                        continue;
+                    } else
+                        Error::info("Processing %lu Bytes", data_size);
 
                     if (std::get<1>(request).method == Private::HTTPrequest::MethodGet) {
                         const std::string &getfilename = std::get<1>(request).filename;
@@ -819,7 +837,16 @@ void HTTPServer::run() {
                         else {
                             Error::warn("Don't know how to serve request for file '%s'", getfilename.c_str());
                             d->writeHTTPError(slaveConnections[i].socket, 404, "Could not serve your request for this file:", getfilename);
+                            close(slaveConnections[i].socket);
+                            slaveConnections[i].socket = -1;
+                            continue;
+                        }
+
+                        close(slaveConnections[i].socket);
+                        slaveConnections[i].socket = -1;
                     } else if (std::get<1>(request).method == Private::HTTPrequest::MethodPost) {
+                        std::string lowercasetext = readtext;
+                        utf8tolower(lowercasetext);
                         const Private::RequestedMimeType requestedMime = d->extractRequestedMimeType(lowercasetext);
                         const std::string text = d->extractTextToLocalize(lowercasetext);
 
@@ -837,14 +864,21 @@ void HTTPServer::run() {
                         case Private::JSON: d->writeResultsJSON(slaveConnections[i].socket, results); break;
                         case Private::XML: d->writeResultsXML(slaveConnections[i].socket, results); break;
                         }
+                        Error::debug("Sent data for mime type %d", requestedMime);
+
+                        close(slaveConnections[i].socket);
+                        slaveConnections[i].socket = -1;
                     } else {
                         Error::warn("Unknown/unsupported HTTP method");
                         d->writeHTTPError(slaveConnections[i].socket, 400);
+                        close(slaveConnections[i].socket);
+                        slaveConnections[i].socket = -1;
+                        continue;
                     }
-
-                    close(slaveConnections[i].socket);
-                    slaveConnections[i].socket = -1;
                 }
+            }
+            if (localNumberOfUsedSlaveSockets > numberOfUsedSlaveSockets)
+                numberOfUsedSlaveSockets = localNumberOfUsedSlaveSockets;
         }
     }
 
@@ -857,6 +891,8 @@ void HTTPServer::run() {
 
     /// Restore old signal mask
     sigprocmask(SIG_SETMASK, &oldsigset, NULL);
+
+    Error::info("Maxmimum number of used slave sockets: %d", numberOfUsedSlaveSockets);
 
     return;
 }
