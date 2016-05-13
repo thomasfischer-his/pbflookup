@@ -1856,17 +1856,30 @@ uint64_t Sweden::retrieveAdministrativeRegion(const std::string &name, int *admi
 }
 
 std::vector<struct Sweden::KnownAdministrativeRegion> Sweden::identifyAdministrativeRegions(const std::vector<std::string> &word_combinations) {
-    std::vector<struct KnownAdministrativeRegion> result;
-
+    std::map<int64_t, struct KnownAdministrativeRegion> result_map;
     for (const std::string &combined : word_combinations) {
         int admin_level = -1;
         const uint64_t relationId = retrieveAdministrativeRegion(combined, &admin_level);
         if (relationId > 0) {
             if (admin_level < 0)
                 Error::warn("Administrative region of name '%s' (relation id %llu) has invalid 'admin_level'", combined.c_str(), relationId);
-            result.push_back(KnownAdministrativeRegion(relationId, combined, admin_level));
+            /// Put identified admin regions into std::map (avoids duplicates)
+            result_map.emplace(relationId, KnownAdministrativeRegion(relationId, combined, admin_level));
         }
     }
+
+    /// Extract map's values, put them into vector
+    std::vector<struct KnownAdministrativeRegion> result;
+    for (auto it = result_map.cbegin(); it != result_map.cend(); ++it)
+        result.push_back(it->second);
+
+    /// Sort array: low-level admin regions go first, rel-id is secondary criterion
+    std::sort(result.begin(), result.end(), [](struct KnownAdministrativeRegion & a, struct KnownAdministrativeRegion & b) {
+        if (a.admin_level > b.admin_level) return true;
+        else if (a.admin_level < b.admin_level) return false;
+        else /** a.admin_level == b.admin_level */
+            return a.relationId < b.relationId;
+    });
 
     return result;
 }
