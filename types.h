@@ -32,10 +32,10 @@ struct OSMElement {
         /// nothing -> invalid
     }
 
-    OSMElement(uint64_t _id, ElementType _type, RealWorldType _realworld_type = OSMElement::UnknownRealWorldType) {
-        id = _id;
-        type = _type;
-        realworld_type = _realworld_type;
+    OSMElement(uint64_t _id, ElementType _type, RealWorldType _realworld_type = OSMElement::UnknownRealWorldType)
+        : id(_id), type(_type), realworld_type(_realworld_type)
+    {
+        /// nothing
     }
 
     std::string name() const;
