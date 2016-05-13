@@ -220,7 +220,7 @@ public:
         int error = 0;
         socklen_t len = sizeof(error);
         const int retval = getsockopt(socket, SOL_SOCKET, SO_ERROR, &error, &len);
-        if (retval != 0)
+        if (retval > 0)
             Error::warn("Error getting error code for socket %d: %s", socket, strerror(retval));
         if (error != 0)
             Error::warn("Socket %d: error: %s", socket, strerror(error));
