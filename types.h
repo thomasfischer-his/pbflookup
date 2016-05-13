@@ -40,21 +40,9 @@ struct OSMElement {
 
     std::string name() const;
 
-    operator std::string() const {
-        std::string typeString;
-        switch (type) {
-        case UnknownElementType: typeString = "Unknown "; break;
-        case Node: typeString = "Node "; break;
-        case Way: typeString = "Way "; break;
-        case Relation: typeString = "Relation "; break;
-        }
+    operator std::string() const;
 
-        return typeString + std::to_string(id);
-    }
-
-    bool isValid() const {
-        return id < UINT64_MAX && type != UnknownElementType;
-    }
+    bool isValid() const;
 };
 
 #endif // TYPES_H

@@ -39,4 +39,18 @@ std::string OSMElement::name() const {
     return result;
 }
 
+OSMElement::operator std::string() const {
+    std::string typeString;
+    switch (type) {
+    case UnknownElementType: typeString = "Unknown "; break;
+    case Node: typeString = "Node "; break;
+    case Way: typeString = "Way "; break;
+    case Relation: typeString = "Relation "; break;
+    }
 
+    return typeString + std::to_string(id);
+}
+
+bool OSMElement::isValid() const {
+    return id < UINT64_MAX && type != UnknownElementType;
+}
