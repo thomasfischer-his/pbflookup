@@ -440,6 +440,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
         const std::vector<struct OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
 
         OSMElement prev_element;
+        Coord prev_coord;
         for (const OSMElement &element : element_list) {
             /// Using the following heuristic: if the previous element is
             /// of the same type and has an id that is very close, then
@@ -452,12 +453,21 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 static const int delta_threshold = 4;
                 if (delta <= delta_threshold && delta >= -delta_threshold) {
                     prev_element = element;
+                    node2Coord->retrieve(getNodeInOSMElement(element).id, prev_coord);
                     continue;
                 }
             }
 
             const OSMElement &eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
             if (eNode.type != OSMElement::Node) continue; ///< Not a node
+
+            Coord coord;
+            if (!node2Coord->retrieve(eNode.id, coord)) continue;
+            if (prev_coord.isValid() && Coord::distanceXYsquare(coord, prev_coord) < 25000000L /** 5km */) {
+                prev_element = element;
+                prev_coord = coord;
+                continue;
+            }
 
             for (const Sweden::KnownAdministrativeRegion &adminReg : adminRegions) {
                 const uint64_t adminRegRelId = adminReg.relationId;
@@ -467,6 +477,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
             }
 
             prev_element = element;
+            prev_coord = coord;
         }
     }
 
