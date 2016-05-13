@@ -335,6 +335,21 @@ struct Coord {
 
     /**
      * Compute the distance between to coordinates based on their
+     * x/y values on the decimeter grid. Should be faster than
+     * distanceXY, but returns the square value of it, i.e. omits
+     * calling costly sqrt(..).
+     * @param a One coordinate
+     * @param b Another coordinate
+     * @return Distance between two coordinates in meter to the square
+     */
+    static int64_t distanceXYsquare(const Coord &a, const Coord &b) {
+        const int64_t deltaX = ((a.x > b.x ? (a.x - b.x) : (b.x - a.x)) + 5) / 10;
+        const int64_t deltaY = ((a.y > b.y ? (a.y - b.y) : (b.y - a.y)) + 5) / 10;
+        return deltaX * deltaX + deltaY * deltaY;
+    }
+
+    /**
+     * Compute the distance between to coordinates based on their
      * latitudes and longitudes. About half the speed of distanceXY
      * which is based on a decimeter grid, but exact.
      * A corresponding object-variant (non-static) exists as
