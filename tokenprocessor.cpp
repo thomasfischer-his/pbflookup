@@ -469,11 +469,25 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 continue;
             }
 
+            int inside_admin_level = INT_MAX;
             for (const Sweden::KnownAdministrativeRegion &adminReg : adminRegions) {
+                /// Keep track which level the latest 'inside'
+                /// admin region match had for this node. A node
+                /// cannot be in another admin region of the same
+                /// level (this other admin region has a
+                /// non-overlapping area).
+                /// So if another admin region is to be tested,
+                /// it can be safely skipped if it has the same
+                /// admin level as the last 'inside' match.
+                if (adminReg.admin_level >= inside_admin_level)
+                    continue;
+
                 const uint64_t adminRegRelId = adminReg.relationId;
                 const std::string adminRegName = adminReg.name;
-                if (adminRegRelId > 0 && adminRegRelId != element.id && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId))
+                if (adminRegRelId > 0 && adminRegRelId != element.id && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId)) {
                     result.push_back(AdminRegionMatch(combined, element, adminRegRelId, adminRegName));
+                    inside_admin_level = adminReg.admin_level;
+                }
             }
 
             prev_element = element;
