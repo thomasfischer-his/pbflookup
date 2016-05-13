@@ -438,7 +438,24 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
 
         /// Retrieve all OSM elements matching a given word combination
         const std::vector<struct OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+
+        OSMElement prev_element;
         for (const OSMElement &element : element_list) {
+            /// Using the following heuristic: if the previous element is
+            /// of the same type and has an id that is very close, then
+            /// it is assumed that it describes a position very close
+            /// to the previous element's location.
+            /// Thus it is safe to ignore this element and to avoid costly
+            /// geometric calculations.
+            if (element.type == prev_element.type) {
+                const int delta = element.id - prev_element.id;
+                static const int delta_threshold = 4;
+                if (delta <= delta_threshold && delta >= -delta_threshold) {
+                    prev_element = element;
+                    continue;
+                }
+            }
+
             const OSMElement &eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
             if (eNode.type != OSMElement::Node) continue; ///< Not a node
 
@@ -448,6 +465,8 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 if (adminRegRelId > 0 && adminRegRelId != element.id && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId))
                     result.push_back(AdminRegionMatch(combined, element, adminRegRelId, adminRegName));
             }
+
+            prev_element = element;
         }
     }
 
