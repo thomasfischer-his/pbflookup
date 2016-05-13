@@ -926,6 +926,10 @@ bool Sweden::nodeInsideRelationRegion(uint64_t nodeId, uint64_t relationId) {
     return d->nodeInsideRelationRegion(nodeId, relationId);
 }
 
+bool Sweden::nodeInsideRelationRegion(const Coord &coord, uint64_t relationId) {
+    return d->nodeInsideRelationRegion(coord, relationId);
+}
+
 void Sweden::insertSCBarea(const int code, uint64_t relid) {
     d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
