@@ -463,7 +463,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
 
             Coord coord;
             if (!node2Coord->retrieve(eNode.id, coord)) continue;
-            if (prev_coord.isValid() && Coord::distanceXYsquare(coord, prev_coord) < 25000000L /** 5km */) {
+            if (prev_coord.isValid() && Coord::distanceXYsquare(coord, prev_coord) < 9000000L /** 3km */) {
                 prev_element = element;
                 prev_coord = coord;
                 continue;
