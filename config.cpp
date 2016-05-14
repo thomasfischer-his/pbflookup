@@ -83,13 +83,20 @@ void replacevariablenames(std::string &text) {
     }
 }
 
-void makeabsolutepath(std::string &text) {
+void makeabsolutepath(std::string &text, const std::string &relative_to_file = std::string()) {
     if (!text.empty() && text[0] != '/') {
-        char cwd[MAX_STRING_LEN];
-        if (getcwd(cwd, MAX_STRING_LEN - 1) != NULL) {
-            /// Insert current working directory in front of relative path
-            /// Requires some copying of strings ...
-            text.insert(0, "/").insert(0, cwd);
+        if (relative_to_file.empty()) {
+            /// no relative-to specified, use current working directory
+            char cwd[MAX_STRING_LEN];
+            if (getcwd(cwd, MAX_STRING_LEN - 1) != NULL) {
+                /// Insert current working directory in front of relative path
+                /// Requires some copying of strings ...
+                text.insert(0, "/").insert(0, cwd);
+            }
+        } else {
+            const size_t last_slash_pos = relative_to_file.rfind("/");
+            if (last_slash_pos != std::string::npos)
+                text.insert(0, relative_to_file.substr(0, last_slash_pos + 1));
         }
     }
 }
@@ -119,7 +126,7 @@ bool init_configuration(const char *configfilename) {
     /// Tell libconfig that the main configuration file's directory
     /// should be used as base for '@include' statements with
     /// relative paths.
-    const size_t lastslash_pos = internal_configfilename.rfind('/');
+    const size_t lastslash_pos = internal_configfilename.rfind("/");
     if (lastslash_pos != std::string::npos && lastslash_pos > 1) {
         const std::string include_dir = internal_configfilename.substr(0, lastslash_pos);
         Error::debug("Including directory '%s' when searching for config files", include_dir.c_str());
@@ -148,7 +155,7 @@ bool init_configuration(const char *configfilename) {
                 tempdir = "/tmp";
         }
         replacetildehome(tempdir);
-        makeabsolutepath(tempdir);
+        makeabsolutepath(tempdir, internal_configfilename);
 #ifdef DEBUG
         Error::debug("  tempdir = '%s'", tempdir.c_str());
 #endif // DEBUG
@@ -164,7 +171,7 @@ bool init_configuration(const char *configfilename) {
             logfilename.clear();
         replacetildehome(logfilename);
         replacevariablenames(logfilename);
-        makeabsolutepath(logfilename);
+        makeabsolutepath(logfilename, internal_configfilename);
 #ifdef DEBUG
         Error::debug("  logfilename = '%s'", logfilename.c_str());
 #endif // DEBUG
@@ -192,7 +199,7 @@ bool init_configuration(const char *configfilename) {
         }
         replacetildehome(pidfilename);
         replacevariablenames(pidfilename);
-        makeabsolutepath(pidfilename);
+        makeabsolutepath(pidfilename, internal_configfilename);
 #ifdef DEBUG
         Error::debug("  pidfilename = '%s'", pidfilename.c_str());
 #endif // DEBUG
@@ -205,7 +212,7 @@ bool init_configuration(const char *configfilename) {
         }
         replacetildehome(osmpbffilename);
         replacevariablenames(osmpbffilename);
-        makeabsolutepath(osmpbffilename);
+        makeabsolutepath(osmpbffilename, internal_configfilename);
 #ifdef DEBUG
         Error::debug("  osmpbffilename = '%s'", osmpbffilename.c_str());
 #endif // DEBUG
@@ -218,7 +225,7 @@ bool init_configuration(const char *configfilename) {
         }
         replacetildehome(stopwordfilename);
         replacevariablenames(stopwordfilename);
-        makeabsolutepath(stopwordfilename);
+        makeabsolutepath(stopwordfilename, internal_configfilename);
 #ifdef DEBUG
         Error::debug("  stopwordfilename = '%s'", stopwordfilename.c_str());
 #endif // DEBUG
@@ -271,7 +278,7 @@ bool init_configuration(const char *configfilename) {
                 http_public_files.clear();
             replacetildehome(http_public_files);
             replacevariablenames(http_public_files);
-            makeabsolutepath(http_public_files);
+            makeabsolutepath(http_public_files, internal_configfilename);
             const size_t http_public_files_len = http_public_files.length();
             if (http_public_files_len > 1 && http_public_files[http_public_files_len - 1] == '/') http_public_files[http_public_files_len - 1] = '\0';
 
