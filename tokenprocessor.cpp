@@ -433,11 +433,24 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
     std::vector<struct TokenProcessor::AdminRegionMatch> result;
     if (adminRegions.empty() || word_combinations.empty()) return result; ///< Nothing to do
 
+#ifdef CPUTIMER
+    int64_t cputime, walltime;
+    int64_t retrievalTime = 0, insideTestTime = 0, sortingTime = 0;
+    Timer timer;
+#endif //  CPUTIMER
+
     for (const std::string &combined : word_combinations) {
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
+#ifdef CPUTIMER
+        timer.start();
+#endif // CPUTIMER
         const std::vector<struct OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+#ifdef CPUTIMER
+        timer.elapsed(&cputime, &walltime);
+        retrievalTime += cputime;
+#endif // CPUTIMER
 
         OSMElement prev_element;
         Coord prev_coord;
@@ -482,11 +495,19 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 if (adminReg.admin_level >= inside_admin_level)
                     continue;
 
-                const uint64_t adminRegRelId = adminReg.relationId;
-                const std::string adminRegName = adminReg.name;
-                if (adminRegRelId > 0 && adminRegRelId != element.id && adminRegRelId != eNode.id && sweden->nodeInsideRelationRegion(eNode.id, adminRegRelId)) {
-                    result.push_back(AdminRegionMatch(combined, element, adminRegRelId, adminRegName));
-                    inside_admin_level = adminReg.admin_level;
+                if (adminReg.relationId > 0 && adminReg.relationId != element.id && adminReg.relationId != eNode.id) {
+#ifdef CPUTIMER
+                    timer.start();
+#endif // CPUTIMER
+                    const bool inside = sweden->nodeInsideRelationRegion(coord, adminReg.relationId);
+#ifdef CPUTIMER
+                    timer.elapsed(&cputime, &walltime);
+                    insideTestTime += cputime;
+#endif // CPUTIMER
+                    if (inside) {
+                        result.push_back(AdminRegionMatch(combined, element, adminReg.relationId, adminReg.name));
+                        inside_admin_level = adminReg.admin_level;
+                    }
                 }
             }
 
@@ -496,6 +517,9 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
     }
 
 
+#ifdef CPUTIMER
+    timer.start();
+#endif // CPUTIMER
     std::sort(result.begin(), result.end(), [](struct AdminRegionMatch & a, struct AdminRegionMatch & b) {
         /**
          * The following sorting criteria will be apply, top down. If there
@@ -557,6 +581,12 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 return a.name.length() > b.name.length();
         }
     });
+
+#ifdef CPUTIMER
+    timer.elapsed(&cputime, &walltime);
+    sortingTime = cputime;
+    Error::info("evaluateAdministrativeRegions:  retrievalTime= %.3lf  insideTestTime= %.3lf  sortingTime= %.3lf", retrievalTime / 1000.0, insideTestTime / 1000.0, sortingTime / 1000.0);
+#endif //CPUTIMER
 
     return result;
 }

@@ -12,6 +12,7 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 #SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -pg")
 
 add_definitions(-DDEBUG)
+add_definitions(-DCPUTIMER)
 add_definitions(-DREVERSE_ID_TREE)
 
 find_package(PkgConfig REQUIRED)

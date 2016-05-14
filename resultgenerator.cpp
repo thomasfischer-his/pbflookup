@@ -36,17 +36,23 @@ ResultGenerator::~ResultGenerator() {
 
 std::vector<Result> ResultGenerator::findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity) {
     std::vector<Result> results;
+#ifdef CPUTIMER
     Timer timer;
     int64_t cputime, walltime;
+#endif // CPUTIMER
 
+#ifdef CPUTIMER
     timer.start();
+#endif // CPUTIMER
     std::vector<std::string> words = tokenizer->read_words(text, Tokenizer::Duplicates);
     tokenizer->add_grammar_cases(words);
     const std::vector<std::string> word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */, Tokenizer::Unique);
+#ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to tokenize text of length %d: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", text.length(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
+#endif // CPUTIMER
 
     /// ===================================================================================
     /// Check if the test input contains road labels (e.g. 'E 20') and city/town names.
@@ -54,8 +60,12 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     /// If distance is below an acceptable threshold, assume location on road closest to
     /// town as resulting position.
     /// -----------------------------------------------------------------------------------
-    if (verbosity > VerbositySilent)
+    if (verbosity > VerbositySilent) {
         Error::info("=== Testing for roads close to cities/towns ===");
+#ifdef CPUTIMER
+        timer.start();
+#endif // CPUTIMER
+    }
 
     const std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
     const std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
@@ -76,11 +86,19 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             }
         }
     }
+#ifdef CPUTIMER
+    if (verbosity > VerbositySilent) {
+        timer.elapsed(&cputime, &walltime);
+        Error::info("Spent CPU time to identify roads close to cities/towns: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+    }
+#endif // CPUTIMER
 
 
     if (verbosity > VerbositySilent) {
         Error::info("=== Testing for places inside administrative boundaries ===");
+#ifdef CPUTIMER
         timer.start();
+#endif // CPUTIMER
     }
     const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
     if (!adminReg.empty()) {
@@ -96,14 +114,18 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             }
         }
     }
+#ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to identify places inside administrative boundaries: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
+#endif // CPUTIMER
 
     if (verbosity > VerbositySilent) {
         Error::info("=== Testing for local-scope places near global-scope places ===");
+#ifdef CPUTIMER
         timer.start();
+#endif // CPUTIMER
     }
     std::vector<struct OSMElement> places;
     places = sweden->identifyPlaces(word_combinations);
@@ -128,15 +150,19 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             }
         }
     }
+#ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to identify nearby places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
+#endif // CPUTIMER
 
 
     if (verbosity > VerbositySilent) {
         Error::info("=== Testing word combination occurring only once (unique) in OSM data ===");
+#ifdef CPUTIMER
         timer.start();
+#endif // CPUTIMER
     }
     std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
     for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
@@ -149,10 +175,12 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
                 Error::debug("Got a result for name '%s'!", uniqueMatch.name.c_str());
         }
     }
+#ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to identify nearby places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
+#endif // CPUTIMER
 
 
     if (!places.empty()) {
