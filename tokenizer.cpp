@@ -184,7 +184,7 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
         "m\xc3\xa4n",
         "plats", "platsen", "pris",
         "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
-        "sankt", "ser", "slott", "sp\xc3\xa5r", "stad", "staden", "station", "svea", "sverige", "s\xc3\xa5g",
+        "sankt", "s:t", "ser", "slott", "sp\xc3\xa5r", "stad", "staden", "station", "svea", "sverige", "s\xc3\xa5g",
         "tf" /** tillfällig */, "tid", "tillf\xc3\xa4llig", "torg", "torget",
         "vi", "via", "v\xc3\xa4g", "v\xc3\xa4gen",
         "\xc3\xa5r" /** 'år' */,
