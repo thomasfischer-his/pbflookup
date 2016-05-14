@@ -46,6 +46,8 @@ public:
         int number;
     };
 
+    enum SCBLevel {LevelMunicipality = 1, LevelCounty = 2};
+
     explicit Sweden();
     explicit Sweden(std::istream &input);
     ~Sweden();
@@ -55,8 +57,8 @@ public:
     bool nodeInsideRelationRegion(uint64_t nodeId, uint64_t relationId);
     bool nodeInsideRelationRegion(const Coord &coord, uint64_t relationId);
     void insertSCBarea(const int code, uint64_t relid);
-    std::vector<int> insideSCBarea(const Coord &coord);
-    std::vector<int> insideSCBarea(uint64_t nodeid);
+    std::vector<int> insideSCBarea(const Coord &coord, SCBLevel scbLevel);
+    std::vector<int> insideSCBarea(uint64_t nodeid, SCBLevel scbLevel);
     static Sweden::RoadType roadTypeForSCBarea(int scbarea);
     static std::string nameOfSCBarea(int scbarea);
     void insertNUTS3area(const int code, uint64_t relid);
@@ -162,5 +164,12 @@ private:
     class Private;
     Private *const d;
 };
+
+inline Sweden::SCBLevel operator|(Sweden::SCBLevel a, Sweden::SCBLevel b) {
+    return static_cast<Sweden::SCBLevel>(static_cast<int>(a) | static_cast<int>(b));
+}
+inline Sweden::SCBLevel operator&(Sweden::SCBLevel a, Sweden::SCBLevel b) {
+    return static_cast<Sweden::SCBLevel>(static_cast<int>(a) &static_cast<int>(b));
+}
 
 #endif // SWEDEN_H

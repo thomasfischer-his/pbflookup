@@ -418,7 +418,7 @@ public:
 
                 const double lon = Coord::toLongitude(result.coord.x);
                 const double lat = Coord::toLatitude(result.coord.y);
-                const std::vector<int> m = sweden->insideSCBarea(result.coord);
+                const std::vector<int> m = sweden->insideSCBarea(result.coord, Sweden::LevelMunicipality);
                 const int scbarea = m.empty() ? 0 : m.front();
                 static const int zoom = 15;
                 html_stream << "<tr><td><a href=\"https://www.openstreetmap.org/?mlat=" << lat << "&amp;mlon=" << lon << "#map=" << zoom << "/" << lat << "/" << lon << "\" target=\"_blank\">lat= " << lat << "<br/>lon= " << lon << "</a><br/>near " << Sweden::nameOfSCBarea(scbarea) << ", " << Sweden::nameOfSCBarea(scbarea / 100) << "</td>";
@@ -489,7 +489,7 @@ public:
 
             const double lon = Coord::toLongitude(result.coord.x);
             const double lat = Coord::toLatitude(result.coord.y);
-            const std::vector<int> m = sweden->insideSCBarea(result.coord);
+            const std::vector<int> m = sweden->insideSCBarea(result.coord, Sweden::LevelMunicipality);
             const int scbarea = m.empty() ? 0 : m.front();
 
             html_stream << "      \"latitude\": " << lat << "," << std::endl;
@@ -563,7 +563,7 @@ public:
 
             const double lon = Coord::toLongitude(result.coord.x);
             const double lat = Coord::toLatitude(result.coord.y);
-            const std::vector<int> m = sweden->insideSCBarea(result.coord);
+            const std::vector<int> m = sweden->insideSCBarea(result.coord, Sweden::LevelMunicipality);
             const int scbarea = m.empty() ? 0 : m.front();
 
             html_stream << "      <latitude format=\"decimal\">" << lat << "</latitude>" << std::endl;

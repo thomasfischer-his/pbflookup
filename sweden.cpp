@@ -934,9 +934,11 @@ void Sweden::insertSCBarea(const int code, uint64_t relid) {
     d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
 
-std::vector<int> Sweden::insideSCBarea(const Coord &coord) {
+std::vector<int> Sweden::insideSCBarea(const Coord &coord, SCBLevel scbLevel) {
     std::vector<int> result;
     for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
+        if ((scbLevel & LevelCounty) == 0 && it->first > 100) continue;
+        if ((scbLevel & LevelMunicipality) == 0 && it->first < 100) continue;
         if (d->nodeInsideRelationRegion(coord, it->second))
             result.push_back(it->first);
     }
@@ -944,9 +946,11 @@ std::vector<int> Sweden::insideSCBarea(const Coord &coord) {
     return result;
 }
 
-std::vector<int> Sweden::insideSCBarea(uint64_t nodeid) {
+std::vector<int> Sweden::insideSCBarea(uint64_t nodeid, SCBLevel scbLevel) {
     std::vector<int> result;
     for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
+        if ((scbLevel & LevelCounty) == 0 && it->first > 100) continue;
+        if ((scbLevel & LevelMunicipality) == 0 && it->first < 100) continue;
         if (d->nodeInsideRelationRegion(nodeid, it->second))
             result.push_back(it->first);
     }
@@ -955,7 +959,8 @@ std::vector<int> Sweden::insideSCBarea(uint64_t nodeid) {
 }
 
 Sweden::RoadType Sweden::roadTypeForSCBarea(int scbarea) {
-    switch (scbarea / 100) {
+    const int internal_scbarea = scbarea > 100 ? scbarea / 100 : scbarea;
+    switch (internal_scbarea) {
     case 10: return RoadType::LanK;
     case 20: return RoadType::LanW;
     case 9: return RoadType::LanI;
@@ -1763,7 +1768,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
                             WayNodes wn;
                             if (wayNodes->retrieve(*it, wn) && wn.num_nodes > 0) {
                                 const uint64_t pivotNodeId = wn.nodes[wn.num_nodes / 2];
-                                std::vector<int> scbAreas = insideSCBarea(pivotNodeId);
+                                std::vector<int> scbAreas = insideSCBarea(pivotNodeId, Sweden::LevelCounty);
                                 if (scbAreas.size() == 1) {
                                     const RoadType properLan = roadTypeForSCBarea(scbAreas.front());
                                     const int properLanIdx = (int)properLan - 2;
