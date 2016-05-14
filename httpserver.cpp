@@ -869,7 +869,9 @@ void HTTPServer::run() {
                         d->timerSearch.start();
                         const std::vector<Result> results = text.length() > 3 ? resultGenerator.findResults(text, 1000, ResultGenerator::VerbositySilent) : std::vector<Result>();
                         d->timerSearch.stop();
-                        Error::debug("%d results", results.size());
+                        int64_t ct;
+                        d->timerSearch.elapsed(&ct);
+                        Error::debug("%d results, time %.3lf", results.size(), ct / 1000.0);
 
                         d->print_socket_status(slaveConnections[i].socket);
 

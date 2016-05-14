@@ -30,7 +30,7 @@ void Testset::run() {
     int setNr = 0;
     ResultGenerator resultGenerator;
     for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
-        Error::info("Test set: %s", it->name.c_str());
+        Error::info("Test set: %s (%d bytes)", it->name.c_str(), it->text.length());
         const std::vector<Coord> &expected = it->coord;
 
         SvgWriter *svgwriter = NULL;

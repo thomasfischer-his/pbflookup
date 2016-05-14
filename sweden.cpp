@@ -1823,6 +1823,9 @@ void Sweden::fixUnlabeledRegionalRoads() {
                                     continue;
                                 } else if (scbAreas.size() > 1)
                                     Error::warn("Got more than one SCB area for way %llu", *it);
+                                else { /// scbAreas.size() == 0
+                                    Error::info("Cannot map way %llu to region in Sweden", *it);
+                                }
                             }
                             /// No proper region found, keep road in "Unknown Lan"
                             ++it;
