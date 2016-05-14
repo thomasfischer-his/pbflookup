@@ -565,11 +565,11 @@ public:
         bool success = false;
         for (const std::deque<Coord> &polygon : region.polygons) {
             /// For a good explanation, see here: http://alienryderflex.com/polygon/
-            const int polyCorners = polygon.size();
+            const size_t polyCorners = polygon.size();
             int j = polyCorners - 1;
             bool oddNodes = false;
 
-            for (int i = 0; i < polyCorners; ++i) {
+            for (size_t i = 0; i < polyCorners; ++i) {
                 if (((polygon[i].y < coord.y && polygon[j].y >= coord.y) || (polygon[j].y < coord.y && polygon[i].y >= coord.y)) && (polygon[i].x <= coord.x || polygon[j].x <= coord.x)) {
                     const int intermediate = polygon[i].x + (coord.y - polygon[i].y) * (polygon[j].x - polygon[i].x) / (polygon[j].y - polygon[i].y);
                     oddNodes ^= intermediate < coord.x;
