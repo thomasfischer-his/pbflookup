@@ -54,16 +54,14 @@ void Testset::run() {
             for (const Result &result : results) {
                 const double lon = Coord::toLongitude(result.coord.x);
                 const double lat = Coord::toLatitude(result.coord.y);
-                const std::vector<int> m = sweden->insideSCBarea(result.coord, Sweden::LevelMunicipality);
-                const int scbarea = m.empty() ? 0 : m.front();
+                const int scbarea = sweden->insideSCBarea(result.coord, Sweden::LevelMunicipality);
                 Error::info("Able to determine a likely position with quality %.5lf near %s (%s), found through '%s'", result.quality, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str(), result.origin.c_str());
                 Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
                 for (const Coord &exp : expected)
                     if (exp.isValid()) {
                         const double lon = Coord::toLongitude(exp.x);
                         const double lat = Coord::toLatitude(exp.y);
-                        const std::vector<int> m = sweden->insideSCBarea(exp, Sweden::LevelMunicipality);
-                        const int scbarea = m.empty() ? 0 : m.front();
+                        const int scbarea = sweden->insideSCBarea(exp, Sweden::LevelMunicipality);
                         Error::info("Distance to expected result: %.1fkm near %s (%s)", exp.distanceLatLon(result.coord) / 1000.0, Sweden::nameOfSCBarea(scbarea).c_str(), Sweden::nameOfSCBarea(scbarea / 100).c_str());
                         Error::debug("  http://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
                     }

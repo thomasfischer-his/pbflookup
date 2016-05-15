@@ -971,28 +971,26 @@ void Sweden::insertSCBarea(const int code, uint64_t relid) {
     d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, relid));
 }
 
-std::vector<int> Sweden::insideSCBarea(const Coord &coord, SCBLevel scbLevel) {
-    std::vector<int> result;
+int Sweden::insideSCBarea(const Coord &coord, SCBLevel scbLevel) {
     for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
         if ((scbLevel & LevelCounty) == 0 && it->first < 100) continue;
         if ((scbLevel & LevelMunicipality) == 0 && it->first >= 100) continue;
         if (d->nodeInsideRelationRegion(coord, it->second))
-            result.push_back(it->first);
+            return it->first;
     }
 
-    return result;
+    return -1;
 }
 
-std::vector<int> Sweden::insideSCBarea(uint64_t nodeid, SCBLevel scbLevel) {
-    std::vector<int> result;
+int Sweden::insideSCBarea(uint64_t nodeid, SCBLevel scbLevel) {
     for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
         if ((scbLevel & LevelCounty) == 0 && it->first < 100) continue;
         if ((scbLevel & LevelMunicipality) == 0 && it->first >= 100) continue;
         if (d->nodeInsideRelationRegion(nodeid, it->second))
-            result.push_back(it->first);
+            return it->first;
     }
 
-    return result;
+    return -1;
 }
 
 Sweden::RoadType Sweden::roadTypeForSCBarea(int scbarea) {
@@ -1806,9 +1804,9 @@ void Sweden::fixUnlabeledRegionalRoads() {
                             WayNodes wn;
                             if (wayNodes->retrieve(*it, wn) && wn.num_nodes > 0) {
                                 const uint64_t pivotNodeId = wn.nodes[wn.num_nodes / 2];
-                                std::vector<int> scbAreas = insideSCBarea(pivotNodeId, Sweden::LevelCounty);
-                                if (scbAreas.size() == 1) {
-                                    const RoadType properLan = roadTypeForSCBarea(scbAreas.front());
+                                const int scbArea = insideSCBarea(pivotNodeId, Sweden::LevelCounty);
+                                if (scbArea > 0) {
+                                    const RoadType properLan = roadTypeForSCBarea(scbArea);
                                     const int properLanIdx = (int)properLan - 2;
                                     if (d->roads.regional[properLanIdx] == NULL)
                                         d->roads.regional[properLanIdx] = (std::vector<uint64_t> ** *)calloc(Private::regional_outer_len, sizeof(std::vector<uint64_t> **));
@@ -1822,9 +1820,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
 
                                     it = wayIds->erase(it);
                                     continue;
-                                } else if (scbAreas.size() > 1)
-                                    Error::warn("Got more than one SCB area for way %llu", *it);
-                                else { /// scbAreas.size() == 0
+                                } else { /// scbArea <= 0
                                     Error::info("Cannot map way %llu to region in Sweden", *it);
                                 }
                             }

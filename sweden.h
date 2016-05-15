@@ -57,8 +57,8 @@ public:
     bool nodeInsideRelationRegion(uint64_t nodeId, uint64_t relationId);
     bool nodeInsideRelationRegion(const Coord &coord, uint64_t relationId);
     void insertSCBarea(const int code, uint64_t relid);
-    std::vector<int> insideSCBarea(const Coord &coord, SCBLevel scbLevel);
-    std::vector<int> insideSCBarea(uint64_t nodeid, SCBLevel scbLevel);
+    int insideSCBarea(const Coord &coord, SCBLevel scbLevel);
+    int insideSCBarea(uint64_t nodeid, SCBLevel scbLevel);
     static Sweden::RoadType roadTypeForSCBarea(int scbarea);
     static std::string nameOfSCBarea(int scbarea);
     void insertNUTS3area(const int code, uint64_t relid);
