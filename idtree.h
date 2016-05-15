@@ -328,6 +328,7 @@ struct Coord {
      * @return Distance between two coordinates in meter
      */
     static int distanceXY(const Coord &a, const Coord &b) {
+        if (a.x == b.x && a.y == b.y) return 0; ///< identical coordinates
         const int64_t deltaX = ((a.x > b.x ? (a.x - b.x) : (b.x - a.x)) + 5) / 10;
         const int64_t deltaY = ((a.y > b.y ? (a.y - b.y) : (b.y - a.y)) + 5) / 10;
         return (int)sqrt(deltaX * deltaX + deltaY * deltaY + 0.5);
@@ -343,6 +344,7 @@ struct Coord {
      * @return Distance between two coordinates in meter to the square
      */
     static int64_t distanceXYsquare(const Coord &a, const Coord &b) {
+        if (a.x == b.x && a.y == b.y) return 0L; ///< identical coordinates
         const int64_t deltaX = ((a.x > b.x ? (a.x - b.x) : (b.x - a.x)) + 5) / 10;
         const int64_t deltaY = ((a.y > b.y ? (a.y - b.y) : (b.y - a.y)) + 5) / 10;
         return deltaX * deltaX + deltaY * deltaY;
@@ -359,6 +361,8 @@ struct Coord {
      * @return Distance between two coordinates in meter
      */
     static int distanceLatLon(const Coord &a, const Coord &b) {
+        if (a.x == b.x && a.y == b.y) return 0; ///< identical coordinates
+
         const double latA = toLatitude(a.y);
         const double lonA = toLongitude(a.x);
         const double latB = toLatitude(b.y);
@@ -378,6 +382,13 @@ struct Coord {
      */
     inline int distanceXY(const Coord &other) const {
         return Coord::distanceXY(*this, other);
+    }
+    /**
+     * An object-variant (non-static) of distanceXYsquare(const Coord &,const Coord &).
+     * @return Distance between two coordinates in meter to the square
+     */
+    inline int distanceXYsquare(const Coord &other) const {
+        return Coord::distanceXYsquare(*this, other);
     }
 
     /**
