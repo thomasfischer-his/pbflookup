@@ -273,10 +273,6 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             timer.start();
 #endif // CPUTIMER
         }
-        /// Sort results by quality (highest first)
-        std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
-            return a.quality > b.quality;
-        });
         if (duplicateProximity > 0) {
             const int64_t duplicateProximitySquare = (int64_t)duplicateProximity * (int64_t)duplicateProximity;
             /// Remove results close to even better results
@@ -298,6 +294,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             }
             results.assign(result_set.cbegin(), result_set.cend());
         }
+        /// Sort results by quality (highest first)
+        std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
+            return a.quality > b.quality;
+        });
 #ifdef CPUTIMER
         if (verbosity > VerbositySilent) {
             timer.elapsed(&cputime, &walltime);
