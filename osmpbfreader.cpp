@@ -506,10 +506,22 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 ++count_named_relations;
                             } else if (strcmp("ref:scb", ckey) == 0 || strcmp("ref:se:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
-                                sweden->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), relId);
+                                const char *s = primblock.stringtable().s(pg.relations(i).vals(k)).c_str();
+                                errno = 0;
+                                const long int v = strtol(s, NULL, 10);
+                                if (errno == 0)
+                                    sweden->insertSCBarea(v, relId);
+                                else
+                                    Error::warn("Cannot convert '%s' to a number", s);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
-                                sweden->insertNUTS3area(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k)).substr(2)), relId);
+                                const char *s = primblock.stringtable().s(pg.relations(i).vals(k)).substr(2).c_str();
+                                errno = 0;
+                                const long int v = strtol(s, NULL, 10);
+                                if (errno == 0)
+                                    sweden->insertNUTS3area(v, relId);
+                                else
+                                    Error::warn("Cannot convert '%s' to a number", s);
                             } else if (strcmp("boundary", ckey) == 0) {
                                 /// Store 'boundary' string for later use
                                 boundary = primblock.stringtable().s(pg.relations(i).vals(k));
