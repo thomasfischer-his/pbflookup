@@ -504,7 +504,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 /// Store 'name' string for later use
                                 name = primblock.stringtable().s(pg.relations(i).vals(k));
                                 ++count_named_relations;
-                            } else if (strcmp("ref:scb", ckey) == 0) {
+                            } else if (strcmp("ref:scb", ckey) == 0 || strcmp("ref:se:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
                                 sweden->insertSCBarea(std::stoi(primblock.stringtable().s(pg.relations(i).vals(k))), relId);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
