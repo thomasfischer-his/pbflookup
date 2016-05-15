@@ -1030,7 +1030,7 @@ std::string Sweden::nameOfSCBarea(int scbarea) {
     case  1: return "Stockholm L\xc3\xa4n";
     case  3: return "Uppsala L\xc3\xa4n";
     case  4: return "S\xc3\xb6""dermanlands L\xc3\xa4n";
-    case  5: return "\xc3\xb6sterg\xc3\xb6tlands L\xc3\xa4n";
+    case  5: return "\xc3\x96sterg\xc3\xb6tlands L\xc3\xa4n";
     case  6: return "J\xc3\xb6nk\xc3\xb6pings L\xc3\xa4n";
     case  7: return "Kronobergs L\xc3\xa4n";
     case  8: return "Kalmar L\xc3\xa4n";
@@ -1040,7 +1040,7 @@ std::string Sweden::nameOfSCBarea(int scbarea) {
     case 13: return "Hallands L\xc3\xa4n";
     case 14: return "V\xc3\xa4stra G\xc3\xb6talands L\xc3\xa4n";
     case 17: return "V\xc3\xa4rmlands L\xc3\xa4n";
-    case 18: return "\xc3\xb6rebro L\xc3\xa4n";
+    case 18: return "\xc3\x96rebro L\xc3\xa4n";
     case 19: return "V\xc3\xa4stmanlands L\xc3\xa4n";
     case 20: return "Dalarnas L\xc3\xa4n";
     case 21: return "G\xc3\xa4vleborgs L\xc3\xa4n";
