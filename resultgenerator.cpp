@@ -17,6 +17,7 @@
 #include "resultgenerator.h"
 
 #include <algorithm>
+#include <unordered_set>
 
 #include "tokenizer.h"
 #include "tokenprocessor.h"
@@ -24,6 +25,40 @@
 #include "helper.h"
 #include "timer.h"
 
+const bool Result::operator==(const Result &r) const {
+    return coord.x == r.coord.x && coord.y == r.coord.y && quality == r.quality && elements.size() == r.elements.size() && origin.length() == r.origin.length() && origin == r.origin;
+}
+
+const bool Result::operator<(const Result &r) const {
+    if (coord.x < r.coord.x) return false;
+    else if (coord.x > r.coord.x) return true;
+    if (coord.y < r.coord.y) return false;
+    else if (coord.y > r.coord.y) return true;
+    if (quality < r.quality) return false;
+    else if (quality > r.quality) return true;
+    if (elements.size() < r.elements.size()) return false;
+    else if (elements.size() > r.elements.size()) return true;
+    if (origin.length() < r.origin.length()) return false;
+    else if (origin.length() > r.origin.length()) return true;
+    if (origin < r.origin) return false;
+    else if (origin > r.origin) return true;
+    return false;
+}
+
+/// Hash function, necessary e.g. for usage in std::unordered_set.
+namespace std {
+template <>
+class hash<Result> {
+public:
+    size_t operator()(const Result &r) const {
+        return hash<int>()(r.coord.x)
+               ^ hash<int>()(r.coord.x)
+               ^ hash<double>()(r.quality)
+               ^ hash<std::string>()(r.origin)
+               ^ hash<std::size_t>()(r.elements.size());
+    }
+};
+}
 ResultGenerator::ResultGenerator() {
     tokenizer = new Tokenizer();
     tokenProcessor = new TokenProcessor();
@@ -225,23 +260,27 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
             return a.quality > b.quality;
         });
-        if (duplicateProximity > 0)
+        if (duplicateProximity > 0) {
+            const int64_t duplicateProximitySquare = (int64_t)duplicateProximity * (int64_t)duplicateProximity;
             /// Remove results close to even better results
-            for (auto outer = results.begin(); outer != results.end();) {
+            std::unordered_set<Result> result_set(results.cbegin(), results.cend());
+            for (auto outer = result_set.cbegin(); outer != result_set.cend();) {
                 bool removedOuter = false;
                 const Result &outerR = *outer;
-                for (auto inner = results.begin(); !removedOuter && inner != outer && inner != results.end(); ++inner) {
+                for (auto inner = result_set.cbegin(); !removedOuter && inner != outer && inner != result_set.cend(); ++inner) {
                     const Result &innerR = *inner;
-                    const auto d = outerR.coord.distanceLatLon(innerR.coord);
-                    if (d < duplicateProximity) {
+                    const auto d = Coord::distanceXYsquare(outerR.coord, innerR.coord);
+                    if (d < duplicateProximitySquare) {
                         /// Less than x meters away? Remove this result!
-                        outer = results.erase(outer);
+                        outer = result_set.erase(outer);
                         removedOuter = true;
                     }
                 }
                 if (!removedOuter)
                     ++outer;
             }
+            results.assign(result_set.cbegin(), result_set.cend());
+        }
     }
 
 

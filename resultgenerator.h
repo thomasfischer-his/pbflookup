@@ -28,6 +28,12 @@ struct Result {
         /** nothing */
     }
 
+    /// Comparison operator, necessary e.g. for std::unordered_set.
+    const bool operator==(const Result &r) const;
+
+    /// Comparison operator, necessary e.g. for std::set.
+    const bool operator<(const Result &r) const;
+
     Coord coord;
     double quality;
     std::string origin;
