@@ -72,12 +72,13 @@ ResultGenerator::~ResultGenerator() {
 std::vector<Result> ResultGenerator::findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity) {
     std::vector<Result> results;
 #ifdef CPUTIMER
-    Timer timer;
+    Timer timer, timerOverFunction;
     int64_t cputime, walltime;
 #endif // CPUTIMER
 
 #ifdef CPUTIMER
     timer.start();
+    timerOverFunction.start();
 #endif // CPUTIMER
     std::vector<std::string> words = tokenizer->read_words(text, Tokenizer::Duplicates);
     tokenizer->add_grammar_cases(words);
@@ -221,8 +222,12 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     if (!places.empty()) {
         /// No good result found, but some places have been recognized in the process.
         /// Pick one of the larger places as result.
-        if (verbosity > VerbositySilent)
+        if (verbosity > VerbositySilent) {
             Error::info("=== Several places are known, trying to pick a good one ===");
+#ifdef CPUTIMER
+            timer.start();
+#endif // CPUTIMER
+        }
         // FIXME picking the right place from the list is rather ugly. Can do better?
         OSMElement bestPlace;
         OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
@@ -252,10 +257,22 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
                 results.push_back(r);
             }
         }
+#ifdef CPUTIMER
+        if (verbosity > VerbositySilent) {
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to identify known places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+        }
+#endif // CPUTIMER
     }
 
 
     if (!results.empty()) {
+        if (verbosity > VerbositySilent) {
+            Error::info("=== Sorting and cleaning results ===");
+#ifdef CPUTIMER
+            timer.start();
+#endif // CPUTIMER
+        }
         /// Sort results by quality (highest first)
         std::sort(results.begin(), results.end(), [](Result & a, Result & b) {
             return a.quality > b.quality;
@@ -281,8 +298,19 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             }
             results.assign(result_set.cbegin(), result_set.cend());
         }
+#ifdef CPUTIMER
+        if (verbosity > VerbositySilent) {
+            timer.elapsed(&cputime, &walltime);
+            Error::info("Spent CPU time to clean/sort results: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+        }
+#endif // CPUTIMER
     }
 
+    Error::debug("%d results", results.size());
+#ifdef CPUTIMER
+    timerOverFunction.elapsed(&cputime);
+    Error::debug(" time %.3lfms = %.1lfs", cputime / 1000.0, cputime / 1000000.0);
+#endif // CPUTIMER
 
     return results;
 }
