@@ -974,8 +974,8 @@ void Sweden::insertSCBarea(const int code, uint64_t relid) {
 std::vector<int> Sweden::insideSCBarea(const Coord &coord, SCBLevel scbLevel) {
     std::vector<int> result;
     for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
-        if ((scbLevel & LevelCounty) == 0 && it->first > 100) continue;
-        if ((scbLevel & LevelMunicipality) == 0 && it->first < 100) continue;
+        if ((scbLevel & LevelCounty) == 0 && it->first < 100) continue;
+        if ((scbLevel & LevelMunicipality) == 0 && it->first >= 100) continue;
         if (d->nodeInsideRelationRegion(coord, it->second))
             result.push_back(it->first);
     }
@@ -986,8 +986,8 @@ std::vector<int> Sweden::insideSCBarea(const Coord &coord, SCBLevel scbLevel) {
 std::vector<int> Sweden::insideSCBarea(uint64_t nodeid, SCBLevel scbLevel) {
     std::vector<int> result;
     for (auto it = d->scbcode_to_relationid.cbegin(); it != d->scbcode_to_relationid.cend(); ++it) {
-        if ((scbLevel & LevelCounty) == 0 && it->first > 100) continue;
-        if ((scbLevel & LevelMunicipality) == 0 && it->first < 100) continue;
+        if ((scbLevel & LevelCounty) == 0 && it->first < 100) continue;
+        if ((scbLevel & LevelMunicipality) == 0 && it->first >= 100) continue;
         if (d->nodeInsideRelationRegion(nodeid, it->second))
             result.push_back(it->first);
     }
