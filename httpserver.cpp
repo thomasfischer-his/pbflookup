@@ -39,7 +39,7 @@
 #include "error.h"
 #include "helper.h"
 
-static const size_t maxBufferSize = 16384;
+static const size_t maxBufferSize = 131072;
 static const size_t maxStringLen = 1024;
 
 int serverSocket;
@@ -681,7 +681,7 @@ void HTTPServer::run() {
     sigprocmask(SIG_BLOCK, &sigset, &oldsigset);
 
     ResultGenerator resultGenerator;
-    static const size_t maxNumberSlaveSockets = 64;
+    static const size_t maxNumberSlaveSockets = 16;
     size_t numberOfUsedSlaveSockets = 0;
     HTTPServer::Private::SlaveConnection slaveConnections[maxNumberSlaveSockets];
 
