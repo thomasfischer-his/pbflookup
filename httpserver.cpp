@@ -748,7 +748,6 @@ void HTTPServer::run() {
             size_t localNumberOfUsedSlaveSockets = 0;
             for (size_t i = 0; i < maxNumberSlaveSockets; ++i) {
                 if (slaveConnections[i].socket >= 0) {
-                    Error::info("Testing socket %d (i=%d)", slaveConnections[i].socket, i);
                     d->print_socket_status(slaveConnections[i].socket);
                     ++localNumberOfUsedSlaveSockets;
                 }
