@@ -760,7 +760,7 @@ Sweden::Sweden(std::istream &input)
             d->scbcode_to_relationid.insert(std::pair<int, uint64_t>(code, nodeid));
         }
     } else
-        Error::warn("Sweden::Sweden: Expected 'S', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected 'S', got '0x%02x' at position %d", chr, input.tellg());
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'n') {
@@ -774,7 +774,7 @@ Sweden::Sweden(std::istream &input)
             d->nuts3code_to_relationid.insert(std::pair<int, uint64_t>(code, nodeid));
         }
     } else
-        Error::warn("Sweden::Sweden: Expected 'n', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected 'n', got '0x%02x' at position %d", chr, input.tellg());
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'E') {
@@ -790,7 +790,7 @@ Sweden::Sweden(std::istream &input)
             }
         }
     } else
-        Error::warn("Sweden::Sweden: Expected 'E', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected 'E', got '0x%02x' at position %d", chr, input.tellg());
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'R') {
@@ -812,7 +812,7 @@ Sweden::Sweden(std::istream &input)
             input.read((char *)&road, sizeof(road));
         }
     } else
-        Error::warn("Sweden::Sweden: Expected 'R', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected 'R', got '0x%02x' at position %d", chr, input.tellg());
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'L') {
@@ -859,16 +859,16 @@ Sweden::Sweden(std::istream &input)
                 Error::err("Region %ld looks unrealistically large or is larger than Sweden::Private::regional_len=%d", region, Sweden::Private::regional_len);
         }
     } else
-        Error::warn("Sweden::Sweden: Expected 'L', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected 'L', got '0x%02x' at position %d", chr, input.tellg());
 
     input.read((char *)&chr, sizeof(chr));
     if (chr != 'A')
-        Error::warn("Sweden::Sweden: Expected 'A', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected 'A', got '0x%02x' at position %d", chr, input.tellg());
     d->administrativeRegion.read(input);
 
     input.read((char *)&chr, sizeof(chr));
     if (chr != '_')
-        Error::warn("Sweden::Sweden: Expected '_', got '0x%02x'", chr);
+        Error::warn("Sweden: Expected '_', got '0x%02x' at position %d", chr, input.tellg());
 }
 
 Sweden::~Sweden()

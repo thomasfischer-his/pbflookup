@@ -233,7 +233,7 @@ public:
         if (newline_text != std::string::npos)
             return input.substr(newline_text + 6);
         else
-            Error::debug("input= |%s|", input.c_str());
+            Error::warn("Could not find 'text=' in: %s", input.c_str());
 
         return std::string();
     }
@@ -453,7 +453,7 @@ public:
         } else {
             html_stream << "<title>PBFLookup: No Results</title>" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
             html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>" << std::endl;
-            html_stream << "<p><tt>%s</tt></p>" << std::endl, XMLize(textToLocalize).c_str();
+            html_stream << "<p><tt>" << XMLize(textToLocalize) << "</tt></p>" << std::endl;
             html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
         }
         printTimer(html_stream, &timerServer, &timerSearch);

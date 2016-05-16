@@ -57,10 +57,10 @@ struct IdTreeNode {
                 } else if (chr == '1') {
                     children[c] = new IdTreeNode<T>(input);
                 } else
-                    Error::err("Expected '0' or '1', got '0x%02x'", chr);
+                    Error::err("IdTree<%s>: Expected '0' or '1', got '0x%02x' at position %d", typeid(T).name(), chr, input.tellg());
             }
         } else
-            Error::err("Expected 'N' or 'C', got '0x%02x'", chr);
+            Error::err("IdTree<%s>: Expected 'N' or 'C', got '0x%02x' at position %d", typeid(T).name(), chr, input.tellg());
     }
 
     ~IdTreeNode() {
