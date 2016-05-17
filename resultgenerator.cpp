@@ -280,8 +280,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             for (auto outer = result_set.cbegin(); outer != result_set.cend();) {
                 bool removedOuter = false;
                 const Result &outerR = *outer;
-                for (auto inner = result_set.cbegin(); !removedOuter && inner != outer && inner != result_set.cend(); ++inner) {
+                for (auto inner = result_set.cbegin(); !removedOuter && inner != result_set.cend(); ++inner) {
+                    if (inner == outer) continue;
                     const Result &innerR = *inner;
+                    if (outerR.quality > innerR.quality) continue; ///< avoid removing results of higher quality
                     const auto d = Coord::distanceXYsquare(outerR.coord, innerR.coord);
                     if (d < duplicateProximitySquare) {
                         /// Less than x meters away? Remove this result!
