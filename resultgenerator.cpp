@@ -162,8 +162,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         timer.start();
 #endif // CPUTIMER
     }
-    std::vector<struct OSMElement> places;
-    places = sweden->identifyPlaces(word_combinations);
+    std::vector<struct OSMElement> places = sweden->identifyPlaces(word_combinations);
     if (!places.empty()) {
         const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
         for (auto it = ++places.cbegin(); it != places.cend();) {
