@@ -236,6 +236,15 @@ public:
         return std::string();
     }
 
+    void writeFinancialSupportStatement(std::ostream &html_stream) const {
+        html_stream << "<hr/>" << std::endl;
+        html_stream << "<h2>Supported By</h2>" << std::endl;
+        html_stream << "<p>This service is financially supported by:<br/>" << std::endl;
+        html_stream << "<a style=\"margin-right:1em;\" href=\"https://www.his.se/\" target=\"_top\"><img src=\"his.png\" width=\"67\" height=\"64\" alt=\"H&ouml;gskolan i Sk&ouml;vde\" /></a>" << std::endl;
+        html_stream << "<a style=\"margin-right:1em;\" href=\"https://www.iis.se/\" target=\"_top\"><img src=\"iis.png\" width=\"64\" height=\"64\" alt=\"Internetstiftelsen i Sverige\" /></a>" << std::endl;
+        html_stream << "</p>" << std::endl;
+    }
+
     void writeHTTPError(int fd, unsigned int error_code, const std::string &msg = std::string(), const std::string &filename = std::string()) {
         std::string error_code_message("Unknown Error");
         if (error_code == 100)
@@ -259,6 +268,7 @@ public:
         html_stream << "<p>" << internal_msg << "</p>" << std::endl;
         if (!filename.empty())
             html_stream << "<pre>" << filename << "</pre>" << std::endl;
+        writeFinancialSupportStatement(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl;
 
         const auto html_code = html_stream.str();
@@ -379,6 +389,7 @@ public:
         html_stream << "<option value=\"application/json\">JSON</option>";
         html_stream << "</select></p></form>" << std::endl;
         printTimer(html_stream, &timerServer, NULL);
+        writeFinancialSupportStatement(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
 
         const auto html_code = html_stream.str();
@@ -455,6 +466,7 @@ public:
             html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
         }
         printTimer(html_stream, &timerServer, &timerSearch);
+        writeFinancialSupportStatement(html_stream);
         html_stream << "</body>" << std::endl << "</html>";
 
         const auto html_code = html_stream.str();
