@@ -308,10 +308,11 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
 
-    Error::debug("%d results", results.size());
 #ifdef CPUTIMER
     timerOverFunction.elapsed(&cputime);
-    Error::debug(" time %.3lfms = %.1lfs", cputime / 1000.0, cputime / 1000000.0);
+    Error::debug("%d results, time %.3lfms = %.1lfs", results.size(), cputime / 1000.0, cputime / 1000000.0);
+#else // CPUTIMER
+    Error::debug("%d results", results.size());
 #endif // CPUTIMER
 
     return results;

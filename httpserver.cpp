@@ -224,8 +224,6 @@ public:
             Error::warn("Error getting error code for socket %d: %s", socket, strerror(retval));
         if (error != 0)
             Error::warn("Socket %d: error: %s", socket, strerror(error));
-        if (retval == 0 && error == 0)
-            Error::debug("Socket %d seems to be healthy", socket);
     }
 
     std::string extractTextToLocalize(const std::string &input) const {
@@ -761,8 +759,7 @@ void HTTPServer::run() {
                         close(slaveConnections[i].socket);
                         slaveConnections[i].socket = -1;
                         continue;
-                    } else
-                        Error::debug("Accepting buffer has size %d", max_data_size);
+                    }
                     ssize_t data_size = recv(slaveConnections[i].socket, slaveConnections[i].data + slaveConnections[i].pos, max_data_size, MSG_DONTWAIT);
                     if (data_size > 0 && data_size == max_data_size) {
                         Error::warn("Just received enough data to completely fill buffer for slave socket: %lu Bytes", data_size);
@@ -865,9 +862,6 @@ void HTTPServer::run() {
                         d->timerSearch.start();
                         const std::vector<Result> results = text.length() > 3 ? resultGenerator.findResults(text, 1000, ResultGenerator::VerbositySilent) : std::vector<Result>();
                         d->timerSearch.stop();
-                        int64_t ct;
-                        d->timerSearch.elapsed(&ct);
-                        Error::debug("%d results, time %.3lf", results.size(), ct / 1000.0);
 
                         d->print_socket_status(slaveConnections[i].socket);
 
