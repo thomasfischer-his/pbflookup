@@ -515,13 +515,15 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     Error::warn("Cannot convert '%s' to a number", s);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
                                 /// Found three-digit NUTS reference (SEnnn)
-                                const char *s = primblock.stringtable().s(pg.relations(i).vals(k)).substr(2).c_str();
-                                errno = 0;
-                                const long int v = strtol(s, NULL, 10);
-                                if (errno == 0)
-                                    sweden->insertNUTS3area(v, relId);
-                                else
-                                    Error::warn("Cannot convert '%s' to a number", s);
+                                const char *s = primblock.stringtable().s(pg.relations(i).vals(k)).c_str();
+                                if (s[0] == 'S' && s[1] == 'E' && s[2] >= '0' && s[2] <= '9') {
+                                    errno = 0;
+                                    const long int v = strtol(s + 2 /** adding 2 to skip 'SE' prefix */, NULL, 10);
+                                    if (errno == 0 && v > 0)
+                                        sweden->insertNUTS3area(v, relId);
+                                    else
+                                        Error::warn("Cannot convert '%s' to a number", s + 2);
+                                }
                             } else if (strcmp("boundary", ckey) == 0) {
                                 /// Store 'boundary' string for later use
                                 boundary = primblock.stringtable().s(pg.relations(i).vals(k));
