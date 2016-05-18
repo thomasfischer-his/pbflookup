@@ -83,6 +83,39 @@ public:
         }
         return cmp == 0;
     }
+
+    /**
+     * Check the list of words for nouns in definitive form.
+     * For each word in definitive form, use a heuristic to determine
+     * its indefinitive form and this form to the list of words as well.
+     * @param words List of words where indefinitive forms have to be added for definitive form words
+     */
+    void add_grammar_cases(std::vector<std::string> &words) const {
+        for (auto it = words.cbegin(); it != words.cend(); ++it) {
+            const std::string word = *it;
+            const size_t len = word.length();
+            if (len > 4) {
+                if ((word[len - 1] == 't' || word[len - 1] == 'n') && (word[len - 2] == 'a' || word[len - 2] == 'e')) {
+                    /// This word is most likely a noun in definite form
+                    /// Trying to determine indefinite form, then adding it to word list
+                    // FIXME are there better rules to determine the indefinite form of a definitive noun?
+
+                    /// Just remove the final 'n' or 't', for example for
+                    /// 'travbanan' -> 'travbana'
+                    std::string indefinite_form = word.substr(0, len - 1);
+                    it = ++words.insert(it, "_" + indefinite_form);
+                    /// Remove the vocal as well, for example for
+                    /// 'biblioteket' -> 'bibliotek'
+                    indefinite_form = word.substr(0, len - 2);
+                    it = ++words.insert(it, "_" + indefinite_form);
+                } else if (word[len - 1] == 's') {
+                    /// This word could be a genetive (Karlsborgs -> Karlsborg)
+                    const std::string nominative = word.substr(0, len - 1);
+                    it = ++words.insert(it, "_" + nominative);
+                }
+            }
+        }
+    }
 };
 
 Tokenizer::Tokenizer()
@@ -132,33 +165,6 @@ std::vector<std::string> Tokenizer::read_words(std::istream &input, Multiplicity
     return words;
 }
 
-void Tokenizer::add_grammar_cases(std::vector<std::string> &words) const {
-    for (auto it = words.cbegin(); it != words.cend(); ++it) {
-        const std::string word = *it;
-        const size_t len = word.length();
-        if (len > 4) {
-            if ((word[len - 1] == 't' || word[len - 1] == 'n') && (word[len - 2] == 'a' || word[len - 2] == 'e')) {
-                /// This word is most likely a noun in definite form
-                /// Trying to determine indefinite form, then adding it to word list
-                // FIXME are there better rules to determine the indefinite form of a definitive noun?
-
-                /// Just remove the final 'n' or 't', for example for
-                /// 'travbanan' -> 'travbana'
-                std::string indefinite_form = word.substr(0, len - 1);
-                it = ++words.insert(it, indefinite_form);
-                /// Remove the vocal as well, for example for
-                /// 'biblioteket' -> 'bibliotek'
-                indefinite_form = word.substr(0, len - 2);
-                it = ++words.insert(it, indefinite_form);
-            } else if (word[len - 1] == 's') {
-                /// This word could be a genetive (Karlsborgs -> Karlsborg)
-                const std::string nominative = word.substr(0, len - 1);
-                it = ++words.insert(it, nominative);
-            }
-        }
-    }
-}
-
 std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination, const Multiplicity multiplicity) {
     /// There are words that are often part of a valid name, but by itself
     /// are rather meaningless, i.e. cause too many false hits:
@@ -193,17 +199,19 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
 
     std::vector<std::string> combinations;
     std::unordered_set<std::string> known_combinations;
+    std::vector<std::string> internal_words = words;
+    d->add_grammar_cases(internal_words);
 
-    for (int s = min(words_per_combination, words.size()); s >= 1; --s) {
-        for (size_t i = 0; i <= words.size() - s; ++i) {
+    for (int s = min(words_per_combination, internal_words.size()); s >= 1; --s) {
+        for (size_t i = 0; i <= internal_words.size() - s; ++i) {
             /// Skip single letter words that do not represent a valid sentence in Swedish
-            if (words[i][1] == '\0' && words[i][0] >= 'a' && words[i][0] <= 'z') continue;
+            if (internal_words[i][1] == '\0' && internal_words[i][0] >= 'a' && internal_words[i][0] <= 'z') continue;
             /// Single words that may be misleading, such as 'nya'
-            if (s == 1 && blacklistedSingleWords.find(words[i]) != blacklistedSingleWords.end()) continue;
+            if (s == 1 && blacklistedSingleWords.find(internal_words[i]) != blacklistedSingleWords.end()) continue;
             /// Free-standing numbers should be skipped as well (won't affect search for e.g. 'väg 53')
             bool isNumber = true;
-            for (int p = words[i].length() - 1; isNumber && p >= 0; --p)
-                isNumber &= words[i][p] >= '0' && words[i][p] <= '9';
+            for (int p = internal_words[i].length() - 1; isNumber && p >= 0; --p)
+                isNumber &= internal_words[i][p] >= '0' && internal_words[i][p] <= '9';
             if (isNumber) continue;
 
             std::string combined_word;
