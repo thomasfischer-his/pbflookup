@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <unordered_set>
 #include <algorithm>
+#include <set>
 
 #include "error.h"
 #include "config.h"
@@ -165,7 +166,7 @@ std::vector<std::string> Tokenizer::read_words(std::istream &input, Multiplicity
     return words;
 }
 
-std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination, const Multiplicity multiplicity) {
+std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination) {
     /// There are words that are often part of a valid name, but by itself
     /// are rather meaningless, i.e. cause too many false hits:
     static const std::unordered_set<std::string> blacklistedSingleWords = {
@@ -197,39 +198,53 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
         "\xc3\xb6" /** 'ö' */, "\xc3\xb6n" /** Hmmm, Umeå has a place called 'Ön' */
     };
 
-    std::vector<std::string> combinations;
     std::unordered_set<std::string> known_combinations;
     std::vector<std::string> internal_words = words;
     d->add_grammar_cases(internal_words);
 
     for (int s = min(words_per_combination, internal_words.size()); s >= 1; --s) {
         for (size_t i = 0; i <= internal_words.size() - s; ++i) {
+            const bool added_grammar_case = internal_words[i][0] == '_';
+            /// Added grammar cases can never start a word combination,
+            /// unless it is the single word in this combination
+            if (added_grammar_case && s > 1) continue;
+            const std::string current_word = added_grammar_case ? internal_words[i].substr(1) : internal_words[i];
+
             /// Skip single letter words that do not represent a valid sentence in Swedish
-            if (internal_words[i][1] == '\0' && internal_words[i][0] >= 'a' && internal_words[i][0] <= 'z') continue;
+            if (current_word[1] == '\0' && current_word[0] >= 'a' && current_word[0] <= 'z') continue;
             /// Single words that may be misleading, such as 'nya'
-            if (s == 1 && blacklistedSingleWords.find(internal_words[i]) != blacklistedSingleWords.end()) continue;
+            if (s == 1 && blacklistedSingleWords.find(current_word) != blacklistedSingleWords.end()) continue;
             /// Free-standing numbers should be skipped as well (won't affect search for e.g. 'väg 53')
             bool isNumber = true;
-            for (int p = internal_words[i].length() - 1; isNumber && p >= 0; --p)
-                isNumber &= internal_words[i][p] >= '0' && internal_words[i][p] <= '9';
+            for (int p = current_word.length() - 1; isNumber && p >= 0; --p)
+                isNumber &= current_word[p] >= '0' && current_word[p] <= '9';
             if (isNumber) continue;
+            /// Skip added grammar cases unless they would be last word in a sequence
 
-            std::string combined_word;
-            for (int k = 0; k < s; ++k) {
-                if (k > 0)
-                    combined_word.append(" ", 1);
-                combined_word.append(words[i + k]);
+            std::string combined_word = current_word;
+            int offset = 0;
+            for (int k = 1; k < s && i + k + offset < internal_words.size();) {
+                const bool added_grammar_case = internal_words[i + k + offset][0] == '_';
+                if (added_grammar_case && k < s - 1) {
+                    /// Words that are added grammar cases may only be
+                    /// the last word in a word combination
+                    ++offset;
+                    continue;
+                }
+
+                combined_word.append(" ", 1);
+                const std::string current_word = added_grammar_case ? internal_words[i + k + offset].substr(1) : internal_words[i + k + offset];
+                combined_word.append(current_word);
+
+                ++k;
             }
-            if (multiplicity == Duplicates)
-                combinations.push_back(combined_word);
-            else if (multiplicity == Unique)
-                known_combinations.insert(combined_word);
+
+            known_combinations.insert(combined_word);
         }
     }
 
-    if (multiplicity == Unique && !known_combinations.empty() && combinations.empty())
-        std::copy(known_combinations.cbegin(), known_combinations.cend(), std::back_inserter(combinations));
-
+    std::vector<std::string> combinations;
+    std::copy(known_combinations.cbegin(), known_combinations.cend(), std::back_inserter(combinations));
     return combinations;
 }
 

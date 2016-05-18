@@ -81,7 +81,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     timerOverFunction.start();
 #endif // CPUTIMER
     const std::vector<std::string> words = tokenizer->read_words(text, Tokenizer::Duplicates);
-    const std::vector<std::string> word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */, Tokenizer::Unique);
+    const std::vector<std::string> word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */);
 #ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
