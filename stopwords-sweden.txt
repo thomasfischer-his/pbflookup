@@ -195,7 +195,6 @@ ligger
 lika
 likställd
 likställda
-lilla
 lite
 liten
 litet
@@ -313,7 +312,6 @@ snart
 som
 sos
 stor
-stora
 stort
 större
 störst
