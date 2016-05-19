@@ -142,6 +142,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             Coord c;
             if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
                 Result r(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegionName + " > " + adminRegionMatch.name);
+                r.elements.push_back(OSMElement(adminRegionMatch.adminRegionId, OSMElement::Relation));
                 r.elements.push_back(adminRegionMatch.match);
                 results.push_back(r);
                 if (verbosity > VerbositySilent)
