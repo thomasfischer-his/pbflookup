@@ -59,11 +59,17 @@ bool getCenterOfOSMElement(const OSMElement &element, Coord &coord) {
             if (wayNodes->retrieve(cur.id, wn)) {
                 nodeIds.insert(wn.nodes[0]); ///< Way's first node
                 nodeIds.insert(wn.nodes[wn.num_nodes - 1]); ///< Way's last node
-                if (wn.num_nodes > 4) {
+                if (wn.num_nodes >= 2) {
                     nodeIds.insert(wn.nodes[wn.num_nodes / 2]); ///< Way's center node
-                    if (wn.num_nodes > 16) {
+                    if (wn.num_nodes >= 4) {
                         nodeIds.insert(wn.nodes[wn.num_nodes / 4]); ///< Way's 1st quartile node
                         nodeIds.insert(wn.nodes[wn.num_nodes * 3 / 4]); ///< Way's 3st quartile node
+                        if (wn.num_nodes >= 8) {
+                            nodeIds.insert(wn.nodes[wn.num_nodes / 8]);
+                            nodeIds.insert(wn.nodes[wn.num_nodes * 3 / 8]);
+                            nodeIds.insert(wn.nodes[wn.num_nodes * 5 / 8]);
+                            nodeIds.insert(wn.nodes[wn.num_nodes * 7 / 8]);
+                        }
                     }
                 }
             }

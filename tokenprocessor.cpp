@@ -236,10 +236,10 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
     /// Retrieve coordinates for all known places
     std::vector<std::pair<struct OSMElement, struct Coord> > placesToCoord;
-    for (auto itP = places.cbegin(); itP != places.cend(); ++itP) {
+    for (const OSMElement &element : places) {
         Coord c;
-        if (node2Coord->retrieve(itP->id, c))
-            placesToCoord.push_back(std::pair<struct OSMElement, struct Coord>(*itP, c));
+        if (getCenterOfOSMElement(element, c))
+            placesToCoord.push_back(std::make_pair(element, c));
     }
 
     /// Go through all word combinations (usually 1 to 3 words combined)
@@ -249,22 +249,18 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         for (const OSMElement &element : element_list) {
-            const OSMElement eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
-            if (eNode.type != OSMElement::Node)
-                /// Resolving relations or ways to a node failed
-                continue;
-
             int minDistance = INT_MAX;
             auto bestPlace = placesToCoord.cend();
+
+            /// Get something like the gravitational center of the OSM element
             Coord c;
-            const bool foundNode = node2Coord->retrieve(eNode.id, c);
-            if (!foundNode) continue;
+            if (!getCenterOfOSMElement(element, c)) continue;
 
             for (auto itP = placesToCoord.cbegin(); itP != placesToCoord.cend(); ++itP) {
                 const struct OSMElement &place = itP->first;
                 const struct Coord &placeCoord = itP->second;
 
-                if (place.id == eNode.id || place.id == element.id) continue; ///< do not compare place with itself
+                if (place.id == element.id) continue; ///< do not compare place with itself
                 const int distance = Coord::distanceLatLon(c, placeCoord);
                 if (distance < minDistance) {
                     minDistance = distance;
@@ -369,13 +365,13 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                 /// Check if estimated 1. quartile of inter-node distance is less than 500m
                 if (internodeDistanceMeter > 0 && internodeDistanceMeter < 500) {
                     OSMElement bestElement;
-                    Coord centralNodeCoord, bestElementCoord;
+                    Coord centralNodeCoord;
                     node2Coord->retrieve(centralNodeId, centralNodeCoord);
                     int bestElementsDistanceToCentralNode = INT_MAX;
                     for (const OSMElement &e : element_list) {
-                        OSMElement eNode = getNodeInOSMElement(e);
-                        node2Coord->retrieve(eNode.id, bestElementCoord);
-                        const int distance = Coord::distanceXY(centralNodeCoord, bestElementCoord);
+                        Coord c;
+                        if (!getCenterOfOSMElement(e, c)) continue;
+                        const int distance = Coord::distanceXY(centralNodeCoord, c);
                         if (distance < bestElementsDistanceToCentralNode) {
                             bestElementsDistanceToCentralNode = distance;
                             bestElement = e;
@@ -466,16 +462,13 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 static const int delta_threshold = 4;
                 if (delta <= delta_threshold && delta >= -delta_threshold) {
                     prev_element = element;
-                    node2Coord->retrieve(getNodeInOSMElement(element).id, prev_coord);
+                    getCenterOfOSMElement(element, prev_coord);
                     continue;
                 }
             }
 
-            const OSMElement &eNode = element.type == OSMElement::Node ? element : getNodeInOSMElement(element);
-            if (eNode.type != OSMElement::Node) continue; ///< Not a node
-
             Coord coord;
-            if (!node2Coord->retrieve(eNode.id, coord)) continue;
+            if (!getCenterOfOSMElement(element, coord)) continue;
             if (prev_coord.isValid() && Coord::distanceXYsquare(coord, prev_coord) < 9000000L /** 3km */) {
                 prev_element = element;
                 prev_coord = coord;
@@ -495,7 +488,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                 if (adminReg.admin_level >= inside_admin_level)
                     continue;
 
-                if (adminReg.relationId > 0 && adminReg.relationId != element.id && adminReg.relationId != eNode.id) {
+                if (adminReg.relationId > 0 && adminReg.relationId != element.id) {
 #ifdef CPUTIMER
                     timer.start();
 #endif // CPUTIMER
