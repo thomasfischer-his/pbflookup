@@ -120,8 +120,8 @@ private:
                  * High level administrative organizations like counties
                  * go before lower-level organizations. For example,
                  * Uppsala county goes before Uppsala municipality
-                 * http://www.openstreetmap.org/relation/54220
-                 * http://www.openstreetmap.org/relation/305455
+                 * https://www.openstreetmap.org/relation/54220
+                 * https://www.openstreetmap.org/relation/305455
                  */
                 return a.admin_level < b.admin_level;
             }

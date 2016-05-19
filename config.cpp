@@ -256,7 +256,7 @@ bool init_configuration(const char *configfilename) {
                                 replacevariablenames(ts.svgoutputfilename);
                                 makeabsolutepath(ts.svgoutputfilename);
                             }
-                            Error::debug("  name=%s  at   http://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
+                            Error::debug("  name=%s  at   https://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
                             testsets.push_back(ts);
                         }
                     }
