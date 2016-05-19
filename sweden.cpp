@@ -1514,13 +1514,26 @@ void Sweden::insertWayAsRoad(uint64_t wayid, const char *refValue) {
 }
 
 void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNumber) {
-    /// Some way ids should be ignored, e.g. (1) those right outside of Sweden
-    /// which just happend to be included in the map data or (2) where OSM data
-    /// is most likely wrong (some 5xxx roads in central Linköping).
+    /// Some way ids should be ignored, e.g. those right outside of Sweden
+    /// which just happend to be included in the map data
     /// To sort:  echo '3, 1, 2' | sed -e 's/ //g' | tr ',' '\n' | sort -u -n | tr '\n' ',' | sed -e 's/,/, /g'
-    static const uint64_t blacklistedWayIds[] = {1648176, 1648475, 1651992, 2954124, 4605570, 8150233, 9702586, 23275365, 23444254, 23444292, 23444785, 24040916, 24731243, 24786276, 25380767, 25459932, 25953242, 26205243, 27565380, 27872415, 27872417, 27872418, 29054792, 29054793, 30784964, 30887520, 34419027, 34419029, 37627542, 38227481, 38564589, 38564590, 42798132, 44141405, 44298775, 45329454, 45876899, 46931166, 48386475, 51381476, 51385960, 53184762, 59065373, 59065380, 59065382, 59065388, 60928268, 61380105, 62080181, 67171996, 69358305, 73854172, 80360747, 116831322, 121821747, 127023670, 138003259, 146294832, 180751968, 180987048, 194028774, 211946632, 225436893, 229700851, 257700608, 258575332, 258575333, 258575334, 308918468, 308918469, 315471029, 321318578, 324044848, 324093732, 324271180, 324492881, 324492887, 326365472, 345614344, 345614345, 347763180, 347763181, 347763182, 347763184, 347763185, 347763186, 347763188, 366707779, 375573546, 375573548, 375671059, 375671060, 375671285, 375671286, 375671287, 383462866, 394305929, 394305930, 399732015, 402989392, 413609159, 0};
-    for (int i = 0; blacklistedWayIds[i] > 0; ++i)
-        if (wayid == blacklistedWayIds[i]) return;
+    static const uint64_t blacklistedWayIds[] = {1648176, 1648475, 1651992, 2954124, 4605570, 8150233, 9702586, 23275365, 23444254, 23444292, 23444785, 24040916, 24731243, 24786276, 25380767, 25459932, 25953242, 26205243, 27565380, 27872415, 27872417, 27872418, 29054792, 29054793, 30784964, 30887520, 34419027, 34419029, 37627542, 38227481, 38564589, 38564590, 42798132, 44141405, 44298775, 45329454, 45876899, 46931166, 48386475, 51381476, 51385960, 53184762, 59065373, 59065380, 59065382, 59065388, 60928268, 61380105, 62080181, 67171996, 69358305, 73854172, 80360747, 116831322, 121821747, 127023670, 138003259, 146294832, 180751968, 180987048, 194028774, 211946632, 225436893, 229700851, 257700608, 258575332, 258575333, 258575334, 308918468, 308918469, 315471029, 321318578, 324044848, 324093732, 324271180, 324492881, 324492887, 326365472, 345614344, 345614345, 347763180, 347763181, 347763182, 347763184, 347763185, 347763186, 347763188, 366707779, 375573546, 375573548, 375671059, 375671060, 375671285, 375671286, 375671287, 383462866, 394305929, 394305930, 399732015, 402989392, 413609159, 417220648, 417220650, 0};
+    /// To count: echo '3, 1, 2' | sed -e 's/ //g' | tr ',' '\n' | wc -l
+    static const size_t blacklistedWayIds_count = 103;
+    if (wayid >= blacklistedWayIds[0] && wayid <= blacklistedWayIds[blacklistedWayIds_count - 1]) {
+        size_t min = 0, max = blacklistedWayIds_count - 1;
+        while (min < max) {
+            int pivot_idx = (max - min) / 2 + min;
+            if (blacklistedWayIds[pivot_idx] == wayid) return;
+            else if (blacklistedWayIds[pivot_idx] < wayid)
+                min = pivot_idx;
+            else /// blacklistedWayIds[pivot_idx]>wayid
+                max = pivot_idx;
+        }
+        /// Now: min == max
+        if (blacklistedWayIds[min] == wayid) return;
+    }
+
     /// In Sundsvall, there are a few 'regional roads' with numbers 5300-5399,
     /// not sure if that is a mistake, ignoring those.
     if (roadNumber >= 5300 && roadNumber < 5400 && (roadType == LanUnknown || roadType == LanY))
