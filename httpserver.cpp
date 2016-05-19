@@ -714,8 +714,9 @@ void HTTPServer::run() {
         /// It is necessary to re-initialize this struct in each loop iteration,
         /// as pselect(..) may modify it (to tell us how long it waited)
         struct timespec timeout;
-        /// Wait up to 60 seconds
-        timeout.tv_sec = 60;
+        /// Wait up to 1200 seconds
+        static const time_t timeout_sec = 1200;
+        timeout.tv_sec = timeout_sec;
         timeout.tv_nsec = 0;
 
         const int pselect_result = pselect(maxSocket + 1, &readfds, NULL /** writefds */, NULL /** errorfds */, &timeout, &oldsigset);
@@ -726,6 +727,9 @@ void HTTPServer::run() {
                 Error::err("pselect(...)  errno=%d  select_result=%d", errno, pselect_result);
         } else if (pselect_result == 0) {
             /// Timeout in pselect(..), nothing happened
+            const time_t curtime = time(NULL);
+            struct tm *brokentime = localtime(&curtime);
+            Error::debug("Timeout in pselect after %d seconds at time/date: %s", timeout_sec, asctime(brokentime));
             continue;
         }
 
