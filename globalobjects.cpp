@@ -237,8 +237,14 @@ GlobalObjectManager::GlobalObjectManager() {
         std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
         if (fp) {
             Timer timer;
-            OsmPbfReader osmPbfReader;
-            osmPbfReader.parse(fp);
+            try
+            {
+                OsmPbfReader osmPbfReader;
+                osmPbfReader.parse(fp);
+            } catch (std::exception const &ex) {
+                Error::err("Exception during thread processing while parsing .osm.pbf: %s", ex.what());
+            }
+
             /// Clean up the protobuf lib
             google::protobuf::ShutdownProtobufLibrary();
             fp.close();

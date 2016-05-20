@@ -27,6 +27,11 @@
 #endif
 #include <unistd.h>
 
+/// For threading
+#include <boost/thread/thread.hpp>
+#include <boost/lockfree/queue.hpp>
+#include <boost/atomic.hpp>
+
 #include <stack>
 #include <sstream>
 
@@ -36,6 +41,162 @@
 #include "globalobjects.h"
 
 #define SHORT_STRING_BUFFER_SIZE     64
+
+/// Data structure for producer-consumer threads
+/// which will simplify ways before storing them
+struct OSMWay {
+    OSMWay(const ::OSMPBF::Way &way)
+        : id(way.id()), size(way.refs_size()) {
+        nodes = (uint64_t *)malloc(size * sizeof(uint64_t));
+
+        uint64_t node_id = 0;
+        for (size_t i = 0; i < size; ++i) {
+            node_id += way.refs(i);
+            nodes[i] = node_id;
+        }
+    }
+
+    ~OSMWay() {
+        free(nodes);
+    }
+
+    const uint64_t id;
+    const size_t size;
+    uint64_t *nodes;
+};
+/// Queue of ways, used in producer-consumer threads
+boost::lockfree::queue<const OSMWay *> queueWaySimplification(1 << 16);
+/// Boolean used to notify consumer threat to finish once consumer will no longer push ways into queue
+boost::atomic<bool> doneWaySimplification(false);
+/// For statistical purposes, track size of queue (boost::lockfree::queue has no method on its own for that)
+boost::atomic<size_t> queueWaySimplificationSize(0);
+
+int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB) {
+    Coord coordA, coordInBetween, coordB;
+
+    if (node2Coord->retrieve(nodeA, coordA) && node2Coord->retrieve(nodeInBetween, coordInBetween) && node2Coord->retrieve(nodeB, coordB)) {
+        /// http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
+        const int d1 = coordB.x - coordA.x;
+        const int d2 = coordB.y - coordA.y;
+        if (d1 == 0 && d2 == 0) { ///< nodes A and B are equal
+            const int d1 = coordA.x - coordInBetween.x;
+            const int d2 = coordA.y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        }
+        /// Find a projection of nodeInBetween onto the line
+        /// between nodeA and nodeB
+        const int l2 = (d1 * d1 + d2 * d2);
+        const double t = ((coordInBetween.x - coordA.x) * d1 + (coordInBetween.y - coordA.y) * d2) / (double)l2;
+        if (t < 0.0) { ///< beyond node A's end of the segment
+            const int d1 = coordA.x - coordInBetween.x;
+            const int d2 = coordA.y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        } else if (t > 1.0) { ///< beyond node B's end of the segment
+            const int d1 = coordB.x - coordInBetween.x;
+            const int d2 = coordB.y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        } else {
+            const int x = coordA.x + t * (coordB.x - coordA.x) + 0.5;
+            const int d = coordB.y - coordA.y;
+            const int y = coordA.y + (int)(t * d + 0.5);
+            const int d1 = x - coordInBetween.x;
+            const int d2 = y - coordInBetween.y;
+            return d1 * d1 + d2 * d2;
+        }
+    } else
+        return 0;
+}
+
+size_t applyRamerDouglasPeucker(const OSMWay &way, uint64_t *result) {
+    std::stack<std::pair<int, int> > recursion;
+    recursion.push(std::make_pair(0, way.size - 1));
+
+    while (!recursion.empty()) {
+        const std::pair<int, int> nextPair = recursion.top();
+        recursion.pop();
+        const int a = nextPair.first, b = nextPair.second;
+
+        int dmax = -1;
+        int dnode = -1;
+        for (int i = a + 1; i < b; ++i) {
+            if (result[i] == 0) continue;
+            const int dsquare = shortestSquareDistanceToSegment(result[a], result[i], result[b]);
+            if (dsquare > dmax) {
+                dmax = dsquare;
+                dnode = i;
+            }
+        }
+
+        static const int epsilon = 400;///< 2m corridor (20dm * 20dm)
+        if (dmax > epsilon) {
+            recursion.push(std::make_pair(a, dnode));
+            recursion.push(std::make_pair(dnode, b));
+        }
+        else
+            for (int i = a + 1; i < b; ++i)
+                if (node2Coord->counter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
+                    result[i] = 0;
+                }
+    }
+
+    size_t p = 0;
+    for (size_t i = 0; i < way.size; ++i)
+        if (result[i] > 0) {
+            if (i > p) result[p] = result[i];
+            ++p;
+        }
+    return p;
+}
+
+void simplifyWay(const OSMWay &way, uint64_t *simplifiedWay, size_t &simplifiedWayAllocationSize) {
+    const size_t simplifiedWaySize = applyRamerDouglasPeucker(way, simplifiedWay);
+
+    WayNodes wn(simplifiedWaySize);
+    memcpy(wn.nodes, simplifiedWay, sizeof(uint64_t) * wn.num_nodes);
+    for (size_t k = 0; k < simplifiedWaySize; ++k)
+        node2Coord->increaseCounter((simplifiedWay)[k]);
+    wayNodes->insert(way.id, wn);
+}
+
+/// This method will be run by the consumer thread which is
+/// processing (simplifying) ways
+void consumerWaySimplification(void) {
+    size_t simplifiedWayAllocationSize = 1024;
+    uint64_t *simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
+
+    const OSMWay *way;
+    while (!doneWaySimplification) {
+        while (queueWaySimplification.pop(way)) {
+            --queueWaySimplificationSize;
+
+            if (way->size > simplifiedWayAllocationSize) {
+                simplifiedWayAllocationSize = ((way->size >> 8) + 2) << 8;
+                free(simplifiedWay);
+                simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
+            }
+
+            simplifyWay(*way, simplifiedWay, simplifiedWayAllocationSize);
+            delete way;
+        }
+        /// Sleep a little bit to avoid busy waiting
+        // TODO use conditions or something like this
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
+    }
+    while (queueWaySimplification.pop(way)) {
+        --queueWaySimplificationSize;
+
+        if (way->size > simplifiedWayAllocationSize) {
+            simplifiedWayAllocationSize = ((way->size >> 8) + 2) << 8;
+            free(simplifiedWay);
+            simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
+        }
+
+        simplifyWay(*way, simplifiedWay, simplifiedWayAllocationSize);
+        delete way;
+    }
+
+    free(simplifiedWay);
+}
 
 OsmPbfReader::OsmPbfReader()
 {
@@ -93,8 +254,9 @@ bool OsmPbfReader::parse(std::istream &input) {
     if (sweden == NULL)
         Error::err("Could not allocate memory for Sweden");
 
-    int simplifiedWayAllocationSize = 1024;
-    uint64_t *simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
+    doneWaySimplification = false;
+    boost::thread waySimplificationThread(consumerWaySimplification);
+    size_t max_queue_size = 0;
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -460,22 +622,18 @@ bool OsmPbfReader::parse(std::istream &input) {
                             /// ... assume that this way is part of a national or primary regional road
                             sweden->insertWayAsRoad(wayId, buffer_ref);
 
-                        if (pg.ways(w).refs_size() + 2 > simplifiedWayAllocationSize) {
-                            simplifiedWayAllocationSize = ((pg.ways(w).refs_size() >> 8) + 1) << 8;
-                            free(simplifiedWay);
-                            simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
-                        }
+                        /// This main thread is the 'producer' of ways,
+                        /// pushing ways into a queue. Another thread,
+                        /// the consumer, will pop ways, simplify them
+                        /// (removing superfluous nodes), and store them
+                        /// for searches later.
+                        queueWaySimplification.push(new OSMWay(pg.ways(w)));
+                        /// Keep track of queue size for statistical purposes
+                        ++queueWaySimplificationSize;
+                        if (queueWaySimplificationSize > max_queue_size) max_queue_size = queueWaySimplificationSize;
 
-                        const int simplifiedWaySize = applyRamerDouglasPeucker(pg.ways(w), simplifiedWay);
-
-                        WayNodes wn(simplifiedWaySize);
-                        memcpy(wn.nodes, simplifiedWay, sizeof(uint64_t)*simplifiedWaySize);
-                        for (int k = 0; k < simplifiedWaySize; ++k)
-                            node2Coord->increaseCounter(simplifiedWay[k]);
-                        wayNodes->insert(wayId, wn);
-
-                        if (wn.num_nodes > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
-                            roadsWithoutRef.push_back(std::pair<uint64_t, std::string>(wayId, std::string(buffer_highway)));
+                        if (pg.ways(w).refs_size() > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
+                            roadsWithoutRef.push_back(std::make_pair(wayId, std::string(buffer_highway)));
 
                         /// Consider only names of length 2 or longer
                         if (name.length() > 1) {
@@ -591,11 +749,13 @@ bool OsmPbfReader::parse(std::istream &input) {
         }
     }
 
-    free(simplifiedWay);
-
     /// Line break after series of dots
     if (isatty(1))
         std::cout << std::endl;
+
+    doneWaySimplification = true;
+    Error::debug("Waiting for way simplification thread, max queue length was %d", max_queue_size);
+    waySimplificationThread.join();
 
     Error::info("Number of named nodes: %d", count_named_nodes);
     Error::info("Number of named nodes: %d", count_named_ways);
@@ -615,88 +775,4 @@ bool OsmPbfReader::parse(std::istream &input) {
     */
 
     return true;
-}
-
-int OsmPbfReader::applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, uint64_t *result) {
-    uint64_t nodeId = 0;
-    const int numberOfNodes = ways.refs_size();
-    for (int i = 0; i < numberOfNodes; ++i) {
-        nodeId += ways.refs(i);
-        result[i] = nodeId;
-    }
-
-    std::stack<std::pair<int, int> > recursion;
-    recursion.push(std::pair<int, int>(0, numberOfNodes - 1));
-
-    while (!recursion.empty()) {
-        const std::pair<int, int> nextPair = recursion.top();
-        recursion.pop();
-        const int a = nextPair.first, b = nextPair.second;
-
-        int dmax = -1;
-        int dnode = -1;
-        for (int i = a + 1; i < b; ++i) {
-            if (result[i] == 0) continue;
-            const int dsquare = shortestSquareDistanceToSegment(result[a], result[i], result[b]);
-            if (dsquare > dmax) {
-                dmax = dsquare;
-                dnode = i;
-            }
-        }
-
-        static const int epsilon = 400;///< 2m corridor (20dm * 20dm)
-        if (dmax > epsilon) {
-            recursion.push(std::pair<int, int>(a, dnode));
-            recursion.push(std::pair<int, int>(dnode, b));
-        }
-        else
-            for (int i = a + 1; i < b; ++i)
-                if (node2Coord->counter(result[i]) == 0) { ///< remove only unused/irrelevant nodes
-                    result[i] = 0;
-                }
-    }
-
-    int p = 0;
-    for (int i = 0; i < numberOfNodes; ++i)
-        if (result[i] > 0) {
-            if (i > p) result[p] = result[i];
-            ++p;
-        }
-    return p;
-}
-
-int OsmPbfReader::shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB) const {
-    Coord coordA, coordInBetween, coordB;
-
-    if (node2Coord->retrieve(nodeA, coordA) && node2Coord->retrieve(nodeInBetween, coordInBetween) && node2Coord->retrieve(nodeB, coordB)) {
-        /// http://stackoverflow.com/questions/849211/shortest-distance-between-a-point-and-a-line-segment
-        const int d1 = coordB.x - coordA.x;
-        const int d2 = coordB.y - coordA.y;
-        if (d1 == 0 && d2 == 0) { ///< nodes A and B are equal
-            const int d1 = coordA.x - coordInBetween.x;
-            const int d2 = coordA.y - coordInBetween.y;
-            return d1 * d1 + d2 * d2;
-        }
-        /// Find a projection of nodeInBetween onto the line
-        /// between nodeA and nodeB
-        const int l2 = (d1 * d1 + d2 * d2);
-        const double t = ((coordInBetween.x - coordA.x) * d1 + (coordInBetween.y - coordA.y) * d2) / (double)l2;
-        if (t < 0.0) { ///< beyond node A's end of the segment
-            const int d1 = coordA.x - coordInBetween.x;
-            const int d2 = coordA.y - coordInBetween.y;
-            return d1 * d1 + d2 * d2;
-        } else if (t > 1.0) { ///< beyond node B's end of the segment
-            const int d1 = coordB.x - coordInBetween.x;
-            const int d2 = coordB.y - coordInBetween.y;
-            return d1 * d1 + d2 * d2;
-        } else {
-            const int x = coordA.x + t * (coordB.x - coordA.x) + 0.5;
-            const int d = coordB.y - coordA.y;
-            const int y = coordA.y + (int)(t * d + 0.5);
-            const int d1 = x - coordInBetween.x;
-            const int d2 = y - coordInBetween.y;
-            return d1 * d1 + d2 * d2;
-        }
-    } else
-        return 0;
 }

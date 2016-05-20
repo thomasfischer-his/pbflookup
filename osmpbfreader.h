@@ -75,9 +75,6 @@ private:
     // pbf struct of an OSM PrimitiveBlock
     OSMPBF::PrimitiveBlock primblock;
 
-    int applyRamerDouglasPeucker(const ::OSMPBF::Way &ways, uint64_t *result);
-    int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint64_t nodeB) const;
-
     static const uint64_t exclaveInclaveWays[];
 };
 
