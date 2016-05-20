@@ -1494,12 +1494,12 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
     if (wayid >= blacklistedWayIds[0] && wayid <= blacklistedWayIds[blacklistedWayIds_count - 1]) {
         size_t min = 0, max = blacklistedWayIds_count - 1;
         while (min < max) {
-            int pivot_idx = (max - min) / 2 + min;
+            const size_t pivot_idx = (max - min) / 2 + min;
             if (blacklistedWayIds[pivot_idx] == wayid) return;
             else if (blacklistedWayIds[pivot_idx] < wayid)
-                min = pivot_idx;
-            else /// blacklistedWayIds[pivot_idx]>wayid
-                max = pivot_idx;
+                min = pivot_idx + 1;
+            else /// blacklistedWayIds[pivot_idx] > wayid
+                max = pivot_idx - 1;
         }
         /// Now: min == max
         if (blacklistedWayIds[min] == wayid) return;
