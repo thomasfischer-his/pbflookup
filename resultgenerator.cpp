@@ -222,7 +222,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         /// No good result found, but some places have been recognized in the process.
         /// Pick one of the larger places as result.
         if (verbosity > VerbositySilent) {
-            Error::info("=== Several places are known, trying to pick a good one ===");
+            Error::info("=== Testing any known places, trying to pick a good one ===");
 #ifdef CPUTIMER
             timer.start();
 #endif // CPUTIMER
@@ -307,8 +307,8 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     }
 
 #ifdef CPUTIMER
-    timerOverFunction.elapsed(&cputime);
-    Error::debug("%d results, time %.3lfms = %.1lfs", results.size(), cputime / 1000.0, cputime / 1000000.0);
+    timerOverFunction.elapsed(&cputime, &walltime);
+    Error::info("%d results, time %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", results.size(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
 #else // CPUTIMER
     Error::debug("%d results", results.size());
 #endif // CPUTIMER
