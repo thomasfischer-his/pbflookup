@@ -264,11 +264,7 @@ public:
     AdministrativeRegion administrativeRegion;
 
     explicit Private(Sweden *parent)
-        : p(parent)
-#ifdef CPUTIMER
-        , buildingTime(0), nodeInsideTime(0), callToNodeInsideRelationRegion(0)
-#endif // CPUTIMER
-    {
+        : p(parent) {
         roads.regional = (std::vector<uint64_t> ** **)calloc(regional_len, sizeof(std::vector<uint64_t> ** *));
     }
 
@@ -284,11 +280,6 @@ public:
                 free(roads.regional[i]);
             }
         free(roads.regional);
-#ifdef CPUTIMER
-        Error::debug("Accumulated building time: %.3lf", buildingTime / 1000.0);
-        Error::debug("Accumulated 'node inside' time: %.3lf  (per call: %.5lf)", nodeInsideTime / 1000.0, nodeInsideTime / 1000.0 / callToNodeInsideRelationRegion);
-        Error::debug("callTonodeInsideRelationRegion=%d", callToNodeInsideRelationRegion);
-#endif // CPUTIMER
     }
 
     static inline int europeanRoadNumberToIndex(int eRoadNumber) {
@@ -396,10 +387,6 @@ public:
 
     void buildPolygonForRelation(uint64_t relid) {
         if (relationId_to_polygons.find(relid) != relationId_to_polygons.cend()) return;
-
-#ifdef CPUTIMER
-        Timer timer;
-#endif // CPUTIMER
 
         int minx = INT_RANGE, miny = INT_RANGE, maxx = -1, maxy = -1;
         RelationMem rel;
@@ -542,12 +529,6 @@ public:
             } else
                 Error::info("Could not insert relation %llu, not all ways found/known?", relid);
         }
-
-#ifdef CPUTIMER
-        int64_t cputime;
-        timer.elapsed(&cputime);
-        buildingTime += cputime;
-#endif // CPUTIMER
     }
 
     bool nodeInsideRelationRegion(const Coord &coord, uint64_t relationId) {
@@ -557,10 +538,6 @@ public:
         /// Quick check if node is outside rectangle that encloses all polygons,
         /// avoids costly operations further below
         if (coord.x < region.minx || coord.x > region.maxx || coord.y < region.miny || coord.y > region.maxy) return false;
-
-#ifdef CPUTIMER
-        Timer timer;
-#endif // CPUTIMER
 
         bool success = false;
         for (const std::deque<Coord> &polygon : region.polygons) {
@@ -583,12 +560,6 @@ public:
             }
         }
 
-#ifdef CPUTIMER
-        int64_t cputime;
-        timer.elapsed(&cputime);
-        nodeInsideTime += cputime;
-        ++callToNodeInsideRelationRegion;
-#endif // CPUTIMER
         return success;
     }
 
