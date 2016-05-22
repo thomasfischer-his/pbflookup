@@ -133,6 +133,7 @@ public:
         case OSMElement::PlaceMedium: return 0.85;
         case OSMElement::PlaceSmall: return 0.7;
         case OSMElement::Island: return 0.6;
+        case OSMElement::Water: return 0.5;
         case OSMElement::Building: return 0.9;
         default: return 0.5;
         }

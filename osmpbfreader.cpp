@@ -466,6 +466,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
                                     /// * Very small places like farms or plots neither
                                 }
+                            } else if (strcmp("natural", ckey) == 0) {
+                                const char *cvalue = primblock.stringtable().s(pg.nodes(j).vals(k)).c_str();
+                                if (strcmp("water", cvalue) == 0)
+                                    realworld_type = OSMElement::Water;
                             }
                         }
 
@@ -550,6 +554,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                                         /// * Administrative boundaries should be checked elsewhere like SCBareas or NUTS3areas
                                         /// * Very small places like farms or plots neither
                                     }
+                                } else if (strcmp("natural", ckey) == 0) {
+                                    const char *cvalue = primblock.stringtable().s(value).c_str();
+                                    if (strcmp("water", cvalue) == 0)
+                                        realworld_type = OSMElement::Water;
                                 }
                             }
                         }
@@ -614,6 +622,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 const char *cvalue = primblock.stringtable().s(pg.ways(w).vals(k)).c_str();
                                 if (strcmp("island", cvalue) == 0)
                                     realworld_type = OSMElement::Island;
+                            } else if (strcmp("natural", ckey) == 0) {
+                                const char *cvalue = primblock.stringtable().s(pg.ways(w).vals(k)).c_str();
+                                if (strcmp("water", cvalue) == 0)
+                                    realworld_type = OSMElement::Water;
                             }
                         }
 
@@ -696,6 +708,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 const char *cvalue = primblock.stringtable().s(pg.relations(i).vals(k)).c_str();
                                 if (strcmp("island", cvalue) == 0)
                                     realworld_type = OSMElement::Island;
+                            } else if (strcmp("natural", ckey) == 0) {
+                                const char *cvalue = primblock.stringtable().s(pg.relations(i).vals(k)).c_str();
+                                if (strcmp("water", cvalue) == 0)
+                                    realworld_type = OSMElement::Water;
                             }
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
