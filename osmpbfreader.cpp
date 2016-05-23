@@ -418,7 +418,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         node2Coord->insert(pg.nodes(j).id(), Coord::fromLonLat(lon, lat));
 
 #ifdef DEBUG
-                        bool node_is_county = false;
+                        bool node_is_county = false, node_is_municipality = false;
 #endif // DEBUG
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
@@ -436,10 +436,16 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     /// representing an area
                                     // realworld_type = OSMElement::PlaceLargeArea;
                                     node_is_county = true;
+                                } else if (strcmp("municipality", cvalue) == 0) {
+                                    /// FIX OSM DATA
+                                    /// Counties should not be represented by nodes, but by relations
+                                    /// representing an area
+                                    // realworld_type = OSMElement::PlaceLargeArea;
+                                    node_is_municipality = true;
                                 }
 #endif // DEBUG
 
-                                if (strcmp("city", cvalue) == 0)
+                                if (strcmp("city", cvalue) == 0 || strcmp("municipality", cvalue) == 0)
                                     realworld_type = OSMElement::PlaceLarge;
                                 else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
                                     realworld_type = OSMElement::PlaceMedium;
@@ -472,6 +478,8 @@ bool OsmPbfReader::parse(std::istream &input) {
 #ifdef DEBUG
                             if (node_is_county)
                                 Error::info("County '%s' is represented by node %llu", name.c_str(), id);
+                            if (node_is_municipality)
+                                Error::info("Municipality '%s' is represented by node %llu", name.c_str(), id);
 #endif // DEBUG
                         }
                     }
@@ -496,7 +504,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         bool isKey = true;
                         int key = 0, value = 0;
 #ifdef DEBUG
-                        bool node_is_county = false;
+                        bool node_is_county = false, node_is_municipality = false;
 #endif // DEBUG
                         while (last_keyvals_pos < pg.dense().keys_vals_size()) {
                             const int key_val = pg.dense().keys_vals(last_keyvals_pos);
@@ -524,10 +532,16 @@ bool OsmPbfReader::parse(std::istream &input) {
                                         /// representing an area
                                         // realworld_type = OSMElement::PlaceLargeArea;
                                         node_is_county = true;
+                                    } else if (strcmp("municipality", cvalue) == 0) {
+                                        /// FIX OSM DATA
+                                        /// Counties should not be represented by nodes, but by relations
+                                        /// representing an area
+                                        // realworld_type = OSMElement::PlaceLargeArea;
+                                        node_is_municipality = true;
                                     }
 #endif // DEBUG
 
-                                    if (strcmp("city", cvalue) == 0)
+                                    if (strcmp("city", cvalue) == 0 || strcmp("municipality", cvalue) == 0)
                                         realworld_type = OSMElement::PlaceLarge;
                                     else if (strcmp("borough", cvalue) == 0 || strcmp("suburb", cvalue) == 0 || strcmp("town", cvalue) == 0 || strcmp("village", cvalue) == 0)
                                         realworld_type = OSMElement::PlaceMedium;
@@ -560,6 +574,8 @@ bool OsmPbfReader::parse(std::istream &input) {
 #ifdef DEBUG
                             if (node_is_county)
                                 Error::debug("County '%s' is represented by node %llu", name.c_str(), last_id);
+                            if (node_is_municipality)
+                                Error::info("Municipality '%s' is represented by node %llu", name.c_str(), id);
 #endif // DEBUG
                         }
                     }
