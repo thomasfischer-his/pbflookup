@@ -79,7 +79,7 @@ public:
         /// collecting unique instances of node ids, it does
         /// not provide a way for fast random access. Therefore,
         /// an array is built based on data collected in the set.
-        uint64_t *node_id_array = (uint64_t *)malloc(considered_nodes * sizeof(uint64_t));
+        uint64_t *node_id_array = (uint64_t *)calloc(considered_nodes, sizeof(uint64_t));
         int i = 0;
         for (auto it = node_ids.cbegin(); it != node_ids.cend(); ++it, ++i)
             node_id_array[i] = *it;

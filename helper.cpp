@@ -563,9 +563,9 @@ std::string &utf8tolower(std::string &text) {
             prev_c = text[i] = utf8tolower(prev_c, text[i]);
         } else if (c == 0xc2 || c == 0xe2) {
             /// Observation: mapper use by mistake UTF-8 sequences starting with 0xc2 or 0xe2
-            bool madeChanges = correctutf8mistakes(text, i);
+            const bool madeChanges = correctutf8mistakes(text, i);
             if (!madeChanges)
-                madeChanges = symbolsToAscii(text, i);
+                symbolsToAscii(text, i);
             prev_c = text[i];
         } else if ((c >= 0xc3 && c <= 0xc5) || c == 0xe1) {
             /// Rewrite extended Latin characters into their plain ASCII counterparts
