@@ -575,7 +575,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                             if (node_is_county)
                                 Error::debug("County '%s' is represented by node %llu", name.c_str(), last_id);
                             if (node_is_municipality)
-                                Error::info("Municipality '%s' is represented by node %llu", name.c_str(), id);
+                                Error::info("Municipality '%s' is represented by node %llu", name.c_str(), last_id);
 #endif // DEBUG
                         }
                     }
