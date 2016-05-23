@@ -180,6 +180,11 @@ struct RelationMem {
     uint16_t *member_flags;
 };
 
+/**
+ * Thin wrapper around std::string, basically only adding serialization
+ * operations to an input stream: New constructor can load data from stream,
+ * new write(..) function dumps object to stream.
+ */
 class WriteableString : public std::string {
 public:
     WriteableString()
@@ -212,6 +217,11 @@ public:
 
         clear(); ///< remove any data/garbage that may be inside the string
         append(buffer, len);
+    }
+
+    WriteableString &operator=(const WriteableString &other) {
+        std::string::operator=(other);
+        return *this;
     }
 
     std::ostream &write(std::ostream &output) {
