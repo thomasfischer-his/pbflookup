@@ -110,6 +110,7 @@ int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint
 size_t applyRamerDouglasPeucker(const OSMWay &way, uint64_t *result) {
     std::stack<std::pair<int, int> > recursion;
     recursion.push(std::make_pair(0, way.size - 1));
+    memcpy(result, way.nodes, way.size * sizeof(uint64_t));
 
     while (!recursion.empty()) {
         const std::pair<int, int> nextPair = recursion.top();
