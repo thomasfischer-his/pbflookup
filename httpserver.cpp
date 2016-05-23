@@ -76,6 +76,7 @@ private:
 
 public:
     Timer timerServer, timerSearch;
+    const char *start_time;
 
     struct SlaveConnection {
         SlaveConnection()
@@ -90,7 +91,9 @@ public:
 
     Private(HTTPServer *parent)
         : p(parent) {
-        // TODO
+        const time_t curtime = time(NULL);
+        struct tm *brokentime = localtime(&curtime);
+        start_time = asctime(brokentime);
     }
 
     enum HTTPstate {NeedMoreData, Bad, Good};
@@ -268,6 +271,7 @@ public:
         html_stream << "<p>" << internal_msg << "</p>" << std::endl;
         if (!filename.empty())
             html_stream << "<pre>" << filename << "</pre>" << std::endl;
+        html_stream << "<p>Server is running since: " << start_time << "</p>" << std::endl;
         writeFinancialSupportStatement(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl;
 
@@ -362,6 +366,7 @@ public:
             timerServer->elapsed(&cputime, &walltime);
             html_stream << "<p>Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>" << std::endl;;
         }
+        html_stream << "<p>Server is running since: " << start_time << "</p>" << std::endl;
     }
 
     void writeFormHTML(int fd) {
