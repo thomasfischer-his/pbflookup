@@ -149,7 +149,12 @@ size_t applyRamerDouglasPeucker(const OSMWay &way, uint64_t *result) {
     return p;
 }
 
-void simplifyWay(const OSMWay &way, uint64_t *simplifiedWay) {
+void simplifyWay(const OSMWay &way) {
+    static const size_t simplifiedWay_size = 8192; /// largest observed way length is 2304
+    static uint64_t simplifiedWay[simplifiedWay_size];
+    if (way.size > simplifiedWay_size)
+        Error::err("Way %llu of size %d is longer than acceptable (%d)", way.id, way.size, simplifiedWay_size);
+
     const size_t simplifiedWaySize = applyRamerDouglasPeucker(way, simplifiedWay);
 
     WayNodes wn(simplifiedWaySize);
@@ -162,21 +167,11 @@ void simplifyWay(const OSMWay &way, uint64_t *simplifiedWay) {
 /// This method will be run by the consumer thread which is
 /// processing (simplifying) ways
 void consumerWaySimplification(void) {
-    size_t simplifiedWayAllocationSize = 1024;
-    uint64_t *simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
-
     const OSMWay *way;
     while (!doneWaySimplification) {
         while (queueWaySimplification.pop(way)) {
             --queueWaySimplificationSize;
-
-            if (way->size > simplifiedWayAllocationSize) {
-                simplifiedWayAllocationSize = ((way->size >> 8) + 2) << 8;
-                free(simplifiedWay);
-                simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
-            }
-
-            simplifyWay(*way, simplifiedWay);
+            simplifyWay(*way);
             delete way;
         }
         /// Sleep a little bit to avoid busy waiting
@@ -185,18 +180,9 @@ void consumerWaySimplification(void) {
     }
     while (queueWaySimplification.pop(way)) {
         --queueWaySimplificationSize;
-
-        if (way->size > simplifiedWayAllocationSize) {
-            simplifiedWayAllocationSize = ((way->size >> 8) + 2) << 8;
-            free(simplifiedWay);
-            simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
-        }
-
-        simplifyWay(*way, simplifiedWay);
+        simplifyWay(*way);
         delete way;
     }
-
-    free(simplifiedWay);
 }
 
 OsmPbfReader::OsmPbfReader()
