@@ -668,7 +668,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                     for (int i = 0; i < maxrelations; ++i) {
                         const uint64_t relId = pg.relations(i).id();
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
-                        std::string name, boundary;
+                        std::string name, type, route, boundary;
                         int admin_level = 0;
                         const int maxkv = pg.relations(i).keys_size();
                         for (int k = 0; k < maxkv; ++k) {
@@ -677,6 +677,12 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 /// Store 'name' string for later use
                                 name = primblock.stringtable().s(pg.relations(i).vals(k));
                                 ++count_named_relations;
+                            } else if (strcmp("type", ckey) == 0) {
+                                /// Store 'type' string for later use
+                                type = primblock.stringtable().s(pg.relations(i).vals(k));
+                            } else if (strcmp("route", ckey) == 0) {
+                                /// Store 'route' string for later use
+                                route = primblock.stringtable().s(pg.relations(i).vals(k));
                             } else if (strcmp("ref:scb", ckey) == 0 || strcmp("ref:se:scb", ckey) == 0) {
                                 /// Found SCB reference (two digits for lands, four digits for municipalities
                                 const char *s = primblock.stringtable().s(pg.relations(i).vals(k)).c_str();
@@ -718,6 +724,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                             }
                             // TODO cover different types of relations to set 'realworld_type' properly
                         }
+
+                        if (realworld_type == OSMElement::UnknownRealWorldType && type.compare("route") == 0 && route.compare("road") == 0)
+                            realworld_type = OSMElement::RoadMajor;
+                        else if (realworld_type == OSMElement::UnknownRealWorldType && boundary.compare("administrative") == 0)
+                            realworld_type = OSMElement::PlaceLargeArea;
 
                         if (admin_level > 0 && name.length() > 1 && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
                             sweden->insertAdministrativeRegion(name, admin_level, relId);
