@@ -395,8 +395,8 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
          * criterion by names' length (weak assumption: longer names are
          * more specific than shorter names).
          */
-        const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
-        const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
+        const size_t countSpacesA = std::count(a.combined.cbegin(), a.combined.cend(), ' ');
+        const size_t countSpacesB = std::count(b.combined.cbegin(), b.combined.cend(), ' ');
 
         /// Set quality during sorting if not already set for match a
         if (a.quality < 0.0) {
@@ -420,7 +420,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         if (countSpacesA < countSpacesB) return false;
         else if (countSpacesA > countSpacesB) return true;
         else /** countSpacesA == countSpacesB */
-            return a.name.length() > b.name.length();
+            return a.combined.length() > b.combined.length();
     });
 
     return result;
@@ -533,8 +533,8 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
         /// std::string::find(..) will return the largest positive value for
         /// std::string::size_type if the argument was not found (std::string::npos),
         /// otherwise the position where found in the string (starting at 0).
-        const std::string::size_type findAdminInCombinedA = a.name.find(a.adminRegionName);
-        const std::string::size_type findAdminInCombinedB = b.name.find(b.adminRegionName);
+        const std::string::size_type findAdminInCombinedA = a.combined.find(a.adminRegionName);
+        const std::string::size_type findAdminInCombinedB = b.combined.find(b.adminRegionName);
 
         /// Set quality during sorting if not already set for match a
         if (a.quality < 0.0) {
@@ -545,14 +545,14 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
              * If the admin region's name occurs in later positions in a's name, the
              * quality value linearly increases towards 1.0.
              */
-            a.quality = findAdminInCombinedA > a.name.length() ? 1.0 : findAdminInCombinedA / (double)(a.name.length() - findAdminInCombinedA + 1);
+            a.quality = findAdminInCombinedA > a.combined.length() ? 1.0 : findAdminInCombinedA / (double)(a.combined.length() - findAdminInCombinedA + 1);
             if (a.match.realworld_type < OSMElement::PlaceLarge || a.match.realworld_type > OSMElement::PlaceSmall)
                 /// Prefer 'places' over anything else
                 a.quality *= .9;
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
-            b.quality = findAdminInCombinedB > b.name.length() ? 1.0 : findAdminInCombinedB / (double)(b.name.length() - findAdminInCombinedB + 1);
+            b.quality = findAdminInCombinedB > b.combined.length() ? 1.0 : findAdminInCombinedB / (double)(b.combined.length() - findAdminInCombinedB + 1);
             if (b.match.realworld_type < OSMElement::PlaceLarge || b.match.realworld_type > OSMElement::PlaceSmall)
                 /// Prefer 'places' over anything else
                 b.quality *= .9;
@@ -567,12 +567,12 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
             else if (b.match.realworld_type >= OSMElement::PlaceLarge && b.match.realworld_type <= OSMElement::PlaceSmall && (a.match.realworld_type < OSMElement::PlaceLarge || a.match.realworld_type > OSMElement::PlaceSmall))
                 return false;
 
-            const size_t countSpacesA = std::count(a.name.cbegin(), a.name.cend(), ' ');
-            const size_t countSpacesB = std::count(b.name.cbegin(), b.name.cend(), ' ');
+            const size_t countSpacesA = std::count(a.combined.cbegin(), a.combined.cend(), ' ');
+            const size_t countSpacesB = std::count(b.combined.cbegin(), b.combined.cend(), ' ');
             if (countSpacesA < countSpacesB) return false;
             else if (countSpacesA > countSpacesB) return true;
             else /** countSpacesA == countSpacesB */
-                return a.name.length() > b.name.length();
+                return a.combined.length() > b.combined.length();
         }
     });
 

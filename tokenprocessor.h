@@ -82,12 +82,12 @@ public:
     std::vector<struct NearPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
 
     struct UniqueMatch {
-        UniqueMatch(std::string _name, const OSMElement &_element, double _quality)
-            : name(_name), element(_element), quality(_quality) {
+        UniqueMatch(std::string _combined, const OSMElement &_element, double _quality)
+            : combined(_combined), element(_element), quality(_quality) {
             /// nothing
         }
 
-        std::string name;
+        std::string combined;
         OSMElement element;
 
         /** Assessment on match's quality, ranging from
@@ -102,12 +102,12 @@ public:
     std::vector<struct UniqueMatch> evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const;
 
     struct AdminRegionMatch {
-        AdminRegionMatch(const std::string &_name, const OSMElement &_match, uint64_t _adminRegionId, const std::string &_adminRegionName, double _quality = -1.0)
-            : name(_name), match(_match), adminRegionId(_adminRegionId), adminRegionName(_adminRegionName), quality(_quality) {
+        AdminRegionMatch(const std::string &_combined, const OSMElement &_match, uint64_t _adminRegionId, const std::string &_adminRegionName, double _quality = -1.0)
+            : combined(_combined), match(_match), adminRegionId(_adminRegionId), adminRegionName(_adminRegionName), quality(_quality) {
             /// nothing
         }
 
-        std::string name;
+        std::string combined;
         OSMElement match;
         uint64_t adminRegionId;
         std::string adminRegionName;
