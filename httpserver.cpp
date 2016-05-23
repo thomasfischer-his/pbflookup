@@ -729,7 +729,12 @@ void HTTPServer::run() {
             /// Timeout in pselect(..), nothing happened
             const time_t curtime = time(NULL);
             struct tm *brokentime = localtime(&curtime);
-            Error::debug("Timeout in pselect after %d seconds at time/date: %s", timeout_sec, asctime(brokentime));
+            static const size_t buffer_len = 256;
+            static char buffer[buffer_len];
+            strncpy(buffer, asctime(brokentime), buffer_len - 1);
+            const size_t buffer_str_len = strlen(buffer);
+            if (buffer[buffer_str_len - 1] < 0x20) buffer[buffer_str_len - 1] = '\0'; ///< remove line break if there is any
+            Error::debug("Timeout in pselect after %d seconds at time/date: %s", timeout_sec, buffer);
             continue;
         }
 
