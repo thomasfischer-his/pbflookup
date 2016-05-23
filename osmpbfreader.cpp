@@ -756,9 +756,13 @@ bool OsmPbfReader::parse(std::istream &input) {
     if (isatty(1))
         std::cout << std::endl;
 
+    Timer joinTimer;
+    int64_t wallTime, cpuTime;
     doneWaySimplification = true;
     Error::debug("Waiting for way simplification thread, max queue length was %d", max_queue_size);
     waySimplificationThread.join();
+    joinTimer.elapsed(&cpuTime, &wallTime);
+    Error::debug("Time to join: cpu= %.3fms   wall= %.3fms", cpuTime / 1000.0, wallTime / 1000.0);
 
     Error::info("Number of named nodes: %d", count_named_nodes);
     Error::info("Number of named nodes: %d", count_named_ways);
