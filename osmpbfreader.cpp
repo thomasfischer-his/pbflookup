@@ -148,7 +148,7 @@ size_t applyRamerDouglasPeucker(const OSMWay &way, uint64_t *result) {
     return p;
 }
 
-void simplifyWay(const OSMWay &way, uint64_t *simplifiedWay, size_t &simplifiedWayAllocationSize) {
+void simplifyWay(const OSMWay &way, uint64_t *simplifiedWay) {
     const size_t simplifiedWaySize = applyRamerDouglasPeucker(way, simplifiedWay);
 
     WayNodes wn(simplifiedWaySize);
@@ -175,7 +175,7 @@ void consumerWaySimplification(void) {
                 simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
             }
 
-            simplifyWay(*way, simplifiedWay, simplifiedWayAllocationSize);
+            simplifyWay(*way, simplifiedWay);
             delete way;
         }
         /// Sleep a little bit to avoid busy waiting
@@ -191,7 +191,7 @@ void consumerWaySimplification(void) {
             simplifiedWay = (uint64_t *)calloc(simplifiedWayAllocationSize, sizeof(uint64_t));
         }
 
-        simplifyWay(*way, simplifiedWay, simplifiedWayAllocationSize);
+        simplifyWay(*way, simplifiedWay);
         delete way;
     }
 
