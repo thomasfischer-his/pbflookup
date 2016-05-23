@@ -141,12 +141,20 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
             Coord c;
             if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
-                Result r(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegionName + " > " + adminRegionMatch.name);
+                WriteableString matchName("UNSET");
+                switch (adminRegionMatch.match.type) {
+                case OSMElement::Node: nodeNames->retrieve(adminRegionMatch.match.id, matchName); break;
+                case OSMElement::Way: wayNames->retrieve(adminRegionMatch.match.id, matchName); break;
+                case OSMElement::Relation: relationNames->retrieve(adminRegionMatch.match.id, matchName); break;
+                case OSMElement::UnknownElementType: matchName = WriteableString("Unknown"); break;
+                }
+
+                Result r(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegionName + " (relation " + std::to_string(adminRegionMatch.adminRegionId) + ") > '" + matchName + "' (" + adminRegionMatch.match.operator std::string() + ", found via: '" + adminRegionMatch.combined + "')");
                 r.elements.push_back(OSMElement(adminRegionMatch.adminRegionId, OSMElement::Relation));
                 r.elements.push_back(adminRegionMatch.match);
                 results.push_back(r);
                 if (verbosity > VerbositySilent)
-                    Error::debug("Found place %lld (%s) inside admin region %d (%s)", adminRegionMatch.match.id, adminRegionMatch.name.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.adminRegionName.c_str());
+                    Error::debug("Found place '%s' (%s) inside admin region '%s' (%d) via combination '%s'", matchName.c_str(), adminRegionMatch.match.operator std::string().c_str(), adminRegionMatch.adminRegionName.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.combined.c_str(), adminRegionMatch.combined.c_str());
             }
         }
     }
@@ -176,7 +184,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
             Coord c;
             if (getCenterOfOSMElement(nearPlacesMatch.local, c)) {
-                Result r(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + nearPlacesMatch.global.operator std::string() + " (" + nearPlacesMatch.global.name().c_str() + ") > " + nearPlacesMatch.local.operator std::string() + " (" + nearPlacesMatch.local.name().c_str() + ")");
+                Result r(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + nearPlacesMatch.global.operator std::string() + " (" + nearPlacesMatch.global.name() + ") > " + nearPlacesMatch.local.operator std::string() + " (" + nearPlacesMatch.local.name() + ")");
                 r.elements.push_back(nearPlacesMatch.global);
                 r.elements.push_back(nearPlacesMatch.local);
                 results.push_back(r);
@@ -203,11 +211,18 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
         Coord c;
         if (getCenterOfOSMElement(uniqueMatch.element, c)) {
-            Result r(c, uniqueMatch.quality * .8, std::string("Unique name: ") + uniqueMatch.name);
+            WriteableString uniquePlaceName("UNSET");
+            switch (uniqueMatch.element.type) {
+            case OSMElement::Node: nodeNames->retrieve(uniqueMatch.element.id, uniquePlaceName); break;
+            case OSMElement::Way: wayNames->retrieve(uniqueMatch.element.id, uniquePlaceName); break;
+            case OSMElement::Relation: relationNames->retrieve(uniqueMatch.element.id, uniquePlaceName); break;
+            case OSMElement::UnknownElementType: uniquePlaceName = WriteableString("Unknown"); break;
+            }
+            Result r(c, uniqueMatch.quality * .8, std::string("Unique name '") + uniquePlaceName + " (" + uniqueMatch.element.operator std::string() + ") found via '" + uniqueMatch.combined + "'");
             r.elements.push_back(uniqueMatch.element);
             results.push_back(r);
             if (verbosity > VerbositySilent)
-                Error::debug("Got a result for name '%s'!", uniqueMatch.name.c_str());
+                Error::debug("Got a result for combined word '%s': %s (%s)", uniqueMatch.combined.c_str(), uniquePlaceName.c_str(), uniqueMatch.element.operator std::string().c_str());
         }
     }
 #ifdef CPUTIMER
