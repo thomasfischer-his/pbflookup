@@ -765,17 +765,5 @@ bool OsmPbfReader::parse(std::istream &input) {
     Error::info("Number of named relations: %d", count_named_relations);
     Error::info("Number of named elements (sum): %d", count_named_nodes + count_named_ways + count_named_relations);
 
-    /*
-    /// Print information about major roads that lack a ref (e.g. 'E20')
-    for (const std::pair<uint64_t, std::string> &pair : roadsWithoutRef) {
-        WayNodes wn;
-        if (wayNodes->retrieve(pair.first, wn)) {
-            std::vector<int> scbareas = sweden->insideSCBarea(wn.nodes[wn.num_nodes / 2]);
-            const int region = scbareas.empty() ? 0 : scbareas.front();
-            Error::debug("Way %llu (%s) is a highway of type %s, but has no ref", pair.first, Sweden::nameOfSCBarea(region).c_str(), pair.second.c_str());
-        }
-    }
-    */
-
     return true;
 }
