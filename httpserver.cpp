@@ -714,8 +714,8 @@ void HTTPServer::run() {
         /// It is necessary to re-initialize this struct in each loop iteration,
         /// as pselect(..) may modify it (to tell us how long it waited)
         struct timespec timeout;
-        /// Wait up to 1200 seconds
-        static const time_t timeout_sec = 1200;
+        /// Wait up to 1800 seconds (30 minutes)
+        static const time_t timeout_sec = 1800;
         timeout.tv_sec = timeout_sec;
         timeout.tv_nsec = 0;
 
