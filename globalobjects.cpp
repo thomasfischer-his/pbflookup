@@ -138,7 +138,7 @@ void loadRelationNames() {
 }
 
 void saveRelationNames() {
-    if (wayNames != NULL) {
+    if (relationNames != NULL) {
         const std::string filename = tempdir + "/" + mapname + ".rn";
         Error::debug("Writing to '%s' (mapping relations to their names)", filename.c_str());
         std::ofstream rnfile(filename);
