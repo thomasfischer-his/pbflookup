@@ -288,6 +288,9 @@ IdTree<T>::~IdTree()
 
 template <class T>
 bool IdTree<T>::insert(uint64_t id, T const &data) {
+    if (id == 0)
+        Error::err("Cannot insert element with id=0 into IdTree<%s>", typeid(T).name());
+
     if (d->root == NULL) {
         d->root = new IdTreeNode<T>();
         if (d->root == NULL)
@@ -336,6 +339,9 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
 
 template <class T>
 bool IdTree<T>::retrieve(const uint64_t id, T &data) const {
+    if (id == 0)
+        Error::err("Cannot retrieve IdTree<%s> data for id==0", typeid(T).name());
+
     IdTreeNode<T> *cur = d->findNodeForId(id);
     if (cur == NULL)
         return false;
