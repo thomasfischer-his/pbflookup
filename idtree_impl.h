@@ -201,7 +201,7 @@ public:
         IdTreeNode<T> *cur = root;
 #endif // REVERSE_ID_TREE
         bool onZeroPath = s == 0;
-        for (unsigned int s_limit = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode); s < s_limit && workingId > 0; ++s) {
+        for (unsigned int s_limit = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode); s < s_limit; ++s) {
             if (cur->children == NULL) {
 #ifdef DEBUG
                 Error::debug("IdTree<%s> node has no children to follow id %llu", typeid(T).name(), id);
@@ -296,7 +296,7 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
 
     IdTreeNode<T> *cur = d->root;
     uint64_t workingId = id;
-    for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0 && workingId > 0; --s) {
+    for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0; --s) {
         if (cur->children == NULL) {
             cur->children = (IdTreeNode<T> **)calloc(IdTreeNode<T>::numChildren, sizeof(IdTreeNode<T> *));
             if (cur->children == NULL)
