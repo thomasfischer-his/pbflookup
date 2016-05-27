@@ -57,18 +57,25 @@ bool getCenterOfOSMElement(const OSMElement &element, Coord &coord) {
         else if (cur.type == OSMElement::Way) {
             WayNodes wn;
             if (wayNodes->retrieve(cur.id, wn)) {
-                nodeIds.insert(wn.nodes[0]); ///< Way's first node
-                nodeIds.insert(wn.nodes[wn.num_nodes - 1]); ///< Way's last node
-                if (wn.num_nodes >= 2) {
-                    nodeIds.insert(wn.nodes[wn.num_nodes / 2]); ///< Way's center node
-                    if (wn.num_nodes >= 4) {
-                        nodeIds.insert(wn.nodes[wn.num_nodes / 4]); ///< Way's 1st quartile node
-                        nodeIds.insert(wn.nodes[wn.num_nodes * 3 / 4]); ///< Way's 3st quartile node
-                        if (wn.num_nodes >= 8) {
-                            nodeIds.insert(wn.nodes[wn.num_nodes / 8]);
-                            nodeIds.insert(wn.nodes[wn.num_nodes * 3 / 8]);
-                            nodeIds.insert(wn.nodes[wn.num_nodes * 5 / 8]);
-                            nodeIds.insert(wn.nodes[wn.num_nodes * 7 / 8]);
+                if (wn.num_nodes == 0)
+                    Error::err("Got %s without nodes: %llu", cur.operator std::string().c_str(), cur.id);
+                else if (wn.num_nodes == 1) {
+                    Error::warn("%s has only a single node: %llu", cur.operator std::string().c_str(), wn.nodes[0]);
+                    nodeIds.insert(wn.nodes[0]); ///< Way's only node
+                } else { /** wn.num_nodes>=2 */
+                    nodeIds.insert(wn.nodes[0]); ///< Way's first node
+                    nodeIds.insert(wn.nodes[wn.num_nodes - 1]); ///< Way's last node
+                    if (wn.num_nodes > 3) {
+                        nodeIds.insert(wn.nodes[wn.num_nodes / 2]); ///< Way's middle node
+                        if (wn.num_nodes > 6) {
+                            nodeIds.insert(wn.nodes[wn.num_nodes / 4]); ///< Way's 1st quartile node
+                            nodeIds.insert(wn.nodes[wn.num_nodes * 3 / 4]); ///< Way's 3st quartile node
+                            if (wn.num_nodes > 12) {
+                                nodeIds.insert(wn.nodes[wn.num_nodes / 8]);
+                                nodeIds.insert(wn.nodes[wn.num_nodes * 3 / 8]);
+                                nodeIds.insert(wn.nodes[wn.num_nodes * 5 / 8]);
+                                nodeIds.insert(wn.nodes[wn.num_nodes * 7 / 8]);
+                            }
                         }
                     }
                 }
