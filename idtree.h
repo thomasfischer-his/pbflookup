@@ -30,41 +30,56 @@
 #include "global.h"
 
 struct WayNodes {
-    WayNodes() {
-        num_nodes = 0;
-        nodes = NULL;
+    WayNodes()
+        : num_nodes(0), nodes(NULL) {
+        /// nothing
     }
 
-    WayNodes(uint32_t _num_nodes) {
-        num_nodes = _num_nodes;
+    WayNodes(uint32_t _num_nodes)
+        : num_nodes(_num_nodes), nodes(NULL) {
+        if (num_nodes == 0)
+            Error::err("Creating way without nodes");
         nodes = (uint64_t *)calloc(_num_nodes, sizeof(uint64_t));
         if (nodes == NULL)
             Error::err("Could not allocate memory for WayNodes::nodes");
     }
 
     WayNodes &operator=(const WayNodes &other) {
+        if (other.num_nodes == 0 || other.nodes == NULL)
+            Error::err("Assigning way without nodes");
+
         if (nodes != NULL) free(nodes);
 
-        num_nodes = other.num_nodes;
+        /// Cast to circumvene 'const'ness
+        uint32_t *_num_nodes = (uint32_t *)(&num_nodes);
+        *_num_nodes = other.num_nodes;
+
         const size_t bytes = num_nodes * sizeof(uint64_t);
         nodes = (uint64_t *)malloc(bytes);
         if (nodes == NULL)
             Error::err("Could not allocate memory for WayNodes::nodes");
         memcpy(nodes, other.nodes, bytes);
+
         return *this;
     }
 
-    WayNodes(std::istream &input) {
-        input.read((char *)&num_nodes, sizeof(num_nodes));
+    WayNodes(std::istream &input)
+        : num_nodes(0), nodes(NULL) {
+        /// Cast to circumvene 'const'ness
+        uint32_t *_num_nodes = (uint32_t *)(&num_nodes);
+        input.read((char *)_num_nodes, sizeof(num_nodes));
         if (!input)
             Error::err("Could not read number of nodes from input stream");
-        const size_t bytes = num_nodes * sizeof(uint64_t);
-        nodes = (uint64_t *)malloc(bytes);
-        if (nodes == NULL)
-            Error::err("Could not allocate memory for WayNodes::nodes");
-        input.read((char *)nodes, bytes);
-        if (!input)
-            Error::err("Could not read all nodes from input stream");
+
+        if (num_nodes > 0) {
+            const size_t bytes = num_nodes * sizeof(uint64_t);
+            nodes = (uint64_t *)malloc(bytes);
+            if (nodes == NULL)
+                Error::err("Could not allocate memory for WayNodes::nodes");
+            input.read((char *)nodes, bytes);
+            if (!input)
+                Error::err("Could not read all nodes from input stream");
+        }
     }
 
     ~WayNodes() {
@@ -76,43 +91,51 @@ struct WayNodes {
         output.write((char *)&num_nodes, sizeof(num_nodes));
         if (!output)
             Error::err("Could not write number of nodes to output stream");
-        const size_t bytes = num_nodes * sizeof(uint64_t);
-        output.write((char *)nodes, bytes);
-        if (!output)
-            Error::err("Could not write all nodes to output stream");
+        if (num_nodes > 0) {
+            const size_t bytes = num_nodes * sizeof(uint64_t);
+            output.write((char *)nodes, bytes);
+            if (!output)
+                Error::err("Could not write all nodes to output stream");
+        }
         return output;
     }
 
-    uint32_t num_nodes;
+    const uint32_t num_nodes;
     uint64_t *nodes;
 };
 
 enum RelationFlags {RoleOuter = 1, RoleInner = 2, RoleInnerOuter = RoleOuter | RoleInner };
 
 struct RelationMem {
-    RelationMem() {
-        num_members = 0;
-        members = NULL;
-        member_flags = NULL;
+    RelationMem()
+        : num_members(0), members(NULL), member_flags(NULL) {
+        /// nothing
     }
 
-    RelationMem(int num) {
-        num_members = num;
-        members = (OSMElement *)calloc(num, sizeof(OSMElement));
-        if (members == NULL)
-            Error::err("Could not allocate memory for RelationMem::members");
-        member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
-        if (member_flags == NULL)
-            Error::err("Could not allocate memory for RelationMem::member_flags");
+    RelationMem(int num)
+        : num_members(num), members(NULL), member_flags(NULL) {
+        if (num_members > 0) {
+            members = (OSMElement *)calloc(num, sizeof(OSMElement));
+            if (members == NULL)
+                Error::err("Could not allocate memory for RelationMem::members");
+            member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
+            if (member_flags == NULL)
+                Error::err("Could not allocate memory for RelationMem::member_flags");
+        }
     }
 
     RelationMem &operator=(const RelationMem &other) {
+        if (other.num_members == 0 || other.members == NULL || other.member_flags == NULL)
+            Error::err("Assigning relation without members");
+
         if (members != NULL)
             free(members);
         if (member_flags != NULL)
             free(member_flags);
 
-        num_members = other.num_members;
+        /// Cast to circumvene 'const'ness
+        uint32_t *_num_members = (uint32_t *)(&num_members);
+        *_num_members = other.num_members;
 
         const size_t bytesElements = num_members * sizeof(OSMElement);
         members = (OSMElement *)malloc(bytesElements);
@@ -129,26 +152,31 @@ struct RelationMem {
         return *this;
     }
 
-    RelationMem(std::istream &input) {
-        input.read((char *)&num_members, sizeof(num_members));
+    RelationMem(std::istream &input)
+        : num_members(0), members(NULL), member_flags(NULL) {
+        /// Cast to circumvene 'const'ness
+        uint32_t *_num_members = (uint32_t *)(&num_members);
+        input.read((char *)_num_members, sizeof(num_members));
         if (!input)
             Error::err("Could not read number of members from input stream");
 
-        const size_t bytesElements = num_members * sizeof(OSMElement);
-        members = (OSMElement *)malloc(bytesElements);
-        if (members == NULL)
-            Error::err("Could not allocate memory for RelationMem::members");
-        input.read((char *)members, bytesElements);
-        if (!input)
-            Error::err("Could not read all members from input stream");
+        if (num_members > 0) {
+            const size_t bytesElements = num_members * sizeof(OSMElement);
+            members = (OSMElement *)malloc(bytesElements);
+            if (members == NULL)
+                Error::err("Could not allocate memory for RelationMem::members");
+            input.read((char *)members, bytesElements);
+            if (!input)
+                Error::err("Could not read all members from input stream");
 
-        const size_t bytesFlags = num_members * sizeof(uint16_t);
-        member_flags = (uint16_t *)malloc(bytesFlags);
-        if (member_flags == NULL)
-            Error::err("Could not allocate memory for RelationMem::member_flags");
-        input.read((char *)member_flags, bytesFlags);
-        if (!input)
-            Error::err("Could not read all members from input stream");
+            const size_t bytesFlags = num_members * sizeof(uint16_t);
+            member_flags = (uint16_t *)malloc(bytesFlags);
+            if (member_flags == NULL)
+                Error::err("Could not allocate memory for RelationMem::member_flags");
+            input.read((char *)member_flags, bytesFlags);
+            if (!input)
+                Error::err("Could not read all members from input stream");
+        }
     }
 
     ~RelationMem() {
@@ -163,19 +191,22 @@ struct RelationMem {
         if (!output)
             Error::err("Could not write number of members to output stream");
 
-        const size_t bytesElements = num_members * sizeof(OSMElement);
-        output.write((char *)members, bytesElements);
-        if (!output)
-            Error::err("Could not write all members to output stream");
+        if (num_members > 0) {
+            const size_t bytesElements = num_members * sizeof(OSMElement);
+            output.write((char *)members, bytesElements);
+            if (!output)
+                Error::err("Could not write all members to output stream");
 
-        const size_t bytesFlags = num_members * sizeof(uint16_t);
-        output.write((char *)member_flags, bytesFlags);
-        if (!output)
-            Error::err("Could not write all members to output stream");
+            const size_t bytesFlags = num_members * sizeof(uint16_t);
+            output.write((char *)member_flags, bytesFlags);
+            if (!output)
+                Error::err("Could not write all members to output stream");
+        }
+
         return output;
     }
 
-    uint32_t num_members;
+    const uint32_t num_members;
     OSMElement *members;
     uint16_t *member_flags;
 };
