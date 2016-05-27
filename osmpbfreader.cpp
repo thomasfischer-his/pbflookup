@@ -150,12 +150,23 @@ size_t applyRamerDouglasPeucker(const OSMWay &way, uint64_t *result) {
 }
 
 void simplifyWay(const OSMWay &way) {
+    if (way.size < 2) {
+        /// Rare but exists in map: a node with only one node
+        /// -> ignore those artefacts
+        Error::warn("Way %llu has only %d nodes", way.id, way.size);
+        return;
+    }
+
     static const size_t simplifiedWay_size = 8192; /// largest observed way length is 2304
     static uint64_t simplifiedWay[simplifiedWay_size];
     if (way.size > simplifiedWay_size)
         Error::err("Way %llu of size %d is longer than acceptable (%d)", way.id, way.size, simplifiedWay_size);
 
     const size_t simplifiedWaySize = applyRamerDouglasPeucker(way, simplifiedWay);
+    if (simplifiedWaySize < 2) {
+        Error::warn("Way %llu got simplified to only %d nodes", way.id, simplifiedWay);
+        return;
+    }
 
     WayNodes wn(simplifiedWaySize);
     memcpy(wn.nodes, simplifiedWay, sizeof(uint64_t) * wn.num_nodes);
@@ -588,6 +599,15 @@ bool OsmPbfReader::parse(std::istream &input) {
                     const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
                         const uint64_t wayId = pg.ways(w).id();
+                        const int way_size = pg.ways(w).refs_size();
+
+                        if (way_size < 2) {
+                            /// Rare but exists in map: a node with only one node (or no node?)
+                            /// -> ignore those artefacts
+                            Error::warn("Way %llu has only %d node(s)", wayId, way_size);
+                            continue;
+                        }
+
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
                         std::string name;
                         buffer_ref[0] = buffer_highway[0] = '\0'; /// clear buffers
@@ -647,7 +667,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         ++queueWaySimplificationSize;
                         if (queueWaySimplificationSize > max_queue_size) max_queue_size = queueWaySimplificationSize;
 
-                        if (pg.ways(w).refs_size() > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
+                        if (way_size > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
                             roadsWithoutRef.push_back(std::make_pair(wayId, std::string(buffer_highway)));
 
                         /// Consider only names of length 2 or longer

@@ -386,7 +386,7 @@ template <class T>
 uint16_t IdTree<T>::counter(const uint64_t id) const {
     IdTreeNode<T> *cur = d->findNodeForId(id);
     if (cur == NULL)
-        return 0;
+        Error::err("Cannot retrieve counter for a non-existing IdTreeNode<%s> of id=%llu", typeid(T).name(), id);
 
     return cur->counter;
 }
@@ -397,6 +397,8 @@ void IdTree<T>::increaseCounter(const uint64_t id) {
 
     if (cur != NULL)
         ++cur->counter;
+    else
+        Error::err("Cannot increase counter for a non-existing IdTreeNode<%s> of id=%llu", typeid(T).name(), id);
 }
 
 template <class T>
