@@ -128,7 +128,10 @@ class IdTree<T>::Private
 {
 private:
     IdTree *p;
+#ifdef REVERSE_ID_TREE
     std::vector<IdTreeNode<T> *> zeroPath;
+    static const size_t zeroPathDepth = 8;
+#endif // REVERSE_ID_TREE
 
 public:
     static const unsigned int num_children;
@@ -165,8 +168,7 @@ public:
      */
     IdTreeNode<T> *skipAheadOnZeroPath(uint64_t &id, unsigned int &s, std::vector<IdTreeNode<T> *> *path = NULL) {
 #define mask_for_level(n) (IdTree::Private::mask<<((sizeof(id) * 8 /** size in Bytes to size in Bits */) - ((n)+1) * IdTreeNode<T>::bitsPerNode))
-        static const int depth = 8;
-        static const uint64_t masks[depth] = {
+        static const uint64_t masks[zeroPathDepth] = {
             mask_for_level(0),
             mask_for_level(0) | mask_for_level(1),
             mask_for_level(0) | mask_for_level(1) | mask_for_level(2),
@@ -177,7 +179,7 @@ public:
             mask_for_level(0) | mask_for_level(1) | mask_for_level(2) | mask_for_level(3) | mask_for_level(4) | mask_for_level(5) | mask_for_level(6) | mask_for_level(7)
         };
 
-        for (s = depth; s > 0; --s) {
+        for (s = zeroPathDepth; s > 0; --s) {
             if ((id & masks[s - 1]) == 0 && zeroPath.size() > s) {
                 /// id would pick child 0 for the first s-many levels when traversing tree
                 id <<= IdTreeNode<T>::bitsPerNode * s;
@@ -191,6 +193,30 @@ public:
     }
 #endif // REVERSE_ID_TREE
 
+#ifdef REVERSE_ID_TREE
+    void buildZeroPath() {
+        if (root == NULL)
+            root = new IdTreeNode<T>();
+
+        IdTreeNode<T> *cur = root;
+        for (size_t s = 0; s < zeroPathDepth; ++s) {
+            zeroPath.push_back(cur);
+            if (s >= zeroPathDepth - 1) break; /// no need to build children for last node
+            if (cur->children == nullptr) {
+                cur->children = (IdTreeNode<T> **)calloc(IdTreeNode<T>::numChildren, sizeof(IdTreeNode<T> *));
+                if (cur->children == nullptr)
+                    Error::err("IdTree<%s>: Could not allocate memory for cur->children", typeid(T).name());
+            }
+            if (cur->children[0] == nullptr)
+                cur->children[0] = new IdTreeNode<T>();
+            cur = cur->children[0];
+        }
+    }
+#endif // REVERSE_ID_TREE
+
+    /**
+     * This is the single most expensive function, taking 25-35% of the CPU time.
+     */
     IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = NULL) {
         if (root == NULL) {
             Error::warn("IdTree<%s> root is invalid, no id was ever added", typeid(T).name());
@@ -204,7 +230,6 @@ public:
 #else // REVERSE_ID_TREE
         IdTreeNode<T> *cur = root;
 #endif // REVERSE_ID_TREE
-        bool onZeroPath = s == 0;
         for (unsigned int s_limit = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode); s < s_limit; ++s) {
             if (cur->children == NULL) {
 #ifdef DEBUG
@@ -229,13 +254,6 @@ public:
             /// Shift out to the right bits that were just extracted
             workingId >>= IdTreeNode<T>::bitsPerNode;
 #endif // REVERSE_ID_TREE
-
-            /// Update zero path if necessary
-            onZeroPath &= bits == 0;
-            if (onZeroPath && zeroPath.size() == s) {
-                /// zeroPath needs to grow
-                zeroPath.push_back(cur);
-            }
 
             if (cur->children[bits] == NULL) {
 #ifdef DEBUG
@@ -272,6 +290,7 @@ IdTree<T>::IdTree()
         Error::err("Could not allocate memory for IdTree<T>::Private");
 #ifdef REVERSE_ID_TREE
     Error::debug("Using most significant bits as first sorting critera in IdTree<%s>", typeid(T).name());
+    d->buildZeroPath();
 #else // REVERSE_ID_TREE
     Error::debug("Using least significant bits as first sorting critera in IdTree<%s>", typeid(T).name());
 #endif // REVERSE_ID_TREE
@@ -282,6 +301,9 @@ IdTree<T>::IdTree(std::istream &input)
     : d(new IdTree<T>::Private(this))
 {
     d->root = new IdTreeNode<T>(input);
+#ifdef REVERSE_ID_TREE
+    d->buildZeroPath();
+#endif // REVERSE_ID_TREE
 }
 
 template <class T>
