@@ -96,7 +96,8 @@ struct WayNodes {
             output.write((char *)nodes, bytes);
             if (!output)
                 Error::err("Could not write all nodes to output stream");
-        }
+        } else
+            Error::warn("Writing way without nodes");
         return output;
     }
 

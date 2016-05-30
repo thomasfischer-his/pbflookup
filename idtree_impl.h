@@ -37,15 +37,17 @@ struct IdTreeNode {
 #ifdef DEBUG
         input.read((char *)&id, sizeof(id));
 #endif // DEBUG
-        input.read((char *)&counter, sizeof(counter));
-        data = T(input);
 
         char chr;
         input.read((char *)&chr, sizeof(chr));
 
         if (chr == 'N') {
+            /// Is leaf node
             children = NULL;
+            input.read((char *)&counter, sizeof(counter));
+            data = T(input);
         } else if (chr == 'C') {
+            /// Is inner node
             const size_t bytes = numChildren * sizeof(IdTreeNode<T> *);
             children = (IdTreeNode<T> **)malloc(bytes);
 
@@ -77,14 +79,16 @@ struct IdTreeNode {
 #ifdef DEBUG
         output.write((char *)&id, sizeof(id));
 #endif // DEBUG
-        output.write((char *)&counter, sizeof(counter));
-        data.write(output);
 
         char chr = '\0';
         if (children == NULL) {
+            /// Is leaf node
             chr = 'N';
             output.write((char *)&chr, sizeof(chr));
+            output.write((char *)&counter, sizeof(counter));
+            data.write(output);
         } else {
+            /// Is inner node
             chr = 'C';
             output.write((char *)&chr, sizeof(chr));
             for (int c = numChildren - 1; c >= 0; --c) {
