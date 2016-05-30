@@ -140,12 +140,34 @@ public:
 
     struct IdTreeNode<T> *root;
 
+    /**
+     * Simple cache to speed up retrieval of data from this tree.
+     * The cache has cache_size many entries, where each entry is
+     * a pair of id and data. The lowest log2(cache_size) many bits
+     * determine the line in this cache.
+     * Upon lookup, the cache row is uniquely determined by the id's
+     * lowest bits. If the id in the cache line is identical to the
+     * request id, it is a cache hit, otherwise a cache miss.
+     */
+    struct CacheLine {
+        uint64_t id;
+        T data;
+    };
+    static const size_t cache_size = 1024;
+    CacheLine cache[cache_size];
+    size_t cache_hit_counter, cache_miss_counter;
+
     Private(IdTree *parent)
         : p(parent), size(0), root(NULL) {
-        /// nothing
+        /// Invalidate all cache lines by setting 'id' to an invalid value (=0)
+        for (size_t i = 0; i < cache_size; ++i)
+            cache[i].id = 0;
+        /// Initialize cache hit/miss counters
+        cache_hit_counter = cache_miss_counter = 0;
     }
 
     ~Private() {
+        Error::info("IdTree<%s>:  cache_hit= %d (%.1f%%)  cache_miss= %d", typeid(T).name(), cache_hit_counter, (double)cache_hit_counter / (cache_hit_counter + cache_miss_counter), cache_miss_counter);
         if (root != NULL)
             delete root;
     }
@@ -366,11 +388,22 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) const {
     if (id == 0)
         Error::err("Cannot retrieve IdTree<%s> data for id==0", typeid(T).name());
 
+    const size_t cache_index = id % Private::cache_size;
+    if (d->cache[cache_index].id == id) {
+        data = d->cache[cache_index].data;
+        ++d->cache_hit_counter;
+        return true;
+    } else
+        ++d->cache_miss_counter;
+
     IdTreeNode<T> *cur = d->findNodeForId(id);
     if (cur == NULL)
         return false;
 
     data = cur->data;
+
+    d->cache[cache_index].id = id;
+    d->cache[cache_index].data = data;
 
     return true;
 }
