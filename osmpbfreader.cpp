@@ -65,7 +65,8 @@ struct OSMWay {
     uint64_t *nodes;
 };
 /// Queue of ways, used in producer-consumer threads
-boost::lockfree::queue<const OSMWay *> queueWaySimplification(1 << 16);
+static const size_t queueWaySimplification_recommendedSize = 1 << 12;
+boost::lockfree::queue<const OSMWay *> queueWaySimplification(queueWaySimplification_recommendedSize);
 /// Boolean used to notify consumer threat to finish once consumer will no longer push ways into queue
 boost::atomic<bool> doneWaySimplification(false);
 /// For statistical purposes, track size of queue (boost::lockfree::queue has no method on its own for that)
@@ -666,6 +667,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                         /// Keep track of queue size for statistical purposes
                         ++queueWaySimplificationSize;
                         if (queueWaySimplificationSize > max_queue_size) max_queue_size = queueWaySimplificationSize;
+                        if (queueWaySimplificationSize > queueWaySimplification_recommendedSize - 64)
+                            /// Give consumer thread time to catch up
+                            boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 
                         if (way_size > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
                             roadsWithoutRef.push_back(std::make_pair(wayId, std::string(buffer_highway)));
