@@ -97,9 +97,8 @@ int shortestSquareDistanceToSegment(uint64_t nodeA, uint64_t nodeInBetween, uint
             const int d2 = coordB.y - coordInBetween.y;
             return d1 * d1 + d2 * d2;
         } else {
-            const int x = coordA.x + t * (coordB.x - coordA.x) + 0.5;
-            const int d = coordB.y - coordA.y;
-            const int y = coordA.y + (int)(t * d + 0.5);
+            const int x = coordA.x + (int)(t * (coordB.x - coordA.x) + 0.5);
+            const int y = coordA.y + (int)(t * (coordB.y - coordA.y) + 0.5);
             const int d1 = x - coordInBetween.x;
             const int d2 = y - coordInBetween.y;
             return d1 * d1 + d2 * d2;
