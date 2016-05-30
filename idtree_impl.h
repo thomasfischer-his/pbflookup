@@ -167,7 +167,7 @@ public:
     }
 
     ~Private() {
-        Error::info("IdTree<%s>:  cache_hit= %d (%.1f%%)  cache_miss= %d", typeid(T).name(), cache_hit_counter, (double)cache_hit_counter / (cache_hit_counter + cache_miss_counter), cache_miss_counter);
+        Error::info("IdTree<%s>:  cache_hit= %d (%.1f%%)  cache_miss= %d", typeid(T).name(), cache_hit_counter, 100.0 * cache_hit_counter / (cache_hit_counter + cache_miss_counter), cache_miss_counter);
         if (root != NULL)
             delete root;
     }
