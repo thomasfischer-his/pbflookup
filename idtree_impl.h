@@ -141,9 +141,8 @@ public:
     struct IdTreeNode<T> *root;
 
     Private(IdTree *parent)
-        : p(parent) {
-        root = NULL;
-        size = 0;
+        : p(parent), size(0), root(NULL) {
+        /// nothing
     }
 
     ~Private() {
@@ -265,7 +264,6 @@ public:
             if (path != NULL) path->push_back(cur);
             cur = cur->children[bits];
         }
-        // FIXME why this line?  if (path != NULL) path->push_back(cur);
 
 #ifdef DEBUG
         if (cur->id != id) {
