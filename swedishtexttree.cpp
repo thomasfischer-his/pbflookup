@@ -20,7 +20,7 @@
 #include "error.h"
 #include "helper.h"
 
-const int SwedishTextTree::num_codes = 48;
+const size_t SwedishTextTree::num_codes = 48;
 const unsigned int SwedishTextTree::default_num_indices = 8;
 const int SwedishTextTree::code_word_sep = SwedishTextTree::num_codes - 2;
 const int SwedishTextTree::code_unknown = SwedishTextTree::num_codes - 1;
@@ -39,7 +39,7 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
         const size_t bytes = SwedishTextTree::num_codes * sizeof(SwedishTextNode *);
         children = (SwedishTextNode **)malloc(bytes);
 
-        for (int i = 0; i < SwedishTextTree::num_codes; ++i) {
+        for (size_t i = 0; i < SwedishTextTree::num_codes; ++i) {
             input.read((char *)&chr, sizeof(chr));
             if (chr == '0') {
                 /// No child at this position
@@ -70,7 +70,7 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
 
 SwedishTextNode::~SwedishTextNode() {
     if (children != nullptr) {
-        for (int i = 0; i < SwedishTextTree::num_codes; ++i)
+        for (size_t i = 0; i < SwedishTextTree::num_codes; ++i)
             if (children[i] != nullptr) delete children[i];
         free(children);
     }
@@ -84,7 +84,7 @@ std::ostream &SwedishTextNode::write(std::ostream &output) {
     } else {
         chr = 'C';
         output.write((char *)&chr, sizeof(chr));
-        for (int i = 0; i < SwedishTextTree::num_codes; ++i) {
+        for (size_t i = 0; i < SwedishTextTree::num_codes; ++i) {
             if (children[i] == nullptr) {
                 chr = '0';
                 output.write((char *)&chr, sizeof(chr));

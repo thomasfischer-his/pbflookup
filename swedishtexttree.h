@@ -40,7 +40,7 @@ public:
 
     std::ostream &write(std::ostream &output);
 
-    static const int num_codes;
+    static const size_t num_codes;
     static const unsigned int default_num_indices;
 
 private:
