@@ -334,7 +334,11 @@ template <class T>
 IdTree<T>::IdTree(std::istream &input)
     : d(new IdTree<T>::Private(this))
 {
+    size_t s;
+    input.read((char *)&s, sizeof(s));
     d->root = new IdTreeNode<T>(input);
+    if (s != size())
+        Error::err("Recorded size of IdTree<%s> does not match actual size: %d != %d", typeid(T).name(), s, size());
 #ifdef REVERSE_ID_TREE
     d->buildZeroPath();
 #endif // REVERSE_ID_TREE
@@ -487,5 +491,7 @@ template <class T>
 std::ostream &IdTree<T>::write(std::ostream &output) {
     if (d->root == nullptr)
         return output;
+    const size_t s = size();
+    output.write((char *)&s, sizeof(s));
     return d->root->write(output);
 }
