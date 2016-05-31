@@ -33,7 +33,7 @@ void Testset::run() {
         Error::info("Test set: %s (%d bytes)", it->name.c_str(), it->text.length());
         const std::vector<Coord> &expected = it->coord;
 
-        SvgWriter *svgwriter = NULL;
+        SvgWriter *svgwriter = nullptr;
         if (!it->svgoutputfilename.empty()) {
             /// If requested in configuration file, prepare to write SVG file
             svgwriter = new SvgWriter(it->svgoutputfilename, 2);
@@ -70,7 +70,7 @@ void Testset::run() {
         } else
             Error::warn("Unable to determine a likely position");
 
-        if (svgwriter != NULL) {
+        if (svgwriter != nullptr) {
             for (const Coord &exp : expected)
                 svgwriter->drawPoint(exp.x, exp.y, SvgWriter::ImportantPoiGroup, "green", "expected");
             for (const Result &result : results)
@@ -79,7 +79,7 @@ void Testset::run() {
             svgwriter->drawDescription(it->text);
 
             delete svgwriter; ///< destructor will finalize SVG file
-            svgwriter = NULL;
+            svgwriter = nullptr;
         }
 
         Error::info("======================================================");

@@ -73,7 +73,7 @@ void replacevariablenames(std::string &text) {
             Error::err("Cannot replace environment variable, invalid synatx in '%s'", text.c_str());
         const std::string envname = text.substr(needle_varstart_pos + 2, needle_varend_pos - needle_varstart_pos - 2);
         const char *envvar = getenv(envname.c_str());
-        if (envvar == NULL)
+        if (envvar == nullptr)
             Error::err("Environment variable '%s' is not set", envname.c_str());
         else if (envvar[0] == '\0') {
             Error::warn("Environment variable '%s' is empty", envname.c_str());

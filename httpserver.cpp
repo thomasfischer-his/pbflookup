@@ -158,7 +158,7 @@ public:
             if (blank_line_counter == 0 && p < headertext.length() - 16) {
                 const std::string needle = headertext.substr(p, 16);
                 if (boost::iequals(needle, "content-length: ")) {
-                    result.content_length = strtol(headertext.substr(p + 16, 6).c_str(), NULL, 10);
+                    result.content_length = strtol(headertext.substr(p + 16, 6).c_str(), nullptr, 10);
                     if (errno != 0) result.content_length = 0;
                 }
             }
@@ -298,7 +298,7 @@ public:
                 valid_filename = false; ///< UTF-8 or any other 8-bit filenames not accepted
             else {
                 needle[0] = filename[i];
-                if (strstr(acceptable_chars, needle) == NULL)
+                if (strstr(acceptable_chars, needle) == nullptr)
                     valid_filename = false; ///< not an acceptable character
             }
         }
@@ -354,9 +354,9 @@ public:
 
     void printTimer(std::ostringstream &html_stream, Timer *timerServer, Timer *timerSearch) {
         int64_t cputime, walltime;
-        if (timerServer != NULL) {
+        if (timerServer != nullptr) {
             html_stream << "<h2>Consumed Time</h2>" << std::endl;
-            if (timerSearch != NULL) {
+            if (timerSearch != nullptr) {
                 html_stream << "<h3>Search</h3>" << std::endl;
                 timerSearch->elapsed(&cputime, &walltime);
                 html_stream << "<p>CPU Time: " << (cputime / 1000.0) << "&thinsp;ms<br/>";
@@ -393,7 +393,7 @@ public:
         html_stream << "<option value=\"text/xml\">XML</option>";
         html_stream << "<option value=\"application/json\">JSON</option>";
         html_stream << "</select></p></form>" << std::endl;
-        printTimer(html_stream, &timerServer, NULL);
+        printTimer(html_stream, &timerServer, nullptr);
         writeFinancialSupportStatement(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
 

@@ -53,7 +53,7 @@ public:
      * @param warnings Optional parameter to learn if unsupported UTF-8 sequences occurred
      * @return Number of words added to the words vector
      */
-    static size_t tokenize_input(const std::string &input, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings = NULL);
+    static size_t tokenize_input(const std::string &input, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings = nullptr);
 
 private:
     class Private;

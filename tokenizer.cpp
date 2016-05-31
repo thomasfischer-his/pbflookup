@@ -121,7 +121,7 @@ public:
 
 Tokenizer::Tokenizer()
     : d(new Tokenizer::Private(this)) {
-    if (d == NULL)
+    if (d == nullptr)
         Error::err("Could not allocate memory for Tokenizer::Private");
 }
 
@@ -259,7 +259,7 @@ std::string Tokenizer::input_text() const {
 
 size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings) {
     static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
-    if (warnings != NULL) *warnings = false;
+    if (warnings != nullptr) *warnings = false;
 
     size_t number_of_words_added = 0;
     std::string internal_line = line;
@@ -286,7 +286,7 @@ size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::strin
                 unicode = (utf8char[0] & 7) << 18 | (utf8char[1] & 63) << 12 | (utf8char[2] & 63) << 6 | (utf8char[3] & 63);
             --it; ///< One step back, as for-loop will step for forward again
             Error::warn("Skipping UTF-8 sequence of three or more bytes, but not supported: %s (U+%04X)", utf8char, unicode);
-            if (warnings != NULL) *warnings = true;
+            if (warnings != nullptr) *warnings = true;
             prev_c = 0; ///< Do not remember this UTF-8 sequence
             continue; ///< Continue with next character
         } else if ((prev_c & 224) == 192) {
@@ -296,7 +296,7 @@ size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::strin
                 /// Warn about two-byte UTF-8 sequences that are not known letters (e.g. Yen symbol)
                 unsigned char utf8char[] = {prev_c, c, '\0'};
                 Error::warn("Skipping unsupported UTF-8 character: %s (%02x %02x = U+%04X)", utf8char, utf8char[0], utf8char[1], (utf8char[0] & 31) << 6 | (utf8char[1] & 63));
-                if (warnings != NULL) *warnings = true;
+                if (warnings != nullptr) *warnings = true;
                 lastword.pop_back(); ///< Start of sequence already in word, remove it
                 prev_c = 0; ///< Do not remember this UTF-8 sequence
                 continue; ///< Continue with next character

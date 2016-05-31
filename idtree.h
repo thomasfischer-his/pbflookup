@@ -31,24 +31,24 @@
 
 struct WayNodes {
     WayNodes()
-        : num_nodes(0), nodes(NULL) {
+        : num_nodes(0), nodes(nullptr) {
         /// nothing
     }
 
     WayNodes(uint32_t _num_nodes)
-        : num_nodes(_num_nodes), nodes(NULL) {
+        : num_nodes(_num_nodes), nodes(nullptr) {
         if (num_nodes == 0)
             Error::err("Creating way without nodes");
         nodes = (uint64_t *)calloc(_num_nodes, sizeof(uint64_t));
-        if (nodes == NULL)
+        if (nodes == nullptr)
             Error::err("Could not allocate memory for WayNodes::nodes");
     }
 
     WayNodes &operator=(const WayNodes &other) {
-        if (other.num_nodes == 0 || other.nodes == NULL)
+        if (other.num_nodes == 0 || other.nodes == nullptr)
             Error::err("Assigning way without nodes");
 
-        if (nodes != NULL) free(nodes);
+        if (nodes != nullptr) free(nodes);
 
         /// Cast to circumvene 'const'ness
         uint32_t *_num_nodes = (uint32_t *)(&num_nodes);
@@ -56,7 +56,7 @@ struct WayNodes {
 
         const size_t bytes = num_nodes * sizeof(uint64_t);
         nodes = (uint64_t *)malloc(bytes);
-        if (nodes == NULL)
+        if (nodes == nullptr)
             Error::err("Could not allocate memory for WayNodes::nodes");
         memcpy(nodes, other.nodes, bytes);
 
@@ -64,7 +64,7 @@ struct WayNodes {
     }
 
     WayNodes(std::istream &input)
-        : num_nodes(0), nodes(NULL) {
+        : num_nodes(0), nodes(nullptr) {
         /// Cast to circumvene 'const'ness
         uint32_t *_num_nodes = (uint32_t *)(&num_nodes);
         input.read((char *)_num_nodes, sizeof(num_nodes));
@@ -74,7 +74,7 @@ struct WayNodes {
         if (num_nodes > 0) {
             const size_t bytes = num_nodes * sizeof(uint64_t);
             nodes = (uint64_t *)malloc(bytes);
-            if (nodes == NULL)
+            if (nodes == nullptr)
                 Error::err("Could not allocate memory for WayNodes::nodes");
             input.read((char *)nodes, bytes);
             if (!input)
@@ -83,7 +83,7 @@ struct WayNodes {
     }
 
     ~WayNodes() {
-        if (nodes != NULL)
+        if (nodes != nullptr)
             free(nodes);
     }
 
@@ -109,29 +109,29 @@ enum RelationFlags {RoleOuter = 1, RoleInner = 2, RoleInnerOuter = RoleOuter | R
 
 struct RelationMem {
     RelationMem()
-        : num_members(0), members(NULL), member_flags(NULL) {
+        : num_members(0), members(nullptr), member_flags(nullptr) {
         /// nothing
     }
 
     RelationMem(int num)
-        : num_members(num), members(NULL), member_flags(NULL) {
+        : num_members(num), members(nullptr), member_flags(nullptr) {
         if (num_members > 0) {
             members = (OSMElement *)calloc(num, sizeof(OSMElement));
-            if (members == NULL)
+            if (members == nullptr)
                 Error::err("Could not allocate memory for RelationMem::members");
             member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
-            if (member_flags == NULL)
+            if (member_flags == nullptr)
                 Error::err("Could not allocate memory for RelationMem::member_flags");
         }
     }
 
     RelationMem &operator=(const RelationMem &other) {
-        if (other.num_members == 0 || other.members == NULL || other.member_flags == NULL)
+        if (other.num_members == 0 || other.members == nullptr || other.member_flags == nullptr)
             Error::err("Assigning relation without members");
 
-        if (members != NULL)
+        if (members != nullptr)
             free(members);
-        if (member_flags != NULL)
+        if (member_flags != nullptr)
             free(member_flags);
 
         /// Cast to circumvene 'const'ness
@@ -140,13 +140,13 @@ struct RelationMem {
 
         const size_t bytesElements = num_members * sizeof(OSMElement);
         members = (OSMElement *)malloc(bytesElements);
-        if (members == NULL)
+        if (members == nullptr)
             Error::err("Could not allocate memory for RelationMem::members");
         memcpy(members, other.members, bytesElements);
 
         const size_t bytesFlags = num_members * sizeof(uint16_t);
         member_flags = (uint16_t *)malloc(bytesFlags);
-        if (member_flags == NULL)
+        if (member_flags == nullptr)
             Error::err("Could not allocate bytesFlags for RelationMem::member_flags");
         memcpy(member_flags, other.member_flags, bytesFlags);
 
@@ -154,7 +154,7 @@ struct RelationMem {
     }
 
     RelationMem(std::istream &input)
-        : num_members(0), members(NULL), member_flags(NULL) {
+        : num_members(0), members(nullptr), member_flags(nullptr) {
         /// Cast to circumvene 'const'ness
         uint32_t *_num_members = (uint32_t *)(&num_members);
         input.read((char *)_num_members, sizeof(num_members));
@@ -164,7 +164,7 @@ struct RelationMem {
         if (num_members > 0) {
             const size_t bytesElements = num_members * sizeof(OSMElement);
             members = (OSMElement *)malloc(bytesElements);
-            if (members == NULL)
+            if (members == nullptr)
                 Error::err("Could not allocate memory for RelationMem::members");
             input.read((char *)members, bytesElements);
             if (!input)
@@ -172,7 +172,7 @@ struct RelationMem {
 
             const size_t bytesFlags = num_members * sizeof(uint16_t);
             member_flags = (uint16_t *)malloc(bytesFlags);
-            if (member_flags == NULL)
+            if (member_flags == nullptr)
                 Error::err("Could not allocate memory for RelationMem::member_flags");
             input.read((char *)member_flags, bytesFlags);
             if (!input)
@@ -181,9 +181,9 @@ struct RelationMem {
     }
 
     ~RelationMem() {
-        if (members != NULL)
+        if (members != nullptr)
             free(members);
-        if (member_flags != NULL)
+        if (member_flags != nullptr)
             free(member_flags);
     }
 

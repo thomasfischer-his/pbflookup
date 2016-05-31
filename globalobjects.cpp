@@ -29,14 +29,14 @@
 #include "osmpbfreader.h"
 
 
-IdTree<WayNodes> *wayNodes = NULL; ///< declared in 'globalobjects.h'
-IdTree<Coord> *node2Coord = NULL; ///< declared in 'globalobjects.h'
-IdTree<RelationMem> *relMembers = NULL; ///< declared in 'globalobjects.h'
-IdTree<WriteableString> *nodeNames = NULL; ///< declared in 'globalobjects.h'
-IdTree<WriteableString> *wayNames = NULL; ///< declared in 'globalobjects.h'
-IdTree<WriteableString> *relationNames = NULL; ///< declared in 'globalobjects.h'
-SwedishTextTree *swedishTextTree = NULL; ///< declared in 'globalobjects.h'
-Sweden *sweden = NULL; ///< declared in 'globalobjects.h'
+IdTree<WayNodes> *wayNodes = nullptr; ///< declared in 'globalobjects.h'
+IdTree<Coord> *node2Coord = nullptr; ///< declared in 'globalobjects.h'
+IdTree<RelationMem> *relMembers = nullptr; ///< declared in 'globalobjects.h'
+IdTree<WriteableString> *nodeNames = nullptr; ///< declared in 'globalobjects.h'
+IdTree<WriteableString> *wayNames = nullptr; ///< declared in 'globalobjects.h'
+IdTree<WriteableString> *relationNames = nullptr; ///< declared in 'globalobjects.h'
+SwedishTextTree *swedishTextTree = nullptr; ///< declared in 'globalobjects.h'
+Sweden *sweden = nullptr; ///< declared in 'globalobjects.h'
 
 
 void loadSwedishTextTree() {
@@ -48,7 +48,7 @@ void loadSwedishTextTree() {
 }
 
 void saveSwedishTextTree() {
-    if (swedishTextTree != NULL) {
+    if (swedishTextTree != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".texttree";
         Error::debug("Writing to '%s' (mapping text to element ids)", filename.c_str());
         std::ofstream swedishtexttreefile(filename);
@@ -69,7 +69,7 @@ void loadNode2Coord() {
 }
 
 void saveNode2Coord() {
-    if (node2Coord != NULL) {
+    if (node2Coord != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".n2c";
         Error::debug("Writing to '%s' (mapping nodes to coordinates)", filename.c_str());
         std::ofstream node2CoordFile(filename);
@@ -92,7 +92,7 @@ void loadNodeNames() {
 }
 
 void saveNodeNames() {
-    if (nodeNames != NULL) {
+    if (nodeNames != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".nn";
         Error::debug("Writing to '%s' (mapping nodes to their names)", filename.c_str());
         std::ofstream nnfile(filename);
@@ -115,7 +115,7 @@ void loadWayNames() {
 }
 
 void saveWayNames() {
-    if (wayNames != NULL) {
+    if (wayNames != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".wn";
         Error::debug("Writing to '%s' (mapping ways to their names)", filename.c_str());
         std::ofstream wnfile(filename);
@@ -138,7 +138,7 @@ void loadRelationNames() {
 }
 
 void saveRelationNames() {
-    if (relationNames != NULL) {
+    if (relationNames != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".rn";
         Error::debug("Writing to '%s' (mapping relations to their names)", filename.c_str());
         std::ofstream rnfile(filename);
@@ -161,7 +161,7 @@ void loadWayNodes() {
 }
 
 void saveWayNodes() {
-    if (wayNodes != NULL) {
+    if (wayNodes != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".w2n";
         Error::debug("Writing to '%s' (mapping ways to nodes they span over)", filename.c_str());
         std::ofstream wayNodeFile(filename);
@@ -182,7 +182,7 @@ void loadRelMem() {
 }
 
 void saveRelMem() {
-    if (relMembers != NULL) {
+    if (relMembers != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".relmem";
         Error::debug("Writing to '%s' (mapping relations to their members)", filename.c_str());
         std::ofstream relmemfile(filename);
@@ -208,7 +208,7 @@ void loadSweden() {
 }
 
 void saveSweden() {
-    if (sweden != NULL) {
+    if (sweden != nullptr) {
         const std::string filename = tempdir + "/" + mapname + ".sweden";
         Error::debug("Writing to '%s'", filename.c_str());
         std::ofstream swedenfile(filename);
@@ -221,14 +221,14 @@ void saveSweden() {
 }
 
 GlobalObjectManager::GlobalObjectManager() {
-    swedishTextTree = NULL;
-    node2Coord = NULL;
-    wayNodes = NULL;
-    relMembers = NULL;
-    nodeNames = NULL;
-    wayNames = NULL;
-    relationNames = NULL;
-    sweden = NULL;
+    swedishTextTree = nullptr;
+    node2Coord = nullptr;
+    wayNodes = nullptr;
+    relMembers = nullptr;
+    nodeNames = nullptr;
+    wayNames = nullptr;
+    relationNames = nullptr;
+    sweden = nullptr;
 
     const std::string filename = tempdir + "/" + mapname + ".texttree";
     if (testNonEmptyFile(filename)) {
@@ -249,7 +249,7 @@ GlobalObjectManager::GlobalObjectManager() {
             google::protobuf::ShutdownProtobufLibrary();
             fp.close();
 
-            if (sweden != NULL)
+            if (sweden != nullptr)
                 sweden->fixUnlabeledRegionalRoads();
 
             int64_t cputime, walltime;
@@ -264,26 +264,26 @@ GlobalObjectManager::GlobalObjectManager() {
 }
 
 GlobalObjectManager::~GlobalObjectManager() {
-#define delete_and_set_NULL(a) { delete a; a=NULL; }
+#define delete_and_set_NULL(a) { delete a; a=nullptr; }
     Error::debug("Going to shut down, free'ing memory");
 
     Timer timer;
     timer.start();
-    if (swedishTextTree != NULL)
+    if (swedishTextTree != nullptr)
         delete_and_set_NULL(swedishTextTree);
-    if (node2Coord != NULL)
+    if (node2Coord != nullptr)
         delete_and_set_NULL(node2Coord);
-    if (nodeNames != NULL)
+    if (nodeNames != nullptr)
         delete_and_set_NULL(nodeNames);
-    if (wayNames != NULL)
+    if (wayNames != nullptr)
         delete_and_set_NULL(wayNames);
-    if (relationNames != NULL)
+    if (relationNames != nullptr)
         delete_and_set_NULL(relationNames);
-    if (wayNodes != NULL)
+    if (wayNodes != nullptr)
         delete_and_set_NULL(wayNodes);
-    if (relMembers != NULL)
+    if (relMembers != nullptr)
         delete_and_set_NULL(relMembers);
-    if (sweden != NULL)
+    if (sweden != nullptr)
         delete_and_set_NULL(sweden);
     int64_t cputime, walltime;
     timer.elapsed(&cputime, &walltime);

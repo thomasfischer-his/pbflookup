@@ -26,7 +26,7 @@ const int SwedishTextTree::code_word_sep = SwedishTextTree::num_codes - 2;
 const int SwedishTextTree::code_unknown = SwedishTextTree::num_codes - 1;
 
 SwedishTextNode::SwedishTextNode() {
-    children = NULL;
+    children = nullptr;
 }
 
 SwedishTextNode::SwedishTextNode(std::istream &input) {
@@ -34,7 +34,7 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
 
     input.read((char *)&chr, sizeof(chr));
     if (chr == 'N') {
-        children = NULL;
+        children = nullptr;
     } else if (chr == 'C') {
         const size_t bytes = SwedishTextTree::num_codes * sizeof(SwedishTextNode *);
         children = (SwedishTextNode **)malloc(bytes);
@@ -43,7 +43,7 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
             input.read((char *)&chr, sizeof(chr));
             if (chr == '0') {
                 /// No child at this position
-                children[i] = NULL;
+                children[i] = nullptr;
             } else if (chr == '1') {
                 children[i] = new SwedishTextNode(input);
             } else
@@ -69,23 +69,23 @@ SwedishTextNode::SwedishTextNode(std::istream &input) {
 }
 
 SwedishTextNode::~SwedishTextNode() {
-    if (children != NULL) {
+    if (children != nullptr) {
         for (int i = 0; i < SwedishTextTree::num_codes; ++i)
-            if (children[i] != NULL) delete children[i];
+            if (children[i] != nullptr) delete children[i];
         free(children);
     }
 }
 
 std::ostream &SwedishTextNode::write(std::ostream &output) {
     char chr = '\0';
-    if (children == NULL) {
+    if (children == nullptr) {
         chr = 'N';
         output.write((char *)&chr, sizeof(chr));
     } else {
         chr = 'C';
         output.write((char *)&chr, sizeof(chr));
         for (int i = 0; i < SwedishTextTree::num_codes; ++i) {
-            if (children[i] == NULL) {
+            if (children[i] == nullptr) {
                 chr = '0';
                 output.write((char *)&chr, sizeof(chr));
             } else {
@@ -174,17 +174,17 @@ bool SwedishTextTree::internal_insert(const char *word, const OSMElement &elemen
     unsigned int pos = 0;
     while (pos < code.size()) {
         const unsigned int nc = code[pos];
-        if (cur->children == NULL) {
+        if (cur->children == nullptr) {
             cur->children = (SwedishTextNode **)calloc(num_codes, sizeof(SwedishTextNode *));
-            if (cur->children == NULL) {
+            if (cur->children == nullptr) {
                 Error::err("Could not allocate memory for cur->children");
                 return false;
             }
         }
         SwedishTextNode *next = cur->children[nc];
-        if (next == NULL) {
+        if (next == nullptr) {
             next = cur->children[nc] = new SwedishTextNode();
-            if (next == NULL) {
+            if (next == nullptr) {
                 Error::err("Could not allocate memory for next Node");
                 return false;
             }
@@ -205,7 +205,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
     SwedishTextNode *cur = root;
     unsigned int pos = 0;
     while (pos < code.size()) {
-        if (cur->children == NULL) {
+        if (cur->children == nullptr) {
 #ifdef DEBUG
             if (warnings & WarningWordNotInTree)
                 Error::debug("SwedishTextTree node has no children to follow for word %s at position %d", word, pos);
@@ -213,7 +213,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
             return result; ///< empty
         }
         SwedishTextNode *next = cur->children[code[pos]];
-        if (next == NULL) {
+        if (next == nullptr) {
 #ifdef DEBUG
             if (warnings & WarningWordNotInTree)
                 Error::debug("SwedishTextTree node has no children to follow for word %s at position %d for code %d", word, pos, code[pos]);
@@ -224,7 +224,7 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
         cur = next;
     }
 
-    if (cur == NULL)
+    if (cur == nullptr)
         return result; ///< empty
     if (cur->elements.empty()) {
 #ifdef DEBUG

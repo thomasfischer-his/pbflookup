@@ -28,7 +28,7 @@ public:
     void start();
     void stop();
 
-    void elapsed(int64_t *elapsed_cpu, int64_t *elapsed_wall = NULL);
+    void elapsed(int64_t *elapsed_cpu, int64_t *elapsed_wall = nullptr);
 
 private:
     struct timespec previous_cpu;

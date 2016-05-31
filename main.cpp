@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
     PidFile pidfile;
     GlobalObjectManager gom;
 
-    if (relMembers != NULL && wayNodes != NULL && node2Coord != NULL && nodeNames != NULL && wayNames != NULL && relationNames != NULL && swedishTextTree != NULL && sweden != NULL) {
+    if (relMembers != nullptr && wayNodes != nullptr && node2Coord != nullptr && nodeNames != nullptr && wayNames != nullptr && relationNames != nullptr && swedishTextTree != nullptr && sweden != nullptr) {
         serverSocket = server_mode() ? socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) : -1;
         if (serverSocket >= 0) {
             HTTPServer httpServer;

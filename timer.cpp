@@ -61,12 +61,12 @@ void Timer::stop() {
 void Timer::elapsed(int64_t *elapsed_cpu, int64_t *elapsed_wall) {
     if (stopped_elapsed_cpu >= 0 && stopped_elapsed_wall >= 0) {
         /// Timer was previously stopped with stop()
-        if (elapsed_cpu != NULL) *elapsed_cpu = stopped_elapsed_cpu;
-        if (elapsed_wall != NULL) *elapsed_wall = stopped_elapsed_wall;
+        if (elapsed_cpu != nullptr) *elapsed_cpu = stopped_elapsed_cpu;
+        if (elapsed_wall != nullptr) *elapsed_wall = stopped_elapsed_wall;
         return;
     }
 
-    if (elapsed_cpu != NULL) {
+    if (elapsed_cpu != nullptr) {
         struct timespec now_cpu;
         if (clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &now_cpu) == 0) {
             const int64_t now_us = (int64_t)now_cpu.tv_sec * 1000000 + now_cpu.tv_nsec / 1000;
@@ -76,7 +76,7 @@ void Timer::elapsed(int64_t *elapsed_cpu, int64_t *elapsed_wall) {
             *elapsed_cpu = -1;
     }
 
-    if (elapsed_wall != NULL) {
+    if (elapsed_wall != nullptr) {
         struct timeval now_wall, result_wall;
         if (gettimeofday(&now_wall, NULL) == 0 && timeval_subtract(&result_wall, &now_wall, &previous_wall) == 0) {
             *elapsed_wall = (int64_t)result_wall.tv_sec * 1000000 + result_wall.tv_usec;

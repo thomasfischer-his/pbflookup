@@ -25,7 +25,7 @@ struct IdTreeNode {
 
     explicit IdTreeNode()
     {
-        children = NULL;
+        children = nullptr;
 #ifdef DEBUG
         id = 0;
 #endif // DEBUG
@@ -43,7 +43,7 @@ struct IdTreeNode {
 
         if (chr == 'N') {
             /// Is leaf node
-            children = NULL;
+            children = nullptr;
             input.read((char *)&counter, sizeof(counter));
             data = T(input);
         } else if (chr == 'C') {
@@ -55,7 +55,7 @@ struct IdTreeNode {
                 input.read((char *)&chr, sizeof(chr));
                 if (chr == '0') {
                     /// No child at this position
-                    children[c] = NULL;
+                    children[c] = nullptr;
                 } else if (chr == '1') {
                     children[c] = new IdTreeNode<T>(input);
                 } else
@@ -66,9 +66,9 @@ struct IdTreeNode {
     }
 
     ~IdTreeNode() {
-        if (children != NULL) {
+        if (children != nullptr) {
             for (int i = (1 << bitsPerNode) - 1; i >= 0; --i) {
-                if (children[i] != NULL)
+                if (children[i] != nullptr)
                     delete children[i];
             }
             free(children);
@@ -81,7 +81,7 @@ struct IdTreeNode {
 #endif // DEBUG
 
         char chr = '\0';
-        if (children == NULL) {
+        if (children == nullptr) {
             /// Is leaf node
             chr = 'N';
             output.write((char *)&chr, sizeof(chr));
@@ -92,7 +92,7 @@ struct IdTreeNode {
             chr = 'C';
             output.write((char *)&chr, sizeof(chr));
             for (int c = numChildren - 1; c >= 0; --c) {
-                if (children[c] == NULL) {
+                if (children[c] == nullptr) {
                     chr = '0';
                     output.write((char *)&chr, sizeof(chr));
                 } else {
@@ -158,7 +158,7 @@ public:
     size_t cache_hit_counter, cache_miss_counter;
 
     Private(IdTree *parent)
-        : p(parent), size(0), root(NULL) {
+        : p(parent), size(0), root(nullptr) {
         /// Invalidate all cache lines by setting 'id' to an invalid value (=0)
         for (size_t i = 0; i < cache_size; ++i)
             cache[i].id = 0;
@@ -168,7 +168,7 @@ public:
 
     ~Private() {
         Error::info("IdTree<%s>:  cache_hit= %d (%.1f%%)  cache_miss= %d", typeid(T).name(), cache_hit_counter, 100.0 * cache_hit_counter / (cache_hit_counter + cache_miss_counter), cache_miss_counter);
-        if (root != NULL)
+        if (root != nullptr)
             delete root;
     }
 
@@ -187,7 +187,7 @@ public:
      * @param path
      * @return
      */
-    IdTreeNode<T> *skipAheadOnZeroPath(uint64_t &id, unsigned int &s, std::vector<IdTreeNode<T> *> *path = NULL) {
+    IdTreeNode<T> *skipAheadOnZeroPath(uint64_t &id, unsigned int &s, std::vector<IdTreeNode<T> *> *path = nullptr) {
 #define mask_for_level(n) (IdTree::Private::mask<<((sizeof(id) * 8 /** size in Bytes to size in Bits */) - ((n)+1) * IdTreeNode<T>::bitsPerNode))
         static const uint64_t masks[zeroPathDepth] = {
             mask_for_level(0),
@@ -204,7 +204,7 @@ public:
             if ((id & masks[s - 1]) == 0 && zeroPath.size() > s) {
                 /// id would pick child 0 for the first s-many levels when traversing tree
                 id <<= IdTreeNode<T>::bitsPerNode * s;
-                if (path != NULL)
+                if (path != nullptr)
                     for (unsigned int k = 0; k < s; ++k) path->push_back(zeroPath[k]);
                 return zeroPath[s];
             }
@@ -216,7 +216,7 @@ public:
 
 #ifdef REVERSE_ID_TREE
     void buildZeroPath() {
-        if (root == NULL)
+        if (root == nullptr)
             root = new IdTreeNode<T>();
 
         IdTreeNode<T> *cur = root;
@@ -238,10 +238,10 @@ public:
     /**
      * This is the single most expensive function, taking 25-35% of the CPU time.
      */
-    IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = NULL) {
-        if (root == NULL) {
+    IdTreeNode<T> *findNodeForId(uint64_t id, std::vector<IdTreeNode<T> *> *path = nullptr) {
+        if (root == nullptr) {
             Error::warn("IdTree<%s> root is invalid, no id was ever added", typeid(T).name());
-            return NULL;
+            return nullptr;
         }
 
         unsigned int s = 0;
@@ -252,11 +252,11 @@ public:
         IdTreeNode<T> *cur = root;
 #endif // REVERSE_ID_TREE
         for (unsigned int s_limit = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode); s < s_limit; ++s) {
-            if (cur->children == NULL) {
+            if (cur->children == nullptr) {
 #ifdef DEBUG
                 Error::debug("IdTree<%s> node has no children to follow id %llu", typeid(T).name(), id);
 #endif // DEBUG
-                return NULL;
+                return nullptr;
             }
 
 #ifdef REVERSE_ID_TREE
@@ -276,21 +276,21 @@ public:
             workingId >>= IdTreeNode<T>::bitsPerNode;
 #endif // REVERSE_ID_TREE
 
-            if (cur->children[bits] == NULL) {
+            if (cur->children[bits] == nullptr) {
 #ifdef DEBUG
                 Error::debug("IdTree<%s> node has no children at pos %d to follow id %llu", typeid(T).name(), bits, id);
 #endif // DEBUG
-                return NULL;
+                return nullptr;
             }
 
-            if (path != NULL) path->push_back(cur);
+            if (path != nullptr) path->push_back(cur);
             cur = cur->children[bits];
         }
 
 #ifdef DEBUG
         if (cur->id != id) {
             Error::warn("IdTree<%s>: Ids do not match: %llu != %llu", typeid(T).name(), cur->id, id);
-            return NULL;
+            return nullptr;
         }
 #endif // DEBUG
 
@@ -306,7 +306,7 @@ template <class T>
 IdTree<T>::IdTree()
     : d(new IdTree<T>::Private(this))
 {
-    if (d == NULL)
+    if (d == nullptr)
         Error::err("Could not allocate memory for IdTree<T>::Private");
 #ifdef REVERSE_ID_TREE
     Error::debug("Using most significant bits as first sorting critera in IdTree<%s>", typeid(T).name());
@@ -337,18 +337,18 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
     if (id == 0)
         Error::err("Cannot insert element with id=0 into IdTree<%s>", typeid(T).name());
 
-    if (d->root == NULL) {
+    if (d->root == nullptr) {
         d->root = new IdTreeNode<T>();
-        if (d->root == NULL)
+        if (d->root == nullptr)
             Error::err("Could not allocate memory for IdTree<%s>::root", typeid(T).name());
     }
 
     IdTreeNode<T> *cur = d->root;
     uint64_t workingId = id;
     for (int s = (IdTreeNode<T>::bitsPerId / IdTreeNode<T>::bitsPerNode) - 1; s >= 0; --s) {
-        if (cur->children == NULL) {
+        if (cur->children == nullptr) {
             cur->children = (IdTreeNode<T> **)calloc(IdTreeNode<T>::numChildren, sizeof(IdTreeNode<T> *));
-            if (cur->children == NULL)
+            if (cur->children == nullptr)
                 Error::err("IdTree<%s>: Could not allocate memory for cur->children", typeid(T).name());
         }
 
@@ -361,9 +361,9 @@ bool IdTree<T>::insert(uint64_t id, T const &data) {
         workingId >>= IdTreeNode<T>::bitsPerNode;
 #endif // REVERSE_ID_TREE
 
-        if (cur->children[lowerBits] == NULL) {
+        if (cur->children[lowerBits] == nullptr) {
             cur->children[lowerBits] = new IdTreeNode<T>();
-            if (cur->children[lowerBits] == NULL)
+            if (cur->children[lowerBits] == nullptr)
                 Error::err("IdTree<%s>: Could not allocate memory for cur->children[lowerBits]", typeid(T).name());
         }
 #ifdef DEBUG
@@ -397,7 +397,7 @@ bool IdTree<T>::retrieve(const uint64_t id, T &data) const {
         ++d->cache_miss_counter;
 
     IdTreeNode<T> *cur = d->findNodeForId(id);
-    if (cur == NULL)
+    if (cur == nullptr)
         return false;
 
     data = cur->data;
@@ -412,7 +412,7 @@ template <class T>
 bool IdTree<T>::remove(uint64_t id) {
     std::vector<IdTreeNode<T> *> path;
     IdTreeNode<T> *cur = d->findNodeForId(id, &path);
-    if (cur == NULL)
+    if (cur == nullptr)
         return false;
 
     int num_children = 0;
@@ -420,21 +420,21 @@ bool IdTree<T>::remove(uint64_t id) {
         path.pop_back();
         IdTreeNode<T> *parent = path.back();
         num_children = 0;
-        if (parent->children != NULL)
+        if (parent->children != nullptr)
             for (int i = (1 << IdTreeNode<T>::bitsPerNode) - 1; i >= 0; --i) {
-                if (cur != NULL && parent->children[i] == cur) {
+                if (cur != nullptr && parent->children[i] == cur) {
                     delete cur;
-                    cur = NULL;
-                    parent->children[i] = NULL;
+                    cur = nullptr;
+                    parent->children[i] = nullptr;
                 }
-                if (parent->children[i] != NULL)
+                if (parent->children[i] != nullptr)
                     ++num_children;
             }
         cur = parent;
     }
     if (num_children == 0 && cur == d->root) {
         delete d->root;
-        d->root = NULL;
+        d->root = nullptr;
     }
 
     return true;
@@ -448,7 +448,7 @@ size_t IdTree<T>::size() const {
 template <class T>
 uint16_t IdTree<T>::counter(const uint64_t id) const {
     IdTreeNode<T> *cur = d->findNodeForId(id);
-    if (cur == NULL)
+    if (cur == nullptr)
         Error::err("Cannot retrieve counter for a non-existing IdTreeNode<%s> of id=%llu", typeid(T).name(), id);
 
     return cur->counter;
@@ -458,7 +458,7 @@ template <class T>
 void IdTree<T>::increaseCounter(const uint64_t id) {
     IdTreeNode<T> *cur = d->findNodeForId(id);
 
-    if (cur != NULL)
+    if (cur != nullptr)
         ++cur->counter;
     else
         Error::err("Cannot increase counter for a non-existing IdTreeNode<%s> of id=%llu", typeid(T).name(), id);
@@ -466,7 +466,7 @@ void IdTree<T>::increaseCounter(const uint64_t id) {
 
 template <class T>
 std::ostream &IdTree<T>::write(std::ostream &output) {
-    if (d->root == NULL)
+    if (d->root == nullptr)
         return output;
     return d->root->write(output);
 }

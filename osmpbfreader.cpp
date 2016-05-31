@@ -199,10 +199,10 @@ void consumerWaySimplification(void) {
 OsmPbfReader::OsmPbfReader()
 {
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
-    if (buffer == NULL)
+    if (buffer == nullptr)
         Error::err("Could not allocate memory for OsmPbfReader::buffer");
     unpack_buffer = new char[OSMPBF::max_uncompressed_blob_size];
-    if (unpack_buffer == NULL)
+    if (unpack_buffer == nullptr)
         Error::err("Could not allocate memory for OsmPbfReader::unpack_buffer");
 }
 
@@ -214,42 +214,42 @@ OsmPbfReader::~OsmPbfReader()
 
 bool OsmPbfReader::parse(std::istream &input) {
     std::vector<std::pair<uint64_t, std::string> > roadsWithoutRef;
-    swedishTextTree = NULL;
-    node2Coord = NULL;
-    nodeNames = NULL;
-    wayNames = NULL;
-    relationNames = NULL;
-    wayNodes = NULL;
-    relMembers = NULL;
-    sweden = NULL;
+    swedishTextTree = nullptr;
+    node2Coord = nullptr;
+    nodeNames = nullptr;
+    wayNames = nullptr;
+    relationNames = nullptr;
+    wayNodes = nullptr;
+    relMembers = nullptr;
+    sweden = nullptr;
     size_t count_named_nodes = 0, count_named_ways = 0, count_named_relations = 0;
 
     if (!input || !input.good())
         return false;
 
     swedishTextTree = new SwedishTextTree();
-    if (swedishTextTree == NULL)
+    if (swedishTextTree == nullptr)
         Error::err("Could not allocate memory for swedishTextTree");
     node2Coord = new IdTree<Coord>();
-    if (node2Coord == NULL)
+    if (node2Coord == nullptr)
         Error::err("Could not allocate memory for node2Coord");
     nodeNames = new IdTree<WriteableString>();
-    if (nodeNames == NULL)
+    if (nodeNames == nullptr)
         Error::err("Could not allocate memory for nodeNames");
     wayNames = new IdTree<WriteableString>();
-    if (wayNames == NULL)
+    if (wayNames == nullptr)
         Error::err("Could not allocate memory for wayNames");
     relationNames = new IdTree<WriteableString>();
-    if (relationNames == NULL)
+    if (relationNames == nullptr)
         Error::err("Could not allocate memory for relationNames");
     wayNodes = new IdTree<WayNodes>();
-    if (wayNodes == NULL)
+    if (wayNodes == nullptr)
         Error::err("Could not allocate memory for wayNodes");
     relMembers = new IdTree<RelationMem>();
-    if (relMembers == NULL)
+    if (relMembers == nullptr)
         Error::err("Could not allocate memory for relmem");
     sweden = new Sweden();
-    if (sweden == NULL)
+    if (sweden == nullptr)
         Error::err("Could not allocate memory for Sweden");
 
     doneWaySimplification = false;

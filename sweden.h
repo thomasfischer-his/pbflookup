@@ -85,7 +85,7 @@ public:
      * @param admin_level administrative level as used in OSM data
      * @return relation id of the administration region if found, else 0
      */
-    uint64_t retrieveAdministrativeRegion(const std::string &name, int *admin_level = NULL);
+    uint64_t retrieveAdministrativeRegion(const std::string &name, int *admin_level = nullptr);
 
     struct KnownAdministrativeRegion {
         KnownAdministrativeRegion(uint64_t _relationId, const std::string &_name, int _admin_level)
