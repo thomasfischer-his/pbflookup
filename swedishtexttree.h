@@ -36,7 +36,7 @@ public:
     bool insert(const std::string &input, const OSMElement &element);
     std::vector<OSMElement> retrieve(const char *word, Warnings warnings = WarningsAll);
 
-    size_t size() const;
+    size_t size();
 
     std::ostream &write(std::ostream &output);
 
@@ -52,6 +52,7 @@ private:
     size_t _size;
 
     bool internal_insert(const char *word, const OSMElement &element);
+    size_t compute_size(const SwedishTextNode *cur) const;
 
     code_word to_code_word(const char *word) const;
     unsigned int code_char(const unsigned char &prev_c, const unsigned char &c) const;

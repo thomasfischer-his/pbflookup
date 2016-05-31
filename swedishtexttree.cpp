@@ -125,6 +125,7 @@ SwedishTextTree::SwedishTextTree(std::istream &input) {
 }
 
 SwedishTextTree::~SwedishTextTree() {
+    Error::debug("SwedishTextTree had %d elements", size());
     delete root;
 }
 
@@ -165,7 +166,6 @@ bool SwedishTextTree::insert(const std::string &input, const OSMElement &element
 }
 
 bool SwedishTextTree::internal_insert(const char *word, const OSMElement &element) {
-    ++_size;
     code_word code = to_code_word(word);
     if (code.empty())
         return false;
@@ -194,6 +194,7 @@ bool SwedishTextTree::internal_insert(const char *word, const OSMElement &elemen
     }
 
     cur->elements.push_back(element);
+    ++_size;
 
     return true;
 }
@@ -239,7 +240,23 @@ std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings war
     return result;
 }
 
-size_t SwedishTextTree::size() const {
+size_t SwedishTextTree::compute_size(const SwedishTextNode *cur) const {
+    size_t result = 0;
+
+    if (cur->children != nullptr)
+        for (size_t i = 0; i < num_codes; ++i)
+            if (cur->children[i] != nullptr)
+                result += compute_size(cur->children[i]);
+
+    result += cur->elements.size();
+
+    return result;
+}
+
+size_t SwedishTextTree::size() {
+    if (_size == 0)
+        /// SwedishTextTree was loaded from file and size never computer, so do it now
+        _size = compute_size(root);
     return _size;
 }
 

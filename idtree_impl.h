@@ -297,6 +297,20 @@ public:
         return cur;
     }
 
+    size_t compute_size(const IdTreeNode<T> *cur, size_t depth = 0) const {
+        size_t result = 0;
+
+        if (cur->children != nullptr)
+            for (size_t i = 0; i < IdTreeNode<T>::numChildren; ++i)
+                if (cur->children[i] != nullptr) {
+                    if (depth < 15)
+                        result += compute_size(cur->children[i], depth + 1);
+                    else ///< depth == 15
+                        ++result;
+                }
+
+        return result;
+    }
 };
 
 template <typename T>
@@ -329,6 +343,7 @@ IdTree<T>::IdTree(std::istream &input)
 template <class T>
 IdTree<T>::~IdTree()
 {
+    Error::debug("IdTree<%s> had %d elements", typeid(T).name(), size());
     delete d;
 }
 
@@ -437,11 +452,15 @@ bool IdTree<T>::remove(uint64_t id) {
         d->root = nullptr;
     }
 
+    --d->size;
     return true;
 }
 
 template <class T>
 size_t IdTree<T>::size() const {
+    if (d->size == 0)
+        /// IdTree was loaded from file and size never computer, so do it now
+        d->size = d->compute_size(d->root);
     return d->size;
 }
 
