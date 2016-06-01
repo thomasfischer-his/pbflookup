@@ -50,7 +50,7 @@ void Testset::run() {
             });
 
             Error::info("Found %d many possible results for testset '%s'", results.size(), it->name.c_str());
-#ifdef DEBUG
+
             for (const Result &result : results) {
                 const double lon = Coord::toLongitude(result.coord.x);
                 const double lat = Coord::toLatitude(result.coord.y);
@@ -66,7 +66,6 @@ void Testset::run() {
                         Error::debug("  https://www.openstreetmap.org/?mlat=%.5f&mlon=%.5f#map=12/%.5f/%.5f", lat, lon, lat, lon);
                     }
             }
-#endif // DEBUG
         } else
             Error::warn("Unable to determine a likely position");
 
