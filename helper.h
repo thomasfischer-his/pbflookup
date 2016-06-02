@@ -16,6 +16,8 @@
 
 #include <climits>
 #include <string>
+#include <vector>
+#include <sstream>
 
 #include "types.h"
 
@@ -23,3 +25,9 @@ OSMElement getNodeInOSMElement(const OSMElement &element);
 bool getCenterOfOSMElement(const OSMElement &element, struct Coord &coord);
 
 std::string &utf8tolower(std::string &text);
+
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems, bool skip_empty = true);
+
+#ifdef LATEX_OUTPUT
+std::string teXify(const std::string &input);
+#endif // LATEX_OUTPUT

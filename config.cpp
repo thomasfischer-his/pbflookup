@@ -101,18 +101,6 @@ void makeabsolutepath(std::string &text, const std::string &relative_to_file = s
     }
 }
 
-#ifdef LATEX_OUTPUT
-std::string teXify(const std::string &input) {
-    std::string output = input;
-    std::string::size_type p = 0;
-    while ((p = output.find("&", p)) != std::string::npos) {
-        output.replace(p, 2, "\\&");
-        p += 2;
-    }
-    return output;
-}
-#endif // LATEX_OUTPUT
-
 bool init_configuration(const char *configfilename) {
     http_port = 0;
 
