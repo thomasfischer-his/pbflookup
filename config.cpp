@@ -230,9 +230,6 @@ bool init_configuration(const char *configfilename) {
         Error::debug("  stopwordfilename = '%s'", stopwordfilename.c_str());
 #endif // DEBUG
 
-#ifdef LATEX_OUTPUT
-        std::ofstream texTable("/tmp/testsets.tex");
-#endif // LATEX_OUTPUT
         testsets.clear();
         static const std::vector<std::string> testsetKeySuffixes = {"", "1", "2", "3", "4", "5", "6", "A", "B", "C", "D", "E", "F"};
         for (const std::string &testsetKeySuffix : testsetKeySuffixes)
@@ -261,13 +258,6 @@ bool init_configuration(const char *configfilename) {
                             }
                             Error::debug("  name=%s  at   https://www.openstreetmap.org/#map=17/%.4f/%.4f", ts.name.c_str(), ts.coord.front().latitude(), ts.coord.front().longitude());
                             testsets.push_back(ts);
-#ifdef LATEX_OUTPUT
-                            if (ts.text.length() < 768) {
-                                texTable << ts.name << "\\newline" << std::endl << "\\hspace*{1em}" << ts.coord.front().latitude() << "~N\\newline" << std::endl << "\\hspace*{1em}" << ts.coord.front().longitude() << "~E";
-                                if (ts.coord.size() > 1)texTable << "\\newline" << std::endl << "\\hspace*{1em}\\begingroup\\relsize{-1}First of " << ts.coord.size() << " coordinates\\endgroup";
-                                texTable << std::endl << "&" << std::endl << teXify(ts.text) << " \\\\" << std::endl;
-                            }
-#endif // LATEX_OUTPUT
                         }
                     }
                 }

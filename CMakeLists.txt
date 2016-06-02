@@ -14,6 +14,7 @@ set(CMAKE_CXX_FLAGS "-Wall -std=c++11")
 add_definitions(-DDEBUG)
 add_definitions(-DCPUTIMER)
 add_definitions(-DREVERSE_ID_TREE)
+add_definitions(-DLATEX_OUTPUT)
 
 find_package(PkgConfig REQUIRED)
 

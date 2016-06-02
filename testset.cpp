@@ -17,6 +17,9 @@
 #include "testset.h"
 
 #include <algorithm>
+#ifdef LATEX_OUTPUT
+#include <fstream>
+#endif // LATEX_OUTPUT
 
 #include "global.h"
 #include "globalobjects.h"
@@ -27,6 +30,11 @@
 #include "helper.h"
 
 void Testset::run() {
+#ifdef LATEX_OUTPUT
+    std::ofstream texTable("/tmp/testsets.tex");
+    texTable << "\\begin{description}" << std::endl;
+#endif // LATEX_OUTPUT
+
     ResultGenerator resultGenerator;
     for (const auto &testset : testsets) {
         Error::info("Test set: %s (%d bytes)", testset.name.c_str(), testset.text.length());
@@ -82,5 +90,16 @@ void Testset::run() {
         }
 
         Error::info("======================================================");
+#ifdef LATEX_OUTPUT
+        texTable << "\\item[\\begingroup\\selectlanguage{swedish}" << testset.name << "\\endgroup] at " << testset.coord.front().latitude() << "~N, " << testset.coord.front().longitude() << "~E";
+        if (testset.coord.size() > 1) texTable << " \\begingroup\\relsize{-1}(first of " << testset.coord.size() << " coordinates)\\endgroup";
+        texTable << " consists of \\textbf{" << resultGeneratorStatistics.word_count << "} words which gave \\textbf{" << resultGeneratorStatistics.word_combinations_count << "} word combinations.";
+        if (testset.text.length() < 8192)
+            texTable << std::endl << "\\par\\begingroup\\slshape\\selectlanguage{swedish}\\relsize{-1}" << teXify(testset.text) << "\\par\\endgroup";
+        texTable << std::endl;
+#endif // LATEX_OUTPUT
     }
+#ifdef LATEX_OUTPUT
+    texTable << "\\end{description}" << std::endl;
+#endif // LATEX_OUTPUT
 }
