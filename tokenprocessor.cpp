@@ -545,16 +545,25 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
              * quality value linearly increases towards 1.0.
              */
             a.quality = findAdminInCombinedA > a.combined.length() ? 1.0 : findAdminInCombinedA / (double)(a.combined.length() - findAdminInCombinedA + 1);
-            if (a.match.realworld_type < OSMElement::PlaceLarge || a.match.realworld_type > OSMElement::PlaceSmall)
-                /// Prefer 'places' over anything else
-                a.quality *= .9;
+            if (a.quality > 0.0) {
+                if (a.match.realworld_type < OSMElement::PlaceLarge || a.match.realworld_type > OSMElement::PlaceSmall)
+                    /// Prefer 'places' over anything else
+                    a.quality *= .9;
+                /// Add a penalty for high-level administrative regions, e.g. prefer Stockholm city of Stockholm county
+                const double admin_level_scaling = (/** always between 2 and 9 */ max(2, min(9, a.adminRegion.admin_level)) + 18) / 27.0;
+                a.quality *= admin_level_scaling;
+            }
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
             b.quality = findAdminInCombinedB > b.combined.length() ? 1.0 : findAdminInCombinedB / (double)(b.combined.length() - findAdminInCombinedB + 1);
-            if (b.match.realworld_type < OSMElement::PlaceLarge || b.match.realworld_type > OSMElement::PlaceSmall)
-                /// Prefer 'places' over anything else
-                b.quality *= .9;
+            if (b.quality > 0.0) {
+                if (b.match.realworld_type < OSMElement::PlaceLarge || b.match.realworld_type > OSMElement::PlaceSmall)
+                    /// Prefer 'places' over anything else
+                    b.quality *= .9;
+                const double admin_level_scaling = (/** always between 2 and 9 */ max(2, min(9, b.adminRegion.admin_level)) + 18) / 27.0;
+                b.quality *= admin_level_scaling;
+            }
         }
 
         /// Larger values findAdminInCombinedX, i.e. late or no hits for admin region preferred
