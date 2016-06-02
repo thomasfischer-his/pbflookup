@@ -27,21 +27,21 @@
 #include "helper.h"
 
 void Testset::run() {
-    int setNr = 0;
     ResultGenerator resultGenerator;
-    for (auto it = testsets.cbegin(); it != testsets.cend(); ++it, ++setNr) {
-        Error::info("Test set: %s (%d bytes)", it->name.c_str(), it->text.length());
-        const std::vector<Coord> &expected = it->coord;
+    for (const auto &testset : testsets) {
+        Error::info("Test set: %s (%d bytes)", testset.name.c_str(), testset.text.length());
+        const std::vector<Coord> &expected = testset.coord;
 
         SvgWriter *svgwriter = nullptr;
-        if (!it->svgoutputfilename.empty()) {
+        if (!testset.svgoutputfilename.empty()) {
             /// If requested in configuration file, prepare to write SVG file
-            svgwriter = new SvgWriter(it->svgoutputfilename, 2);
+            svgwriter = new SvgWriter(testset.svgoutputfilename, 2);
             sweden->drawSCBareas(*svgwriter);
             sweden->drawRoads(*svgwriter);
         }
 
-        std::vector<Result> results = resultGenerator.findResults(it->text, 0, ResultGenerator::VerbosityTalking);
+        ResultGenerator::Statistics resultGeneratorStatistics;
+        std::vector<Result> results = resultGenerator.findResults(testset.text, 0, ResultGenerator::VerbosityTalking, &resultGeneratorStatistics);
 
         if (!results.empty()) {
             /// Sort results by quality (highest first)
@@ -49,7 +49,7 @@ void Testset::run() {
                 return a.quality > b.quality;
             });
 
-            Error::info("Found %d many possible results for testset '%s'", results.size(), it->name.c_str());
+            Error::info("Found %d many possible results for testset '%s'", results.size(), testset.name.c_str());
 
             for (const Result &result : results) {
                 const double lon = Coord::toLongitude(result.coord.x);
@@ -74,8 +74,8 @@ void Testset::run() {
                 svgwriter->drawPoint(exp.x, exp.y, SvgWriter::ImportantPoiGroup, "green", "expected");
             for (const Result &result : results)
                 svgwriter->drawPoint(result.coord.x, result.coord.y, SvgWriter::ImportantPoiGroup, "red", "computed");
-            svgwriter->drawCaption(it->name);
-            svgwriter->drawDescription(it->text);
+            svgwriter->drawCaption(testset.name);
+            svgwriter->drawDescription(testset.text);
 
             delete svgwriter; ///< destructor will finalize SVG file
             svgwriter = nullptr;
