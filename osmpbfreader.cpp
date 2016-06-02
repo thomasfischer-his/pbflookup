@@ -196,6 +196,86 @@ void consumerWaySimplification(void) {
     }
 }
 
+/// found online: http://stackoverflow.com/questions/236129/split-a-string-in-c
+std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems, bool skip_empty = true) {
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        if (skip_empty && item.empty()) continue;
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+/**
+ * Insert the name(s) of an element into its data structures
+ * after performing some sanitation and validity checking.
+ *
+ * @param id node, way, or relation id (determined by element_type)
+ * @param element_type element type to notify if name belongs to a node, way, or relation
+ * @param realworld_type real-world type of element to process
+ * @param name_set a collection of key-value pairs of names such as "name:de=Oskars Schleussen"
+ */
+void insertNames(uint64_t id, OSMElement::ElementType element_type, OSMElement::RealWorldType realworld_type, const std::map<std::string, std::string> &name_set) {
+    bool first_name = true;
+    std::string best_name; ///< if multiple names are available, record the 'best' name
+    const OSMElement element(id, element_type, realworld_type);
+    std::set<std::string> known_names; ///< track names to avoid duplicate insertions
+    static const std::set<std::string> ignored_country_codes = {"ab", "ace", "af", "ak", "als", "am", "an", "ang", "ar", "arc", "arz", "ast", "ay", "az", "ba", "bar", "bat-smg", "bcl", "be", "be-tarask", "bg", "bi", "bm", "bn", "bo", "bpy", "br", "bs", "bxr", "ca", "cdo", "ce", "ceb", "chr", "chy", "ckb", "co", "crh", "cs", "csb", "cu", "cv", "cy", "da", "de", "diq", "dsb", "dv", "dz", "ee", "el", "en", "eo", "es", "et", "eu", "ext", "fa", "ff", "fi", "fiu-vro", "fo", "fr", "frp", "frr", "fur", "fy", "ga", "gag", "gan", "gd", "gl", "gn", "gu", "gv", "ha", "hak", "haw", "he", "hi", "hif", "hr", "hsb", "ht", "hu", "hy", "ia", "id", "ie", "ig", "ilo", "io", "is", "it", "iu", "ja", "jbo", "jv", "ka", "kaa", "kab", "kbd", "kg", "ki", "kk", "kl", "km", "kn", "ko", "koi", "krc", "ks", "ksh", "ku", "kv", "kw", "ky", "la", "lad", "lb", "lez", "lg", "li", "lij", "lmo", "ln", "lo", "lt", "ltg", "lv", "mdf", "mg", "mhr", "mi", "mk", "ml", "mn", "mr", "mrj", "ms", "mt", "my", "myv", "mzn", "na", "nah", "nan", "nap", "nb", "nds", "nds-nl", "ne", "new", "nl", "nn", "no", "nov", "nrm", "nv", "oc", "om", "or", "os", "pa", "pag", "pam", "pap", "pcd", "pdc", "pih", "pl", "pms", "pnb", "pnt", "ps", "pt", "qu", "rm", "rmy", "rn", "ro", "roa-rup", "roa-tara", "ru", "rue", "rw", "sa", "sah", "sc", "scn", "sco", "se", "sg", "sh", "si", "simple", "sk", "sl", "sm", "sme", "sn", "so", "sq", "sr", "sr-Latn", "srn", "ss", "st", "stq", "su", "sw", "szl", "ta", "te", "tet", "tg", "th", "ti", "tk", "tl", "to", "tpi", "tr", "ts", "tt", "tw", "tzl", "udm", "ug", "uk", "ur", "uz", "vec", "vep", "vi", "vls", "vo", "wa", "war", "wo", "wuu", "xal", "xmf", "yi", "yo", "yue", "za", "zea", "zh", "zh-classical", "zh-min-nan", "zh_pinyin", "zh_py", "zh_pyt", "zh-simplified", "zh-yue", "zu"};
+
+    for (auto name_pair : name_set) {
+        auto const &name_key = name_pair.first;
+        auto const &name_value = name_pair.second;
+        /// Consider only names of length 2 or longer
+        if (name_value.length() < 2) continue;
+
+        if (first_name && element_type == OSMElement::Node) {
+            node2Coord->increaseCounter(id);
+            first_name = false;
+        }
+
+        if (name_key.find(":") != std::string::npos) {
+            /// Name has components, split and check
+            std::vector<std::string> name_key_components;
+            split(name_key, ':', name_key_components);
+            if (name_key_components.size() >= 2) {
+                const auto components_back(name_key_components.back());
+                if (ignored_country_codes.find(components_back) != ignored_country_codes.cend()) {
+                    /// This is a language-specific name, such as 'name:en', but not 'name:sv' (Swedish), so skip it
+                    continue;
+                }
+            }
+        }
+
+        /// Only unique names
+        if (known_names.find(name_value) != known_names.cend())
+            continue;
+        else
+            known_names.insert(name_value);
+
+        if (best_name.empty())
+            best_name = name_value;
+        else if (name_key == "name")
+            best_name = name_value;
+
+        const bool result = swedishTextTree->insert(name_value, element);
+        if (!result)
+            Error::warn("Cannot insert %s=%s for id=%llu", name_key.c_str(), name_value.c_str(), id);
+    }
+
+    if (!best_name.empty()) {
+        bool result = false;
+        switch (element_type) {
+        case OSMElement::Node: result = nodeNames->insert(id, WriteableString(best_name)); break;
+        case OSMElement::Way: result = wayNames->insert(id, WriteableString(best_name)); break;
+        case OSMElement::Relation: result = relationNames->insert(id, WriteableString(best_name)); break;
+        case OSMElement::UnknownElementType: break;
+        }
+        if (!result)
+            Error::warn("Cannot insert name %s for %s", best_name.c_str(), element.operator std::string().c_str());
+    }
+}
+
 OsmPbfReader::OsmPbfReader()
 {
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
@@ -421,12 +501,14 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                     const int maxnodes = pg.nodes_size();
                     for (int j = 0; j < maxnodes; ++j) {
+                        const uint64_t id = pg.nodes(j).id();
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
-                        std::string name;
+                        /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
+                        std::map<std::string, std::string> name_set;
 
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        node2Coord->insert(pg.nodes(j).id(), Coord::fromLonLat(lon, lat));
+                        node2Coord->insert(id, Coord::fromLonLat(lon, lat));
 
 #ifdef DEBUG
                         bool node_is_county = false, node_is_municipality = false;
@@ -435,8 +517,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 /// Store 'name' string for later use
-                                name = primblock.stringtable().s(pg.nodes(j).vals(k));
+                                name_set.insert(make_pair(primblock.stringtable().s(pg.nodes(j).keys(k)), primblock.stringtable().s(pg.nodes(j).vals(k))));
                                 ++count_named_nodes;
+                            } else if (strncmp("name:", ckey, 5) == 0 || strcmp("alt_name", ckey) == 0 || strncmp("alt_name:", ckey, 9) == 0 || strcmp("old_name", ckey) == 0 || strncmp("old_name:", ckey, 9) == 0 || strcmp("loc_name", ckey) == 0 || strncmp("loc_name:", ckey, 9) == 0 || strcmp("short_name", ckey) == 0 || strncmp("short_name:", ckey, 11) == 0 || strcmp("official_name", ckey) == 0 || strncmp("official_name:", ckey, 14) == 0) {
+                                /// Store name string for later use
+                                name_set.insert(make_pair(primblock.stringtable().s(pg.nodes(j).keys(k)), primblock.stringtable().s(pg.nodes(j).vals(k))));
                             } else if (strcmp("place", ckey) == 0) {
                                 const char *cvalue = primblock.stringtable().s(pg.nodes(j).vals(k)).c_str();
 
@@ -477,22 +562,15 @@ bool OsmPbfReader::parse(std::istream &input) {
                             }
                         }
 
-                        /// Consider only names of length 2 or longer
-                        if (name.length() > 1) {
-                            const uint64_t id = pg.nodes(j).id();
-                            node2Coord->increaseCounter(id);
-                            const OSMElement element(id, OSMElement::Node, realworld_type);
-                            const bool result = swedishTextTree->insert(name, element);
-                            if (!result)
-                                Error::warn("Cannot insert %s", name.c_str());
-                            nodeNames->insert(id, WriteableString(name));
+                        if (!name_set.empty())
+                            insertNames(id, OSMElement::Node, realworld_type, name_set);
+
 #ifdef DEBUG
-                            if (node_is_county)
-                                Error::info("County '%s' is represented by node %llu", name.c_str(), id);
-                            if (node_is_municipality)
-                                Error::info("Municipality '%s' is represented by node %llu", name.c_str(), id);
+                        if (node_is_county)
+                            Error::info("County '%s' is represented by node %llu", name_set["name"].c_str(), id);
+                        if (node_is_municipality)
+                            Error::info("Municipality '%s' is represented by node %llu", name_set["name"].c_str(), id);
 #endif // DEBUG
-                        }
                     }
                 }
 
@@ -505,7 +583,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                     const int idmax = pg.dense().id_size();
                     for (int j = 0; j < idmax; ++j) {
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
-                        std::string name;
+                        /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
+                        std::map<std::string, std::string> name_set;
 
                         last_id += pg.dense().id(j);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
@@ -531,8 +610,11 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 const char *ckey = primblock.stringtable().s(key).c_str();
                                 if (strcmp("name", ckey) == 0) {
                                     /// Store 'name' string for later use
-                                    name = primblock.stringtable().s(value);
+                                    name_set.insert(make_pair(primblock.stringtable().s(key), primblock.stringtable().s(value)));
                                     ++count_named_nodes;
+                                } else if (strncmp("name:", ckey, 5) == 0 || strcmp("alt_name", ckey) == 0 || strncmp("alt_name:", ckey, 9) == 0 || strcmp("old_name", ckey) == 0 || strncmp("old_name:", ckey, 9) == 0 || strcmp("loc_name", ckey) == 0 || strncmp("loc_name:", ckey, 9) == 0 || strcmp("short_name", ckey) == 0 || strncmp("short_name:", ckey, 11) == 0 || strcmp("official_name", ckey) == 0 || strncmp("official_name:", ckey, 14) == 0) {
+                                    /// Store name string for later use
+                                    name_set.insert(make_pair(primblock.stringtable().s(key), primblock.stringtable().s(value)));
                                 } else if (strcmp("place", ckey) == 0) {
                                     const char *cvalue = primblock.stringtable().s(value).c_str();
 
@@ -574,21 +656,15 @@ bool OsmPbfReader::parse(std::istream &input) {
                             }
                         }
 
-                        /// Consider only names of length 2 or longer
-                        if (name.length() > 1) {
-                            node2Coord->increaseCounter(last_id);
-                            const OSMElement element(last_id, OSMElement::Node, realworld_type);
-                            const bool result = swedishTextTree->insert(name, element);
-                            if (!result)
-                                Error::warn("Cannot insert %s", name.c_str());
-                            nodeNames->insert(last_id, WriteableString(name));
+                        if (!name_set.empty())
+                            insertNames(last_id, OSMElement::Node, realworld_type, name_set);
+
 #ifdef DEBUG
-                            if (node_is_county)
-                                Error::debug("County '%s' is represented by node %llu", name.c_str(), last_id);
-                            if (node_is_municipality)
-                                Error::info("Municipality '%s' is represented by node %llu", name.c_str(), last_id);
+                        if (node_is_county)
+                            Error::debug("County '%s' is represented by node %llu", name_set["name"].c_str(), last_id);
+                        if (node_is_municipality)
+                            Error::info("Municipality '%s' is represented by node %llu", name_set["name"].c_str(), last_id);
 #endif // DEBUG
-                        }
                     }
                 }
 
@@ -609,14 +685,19 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
 
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
-                        std::string name;
+                        /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
+                        std::map<std::string, std::string> name_set;
+
                         buffer_ref[0] = buffer_highway[0] = '\0'; /// clear buffers
                         for (int k = 0; k < pg.ways(w).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.ways(w).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 /// Store 'name' string for later use
-                                name = primblock.stringtable().s(pg.ways(w).vals(k));
-                                ++count_named_ways;
+                                name_set.insert(make_pair(primblock.stringtable().s(pg.ways(w).keys(k)), primblock.stringtable().s(pg.ways(w).vals(k))));
+                                ++count_named_nodes;
+                            } else if (strncmp("name:", ckey, 5) == 0 || strcmp("alt_name", ckey) == 0 || strncmp("alt_name:", ckey, 9) == 0 || strcmp("old_name", ckey) == 0 || strncmp("old_name:", ckey, 9) == 0 || strcmp("loc_name", ckey) == 0 || strncmp("loc_name:", ckey, 9) == 0 || strcmp("short_name", ckey) == 0 || strncmp("short_name:", ckey, 11) == 0 || strcmp("official_name", ckey) == 0 || strncmp("official_name:", ckey, 14) == 0) {
+                                /// Store name string for later use
+                                name_set.insert(make_pair(primblock.stringtable().s(pg.ways(w).keys(k)), primblock.stringtable().s(pg.ways(w).vals(k))));
                             } else if (strcmp("highway", ckey) == 0) {
                                 const char *cvalue = primblock.stringtable().s(pg.ways(w).vals(k)).c_str();
 
@@ -673,14 +754,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                         if (way_size > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
                             roadsWithoutRef.push_back(std::make_pair(wayId, std::string(buffer_highway)));
 
-                        /// Consider only names of length 2 or longer
-                        if (name.length() > 1) {
-                            const OSMElement element(wayId, OSMElement::Way, realworld_type);
-                            const bool result = swedishTextTree->insert(name, element);
-                            if (!result)
-                                Error::warn("Cannot insert %s", name.c_str());
-                            wayNames->insert(wayId, WriteableString(name));
-                        }
+                        if (!name_set.empty())
+                            insertNames(wayId, OSMElement::Way, realworld_type, name_set);
                     }
                 }
 
@@ -691,15 +766,20 @@ bool OsmPbfReader::parse(std::istream &input) {
                     for (int i = 0; i < maxrelations; ++i) {
                         const uint64_t relId = pg.relations(i).id();
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
-                        std::string name, type, route, boundary;
+                        /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
+                        std::map<std::string, std::string> name_set;
+                        std::string type, route, boundary;
                         int admin_level = 0;
                         const int maxkv = pg.relations(i).keys_size();
                         for (int k = 0; k < maxkv; ++k) {
                             const char *ckey = primblock.stringtable().s(pg.relations(i).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
                                 /// Store 'name' string for later use
-                                name = primblock.stringtable().s(pg.relations(i).vals(k));
-                                ++count_named_relations;
+                                name_set.insert(make_pair(primblock.stringtable().s(pg.relations(i).keys(k)), primblock.stringtable().s(pg.relations(i).vals(k))));
+                                ++count_named_nodes;
+                            } else if (strncmp("name:", ckey, 5) == 0 || strcmp("alt_name", ckey) == 0 || strncmp("alt_name:", ckey, 9) == 0 || strcmp("old_name", ckey) == 0 || strncmp("old_name:", ckey, 9) == 0 || strcmp("loc_name", ckey) == 0 || strncmp("loc_name:", ckey, 9) == 0 || strcmp("short_name", ckey) == 0 || strncmp("short_name:", ckey, 11) == 0 || strcmp("official_name", ckey) == 0 || strncmp("official_name:", ckey, 14) == 0) {
+                                /// Store name string for later use
+                                name_set.insert(make_pair(primblock.stringtable().s(pg.relations(i).keys(k)), primblock.stringtable().s(pg.relations(i).vals(k))));
                             } else if (strcmp("type", ckey) == 0) {
                                 /// Store 'type' string for later use
                                 type = primblock.stringtable().s(pg.relations(i).vals(k));
@@ -753,6 +833,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         else if (realworld_type == OSMElement::UnknownRealWorldType && boundary.compare("administrative") == 0)
                             realworld_type = OSMElement::PlaceLargeArea;
 
+                        const auto name(name_set["name"]);
                         if (admin_level > 0 && name.length() > 1 && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
                             sweden->insertAdministrativeRegion(name, admin_level, relId);
 
@@ -779,14 +860,8 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
                         relMembers->insert(relId, rm);
 
-                        /// Consider only names of length 2 or longer
-                        if (name.length() > 1) {
-                            const OSMElement element(relId, OSMElement::Relation, realworld_type);
-                            const bool result = swedishTextTree->insert(name, element);
-                            if (!result)
-                                Error::warn("Cannot insert %s", name.c_str());
-                            relationNames->insert(relId, WriteableString(name));
-                        }
+                        if (!name_set.empty())
+                            insertNames(relId, OSMElement::Relation, realworld_type, name_set);
                     }
                 }
 
