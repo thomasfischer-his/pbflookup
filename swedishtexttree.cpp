@@ -261,7 +261,7 @@ size_t SwedishTextTree::size() {
 }
 
 SwedishTextTree::code_word SwedishTextTree::to_code_word(const char *input)  const {
-    std::vector<unsigned int> result;
+    SwedishTextTree::code_word result;
 
     const unsigned int len = strlen(input);
     unsigned char prev_c = 0;
