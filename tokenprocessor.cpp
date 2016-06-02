@@ -353,8 +353,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         /// such as the shape of a single building
         if (element_list.size() > 0 && element_list.size() < 30 /** arbitrarily chosen value */) {
             if (element_list.size() == 1) {
-                /// For single-element results, set inter-node distance to
-                /// 1m as distance==0 is interpreted as error
+                /// Directly accept single-element results
                 result.push_back(UniqueMatch(combined, element_list.front(), Private::qualityForRealWorldTypes(element_list.front())));
             } else { /** element_list.size() > 1 */
                 /// Estimate the inter-node distance. For an 'unique' location,
