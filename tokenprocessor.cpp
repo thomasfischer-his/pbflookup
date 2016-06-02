@@ -362,8 +362,8 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                 unsigned int considered_nodes = 0, considered_distances = 0;
                 uint64_t centralNodeId;
                 int internodeDistanceMeter = d->interIdEstimatedDistance(element_list, considered_nodes, considered_distances, centralNodeId);
-                /// Check if estimated 1. quartile of inter-node distance is less than 500m
-                if (internodeDistanceMeter > 0 && internodeDistanceMeter < 500) {
+                /// Check if estimated 1. quartile of inter-node distance is less than 2500m
+                if (internodeDistanceMeter > 0 && internodeDistanceMeter < 2500) {
                     OSMElement bestElement;
                     Coord centralNodeCoord;
                     node2Coord->retrieve(centralNodeId, centralNodeCoord);
@@ -378,7 +378,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                         }
                     }
 
-                    if (bestElementsDistanceToCentralNode < 1000)
+                    if (bestElementsDistanceToCentralNode < 2500)
                         result.push_back(UniqueMatch(combined, bestElement, Private::qualityForRealWorldTypes(bestElement)));
                 }
             }
