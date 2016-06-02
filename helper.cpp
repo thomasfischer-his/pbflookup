@@ -605,4 +605,23 @@ std::string teXify(const std::string &input) {
     }
     return output;
 }
+
+std::string rewrite_TeX_spaces(const std::string &input) {
+    size_t space_counter = 0;
+    std::string output;
+    for (const char c : input) {
+        if (c == ' ' || c == '\r' || c == '\n'){
+            if (!output.empty())
+            ++space_counter;
+        } else {
+            if (space_counter == 1)
+                output.append(" ", 1);
+            else if (space_counter > 1)
+                output.append("\\hspace*{1em plus 1.5em minus 0.5em}");
+            space_counter = 0;
+            output.append(&c, 1);
+        }
+    }
+    return output;
+}
 #endif // LATEX_OUTPUT

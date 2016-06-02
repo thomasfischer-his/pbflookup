@@ -30,4 +30,5 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 
 #ifdef LATEX_OUTPUT
 std::string teXify(const std::string &input);
+std::string rewrite_TeX_spaces(const std::string &input);
 #endif // LATEX_OUTPUT
