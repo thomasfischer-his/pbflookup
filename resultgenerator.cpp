@@ -150,12 +150,12 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
                 case OSMElement::UnknownElementType: matchName = WriteableString("Unknown"); break;
                 }
 
-                Result r(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegionName + " (relation " + std::to_string(adminRegionMatch.adminRegionId) + ") > '" + matchName + "' (" + adminRegionMatch.match.operator std::string() + ", found via: '" + adminRegionMatch.combined + "')");
-                r.elements.push_back(OSMElement(adminRegionMatch.adminRegionId, OSMElement::Relation));
+                Result r(c, adminRegionMatch.quality * .95, std::string("Places inside admin bound: ") + adminRegionMatch.adminRegion.name + " (relation " + std::to_string(adminRegionMatch.adminRegion.relationId) + ") > '" + matchName + "' (" + adminRegionMatch.match.operator std::string() + ", found via: '" + adminRegionMatch.combined + "')");
+                r.elements.push_back(OSMElement(adminRegionMatch.adminRegion.relationId, OSMElement::Relation));
                 r.elements.push_back(adminRegionMatch.match);
                 results.push_back(r);
                 if (verbosity > VerbositySilent)
-                    Error::debug("Found place '%s' (%s) inside admin region '%s' (%d) via combination '%s'", matchName.c_str(), adminRegionMatch.match.operator std::string().c_str(), adminRegionMatch.adminRegionName.c_str(), adminRegionMatch.adminRegionId, adminRegionMatch.combined.c_str(), adminRegionMatch.combined.c_str());
+                    Error::debug("Found place '%s' (%s) inside admin region '%s' (%d) via combination '%s'", matchName.c_str(), adminRegionMatch.match.operator std::string().c_str(), adminRegionMatch.adminRegion.name.c_str(), adminRegionMatch.adminRegion.relationId, adminRegionMatch.combined.c_str(), adminRegionMatch.combined.c_str());
             }
         }
     }

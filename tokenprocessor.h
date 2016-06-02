@@ -102,15 +102,14 @@ public:
     std::vector<struct UniqueMatch> evaluateUniqueMatches(const std::vector<std::string> &word_combinations) const;
 
     struct AdminRegionMatch {
-        AdminRegionMatch(const std::string &_combined, const OSMElement &_match, uint64_t _adminRegionId, const std::string &_adminRegionName, double _quality = -1.0)
-            : combined(_combined), match(_match), adminRegionId(_adminRegionId), adminRegionName(_adminRegionName), quality(_quality) {
+        AdminRegionMatch(const std::string &_combined, const OSMElement &_match, const Sweden::KnownAdministrativeRegion &_adminRegion, double _quality = -1.0)
+            : combined(_combined), match(_match), adminRegion(_adminRegion), quality(_quality) {
             /// nothing
         }
 
         std::string combined;
         OSMElement match;
-        uint64_t adminRegionId;
-        std::string adminRegionName;
+        Sweden::KnownAdministrativeRegion adminRegion;
 
         /** Assessment on match's quality, ranging from
          *    1.0  -> very good

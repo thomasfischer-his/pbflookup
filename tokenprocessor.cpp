@@ -498,7 +498,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
                     insideTestTime += cputime;
 #endif // CPUTIMER
                     if (inside) {
-                        result.push_back(AdminRegionMatch(combined, element, adminReg.relationId, adminReg.name));
+                        result.push_back(AdminRegionMatch(combined, element, adminReg));
                         inside_admin_level = adminReg.admin_level;
                     }
                 }
@@ -532,8 +532,8 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
         /// std::string::find(..) will return the largest positive value for
         /// std::string::size_type if the argument was not found (std::string::npos),
         /// otherwise the position where found in the string (starting at 0).
-        const std::string::size_type findAdminInCombinedA = a.combined.find(a.adminRegionName);
-        const std::string::size_type findAdminInCombinedB = b.combined.find(b.adminRegionName);
+        const std::string::size_type findAdminInCombinedA = a.combined.find(a.adminRegion.name);
+        const std::string::size_type findAdminInCombinedB = b.combined.find(b.adminRegion.name);
 
         /// Set quality during sorting if not already set for match a
         if (a.quality < 0.0) {
