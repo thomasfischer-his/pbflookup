@@ -69,7 +69,7 @@ ResultGenerator::~ResultGenerator() {
     delete tokenProcessor;
 }
 
-std::vector<Result> ResultGenerator::findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity) {
+std::vector<Result> ResultGenerator::findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity, ResultGenerator::Statistics *statistics) {
     std::vector<Result> results;
 #ifdef CPUTIMER
     Timer timer, timerOverFunction;
@@ -83,6 +83,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     const std::vector<std::string> words = tokenizer->read_words(text, Tokenizer::Duplicates);
     const std::vector<std::string> word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */);
     Error::info("Identified %d words, resulting in %d word combinations", words.size(), word_combinations.size());
+    if (statistics != nullptr) {
+        statistics->word_count = words.size();
+        statistics->word_combinations_count = word_combinations.size();
+    }
 #ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);

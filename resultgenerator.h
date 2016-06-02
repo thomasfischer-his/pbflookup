@@ -43,12 +43,17 @@ struct Result {
 
 class ResultGenerator {
 public:
+    struct Statistics {
+        size_t word_count = 0;
+        size_t word_combinations_count = 0;
+    };
+
     enum Verbosity { VerbositySilent = 0, VerbosityTalking = 5};
 
     ResultGenerator();
     ~ResultGenerator();
 
-    std::vector<Result> findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity);
+    std::vector<Result> findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity, ResultGenerator::Statistics *statistics = nullptr);
 
 private:
     Tokenizer *tokenizer;
