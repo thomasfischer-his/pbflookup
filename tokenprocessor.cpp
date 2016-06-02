@@ -403,8 +403,8 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
 
             if (countSpacesA >= 3) a.quality *= 1.0;
             else if (countSpacesA == 2) a.quality *= 0.9;
-            else if (countSpacesA == 1) a.quality *= 0.75;
-            else /** countSpacesA == 0 */ a.quality *= 0.5;
+            else if (countSpacesA == 1) a.quality *= 0.8;
+            else /** countSpacesA == 0 */ a.quality *= 0.7;
         }
         /// Set quality during sorting if not already set for match b
         if (b.quality < 0.0) {
@@ -412,8 +412,8 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
 
             if (countSpacesB >= 3) b.quality *= 1.0;
             else if (countSpacesB == 2) b.quality *= 0.9;
-            else if (countSpacesB == 1) b.quality *= 0.75;
-            else /** countSpacesB == 0 */ b.quality *= 0.5;
+            else if (countSpacesB == 1) b.quality *= 0.8;
+            else /** countSpacesB == 0 */ b.quality *= 0.7;
         }
 
         if (countSpacesA < countSpacesB) return false;
