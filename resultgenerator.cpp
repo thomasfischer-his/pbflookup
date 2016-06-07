@@ -108,7 +108,9 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     }
 
     const std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
+    Error::debug("Identified roads: %d", identifiedRoads.size());
     const std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
+    Error::debug("Identified road matches: %d", roadMatches.size());
 
     for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
         const int distance = roadMatch.distance;
@@ -141,8 +143,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
+    Error::debug("Identified administrative regions: %d", adminReg.size());
     if (!adminReg.empty()) {
         const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor->evaluateAdministrativeRegions(adminReg, word_combinations);
+        Error::debug("Identified administrative region matches: %d", adminReg.size());
         for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
             Coord c;
             if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
@@ -177,6 +181,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     std::vector<struct OSMElement> places = sweden->identifyPlaces(word_combinations);
+    Error::debug("Identified places: %d", places.size());
     if (!places.empty()) {
         const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
         for (auto it = ++places.cbegin(); it != places.cend();) {
@@ -186,6 +191,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
                 ++it;
         }
         const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, places);
+        Error::debug("Identified near places matches: %d", nearPlacesMatches.size());
         for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
             Coord c;
             if (getCenterOfOSMElement(nearPlacesMatch.local, c)) {
@@ -213,6 +219,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
+    Error::debug("Identified unique matches: %d", uniqueMatches.size());
     for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
         Coord c;
         if (getCenterOfOSMElement(uniqueMatch.element, c)) {
