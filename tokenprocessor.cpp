@@ -37,11 +37,17 @@ public:
         /// nothing
     }
 
-    int interIdEstimatedDistance(const std::vector<OSMElement> &element_list, unsigned int &considered_nodes, unsigned int &considered_distances, uint64_t &mostCentralNodeId) {
-        considered_nodes = considered_distances = 0;
-        mostCentralNodeId = INT64_MAX;
+    struct InterIdEstimatedDistanceResult {
+        unsigned int considered_nodes = 0;
+        unsigned int considered_distances = 0;
+        uint64_t mostCentralNodeId = 0;
+        int firstQuartileDistance = 0;
+    };
 
-        if (element_list.empty()) return 0; ///< too few elements as input
+    Private::InterIdEstimatedDistanceResult interIdEstimatedDistance(const std::vector<OSMElement> &element_list) {
+        InterIdEstimatedDistanceResult result;
+
+        if (element_list.empty()) return InterIdEstimatedDistanceResult(); ///< too few elements as input
 
         /// Collect as many nodes (identified by their ids) as referenced
         /// by the provided element_list vector. Ways and relations get
@@ -71,36 +77,36 @@ public:
             }
         }
 
-        considered_nodes = node_ids.size();
-        if (considered_nodes <= 1)
-            return 0; ///< too few nodes found
+        result.considered_nodes = node_ids.size();
+        if (result.considered_nodes <= 1)
+            return InterIdEstimatedDistanceResult(); ///< too few nodes found
 
         /// Whereas std::unordered_set node_ids is good for
         /// collecting unique instances of node ids, it does
         /// not provide a way for fast random access. Therefore,
         /// an array is built based on data collected in the set.
-        uint64_t *node_id_array = (uint64_t *)calloc(considered_nodes, sizeof(uint64_t));
+        uint64_t *node_id_array = (uint64_t *)calloc(result.considered_nodes, sizeof(uint64_t));
         int i = 0;
         for (auto it = node_ids.cbegin(); it != node_ids.cend(); ++it, ++i)
             node_id_array[i] = *it;
 
         std::vector<int> distances;
         // TODO remove static const int very_few_nodes = 5;
-        const int stepcount = min(considered_nodes - 1, min(7, max(1, considered_nodes / 2)));
-        size_t step = considered_nodes / stepcount;
+        const int stepcount = min(result.considered_nodes - 1, min(7, max(1, result.considered_nodes / 2)));
+        size_t step = result.considered_nodes / stepcount;
         /// Ensure that both numbers have no common divisor except for 1
-        while (considered_nodes % step == 0 && step < considered_nodes) ++step;
-        if (step >= considered_nodes) step = 1; ///< this should only happen for considered_nodes<=3
-        step = max(1, min(considered_nodes - 1, step)); ///< ensure that step is within valid bounds
+        while (result.considered_nodes % step == 0 && step < result.considered_nodes) ++step;
+        if (step >= result.considered_nodes) step = 1; ///< this should only happen for considered_nodes<=3
+        step = max(1, min(result.considered_nodes - 1, step)); ///< ensure that step is within valid bounds
 
         int bestDistanceAverage = INT_MAX;
-        for (size_t a = 0; a < considered_nodes; ++a) {
+        for (size_t a = 0; a < result.considered_nodes; ++a) {
             size_t b = a;
             Coord cA;
             if (node2Coord->retrieve(node_id_array[a], cA)) {
                 int sumDistances = 0, countDistances = 0;
                 for (int s = 0; s < stepcount; ++s) {
-                    b = (b + step) % considered_nodes;
+                    b = (b + step) % result.considered_nodes;
                     Coord cB;
                     if (node2Coord->retrieve(node_id_array[b], cB)) {
                         const int d = Coord::distanceLatLon(cA, cB);
@@ -114,16 +120,18 @@ public:
                 const int averageDistance = countDistances > 0 ? sumDistances / countDistances : 0;
                 if (countDistances > 0 && averageDistance < bestDistanceAverage) {
                     bestDistanceAverage = averageDistance;
-                    mostCentralNodeId = node_id_array[a];
+                    result.mostCentralNodeId = node_id_array[a];
                 }
             }
         }
         free(node_id_array);
-        considered_distances = distances.size();
+        result.considered_distances = distances.size();
+        if (result.considered_distances == 0) return InterIdEstimatedDistanceResult(); ///< too few distances computed
 
         std::sort(distances.begin(), distances.end(), std::less<int>());
-        if (distances.size() == 0) return 0; ///< too few distances computed
-        return distances[distances.size() / 4]; ///< take first quartile
+        result.firstQuartileDistance = distances[distances.size() / 4]; ///< take first quartile
+
+        return result;
     }
 
     static double qualityForRealWorldTypes(const OSMElement &element) {
@@ -359,14 +367,14 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                 /// Estimate the inter-node distance. For an 'unique' location,
                 /// all nodes must be close by as they are supposed to belong
                 /// together, e.g. the nodes that shape a building
-                unsigned int considered_nodes = 0, considered_distances = 0;
-                uint64_t centralNodeId;
-                int internodeDistanceMeter = d->interIdEstimatedDistance(element_list, considered_nodes, considered_distances, centralNodeId);
-                /// Check if estimated 1. quartile of inter-node distance is less than 2500m
-                if (internodeDistanceMeter > 0 && internodeDistanceMeter < 2500) {
+                Private::InterIdEstimatedDistanceResult interIdEstimatedDistanceResult = d->interIdEstimatedDistance(element_list);
+                static const int innerThreshold = 1000; ///< 1km (=10^3)
+                static const int outerThreshold = 31622; ///< 31.6km (=10^4.5)
+                /// Check if estimated 1. quartile of inter-node distance is less than 10km (outerThreshold)
+                if (interIdEstimatedDistanceResult.firstQuartileDistance > 0 && interIdEstimatedDistanceResult.firstQuartileDistance < outerThreshold) {
                     OSMElement bestElement;
                     Coord centralNodeCoord;
-                    node2Coord->retrieve(centralNodeId, centralNodeCoord);
+                    node2Coord->retrieve(interIdEstimatedDistanceResult.mostCentralNodeId, centralNodeCoord);
                     int bestElementsDistanceToCentralNode = INT_MAX;
                     for (const OSMElement &e : element_list) {
                         Coord c;
@@ -378,48 +386,21 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                         }
                     }
 
-                    if (bestElementsDistanceToCentralNode < 2500)
-                        result.push_back(UniqueMatch(combined, bestElement, Private::qualityForRealWorldTypes(bestElement)));
+                    if (bestElementsDistanceToCentralNode < outerThreshold) {
+                        double quality = Private::qualityForRealWorldTypes(bestElement);
+                        if (bestElementsDistanceToCentralNode > innerThreshold)
+                            /// Scale quality from 0.0 (distance 10km and larger) to 1.0 (distance 317m and less)
+                            quality *= (4.5 - log10(bestElementsDistanceToCentralNode))/1.5;
+
+                        result.push_back(UniqueMatch(combined, bestElement, quality));
+                    }
                 }
             }
         }
     }
 
     std::sort(result.begin(), result.end(), [](struct UniqueMatch & a, struct UniqueMatch & b) {
-        /**
-         * Sort unique matches first by number of spaces (tells from
-         * how many words a word combination was composed from; it is
-         * assumed that more words in a combination make the combination
-         * more specific and as such a better hit), and as secondary
-         * criterion by names' length (weak assumption: longer names are
-         * more specific than shorter names).
-         */
-        const size_t countSpacesA = std::count(a.combined.cbegin(), a.combined.cend(), ' ');
-        const size_t countSpacesB = std::count(b.combined.cbegin(), b.combined.cend(), ' ');
-
-        /// Set quality during sorting if not already set for match a
-        if (a.quality < 0.0) {
-            a.quality = Private::qualityForRealWorldTypes(a.element);
-
-            if (countSpacesA >= 3) a.quality *= 1.0;
-            else if (countSpacesA == 2) a.quality *= 0.9;
-            else if (countSpacesA == 1) a.quality *= 0.8;
-            else /** countSpacesA == 0 */ a.quality *= 0.7;
-        }
-        /// Set quality during sorting if not already set for match b
-        if (b.quality < 0.0) {
-            b.quality = Private::qualityForRealWorldTypes(b.element);
-
-            if (countSpacesB >= 3) b.quality *= 1.0;
-            else if (countSpacesB == 2) b.quality *= 0.9;
-            else if (countSpacesB == 1) b.quality *= 0.8;
-            else /** countSpacesB == 0 */ b.quality *= 0.7;
-        }
-
-        if (countSpacesA < countSpacesB) return false;
-        else if (countSpacesA > countSpacesB) return true;
-        else /** countSpacesA == countSpacesB */
-            return a.combined.length() > b.combined.length();
+        return a.quality > b.quality;
     });
 
     return result;
