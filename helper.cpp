@@ -610,9 +610,9 @@ std::string rewrite_TeX_spaces(const std::string &input) {
     size_t space_counter = 0;
     std::string output;
     for (const char c : input) {
-        if (c == ' ' || c == '\r' || c == '\n'){
+        if (c == ' ' || c == '\r' || c == '\n') {
             if (!output.empty())
-            ++space_counter;
+                ++space_counter;
         } else {
             if (space_counter == 1)
                 output.append(" ", 1);
