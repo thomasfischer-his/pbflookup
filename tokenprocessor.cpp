@@ -258,6 +258,9 @@ std::vector<struct TokenProcessor::LocalPlaceMatch> TokenProcessor::evaluateNear
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         for (const OSMElement &element : element_list) {
+            if (std::find(places.cbegin(), places.cend(), element) != places.cend())
+                continue; ///< skip elements that are contained in 'places' vector
+
             int minDistance = INT_MAX;
             auto bestPlace = placesToCoord.cend();
 
