@@ -195,7 +195,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         for (const struct TokenProcessor::LocalPlaceMatch &localPlacesMatch : localPlacesMatches) {
             Coord c;
             if (getCenterOfOSMElement(localPlacesMatch.local, c)) {
-                Result r(c, localPlacesMatch.quality * .75, std::string("Local near global place: ") + localPlacesMatch.local.operator std::string() + " (" + localPlacesMatch.local.name() + ") near " + localPlacesMatch.global.operator std::string() + " (" + localPlacesMatch.global.name());
+                Result r(c, localPlacesMatch.quality * .75, std::string("Local near global place: ") + localPlacesMatch.local.operator std::string() + " ('" + localPlacesMatch.local.name() + "') near " + localPlacesMatch.global.operator std::string() + " ('" + localPlacesMatch.global.name() + "')");
                 r.elements.push_back(localPlacesMatch.global);
                 r.elements.push_back(localPlacesMatch.local);
                 results.push_back(r);

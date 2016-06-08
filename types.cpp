@@ -62,7 +62,7 @@ OSMElement::operator std::string() const {
     case UnknownRealWorldType: realWorldTypeString = " Unknown-Type"; break;
     }
 
-    return typeString + std::to_string(id) + realWorldTypeString;
+    return typeString + std::to_string(id) + "of type" + realWorldTypeString;
 }
 
 bool OSMElement::isValid() const {
