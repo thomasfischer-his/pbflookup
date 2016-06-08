@@ -223,18 +223,11 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
         Coord c;
         if (getCenterOfOSMElement(uniqueMatch.element, c)) {
-            WriteableString uniquePlaceName("UNSET");
-            switch (uniqueMatch.element.type) {
-            case OSMElement::Node: nodeNames->retrieve(uniqueMatch.element.id, uniquePlaceName); break;
-            case OSMElement::Way: wayNames->retrieve(uniqueMatch.element.id, uniquePlaceName); break;
-            case OSMElement::Relation: relationNames->retrieve(uniqueMatch.element.id, uniquePlaceName); break;
-            case OSMElement::UnknownElementType: uniquePlaceName = WriteableString("Unknown"); break;
-            }
-            Result r(c, uniqueMatch.quality * .8, std::string("Unique name '") + uniquePlaceName + " (" + uniqueMatch.element.operator std::string() + ") found via '" + uniqueMatch.combined + "'");
+            Result r(c, uniqueMatch.quality * .8, std::string("Unique name '") + uniqueMatch.element.name().c_str() + "' (" + uniqueMatch.element.operator std::string() + ") found via '" + uniqueMatch.combined + "'");
             r.elements.push_back(uniqueMatch.element);
             results.push_back(r);
             if (verbosity > VerbositySilent)
-                Error::debug("Got a result for combined word '%s': %s (%s)", uniqueMatch.combined.c_str(), uniquePlaceName.c_str(), uniqueMatch.element.operator std::string().c_str());
+                Error::debug("Got a result for combined word '%s': %s (%s)", uniqueMatch.combined.c_str(), uniqueMatch.element.name().c_str(), uniqueMatch.element.operator std::string().c_str());
         }
     }
 #ifdef CPUTIMER
