@@ -239,8 +239,8 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
     return result;
 }
 
-std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places) {
-    std::vector<struct TokenProcessor::NearPlaceMatch> result;
+std::vector<struct TokenProcessor::LocalPlaceMatch> TokenProcessor::evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places) {
+    std::vector<struct TokenProcessor::LocalPlaceMatch> result;
     if (places.empty()) return result; /// No places known? Nothing to do -> return
 
     /// Retrieve coordinates for all known places
@@ -279,12 +279,12 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
 
             static const int limitDistance = 20000; ///< 20km
             if (minDistance <= limitDistance && bestPlace != placesToCoord.cend())
-                result.push_back(NearPlaceMatch(combined, bestPlace->first /** struct OSMElement */, element, minDistance));
+                result.push_back(LocalPlaceMatch(combined, bestPlace->first /** struct OSMElement */, element, minDistance));
         }
     }
 
     /// Sort results using this lambda expression
-    std::sort(result.begin(), result.end(), [](struct TokenProcessor::NearPlaceMatch & a, struct TokenProcessor::NearPlaceMatch & b) {
+    std::sort(result.begin(), result.end(), [](struct TokenProcessor::LocalPlaceMatch & a, struct TokenProcessor::LocalPlaceMatch & b) {
         /**
          * The following sorting criteria will be apply, top down. If there
          * is a tie, the next following criteria will be applied.
@@ -341,7 +341,7 @@ std::vector<struct TokenProcessor::NearPlaceMatch> TokenProcessor::evaluateNearP
     });
 
 #ifdef DEBUG
-    for (const TokenProcessor::NearPlaceMatch &npm : result)
+    for (const TokenProcessor::LocalPlaceMatch &npm : result)
         Error::debug("Found %s (%s) near place %s (%s) with distance %.1fkm", npm.local.operator std::string().c_str(), npm.local.name().c_str(), npm.global.operator std::string().c_str(), npm.global.name().c_str(), npm.distance / 1000.0);
 #endif
 

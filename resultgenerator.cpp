@@ -180,34 +180,34 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         timer.start();
 #endif // CPUTIMER
     }
-    std::vector<struct OSMElement> places = sweden->identifyPlaces(word_combinations);
-    Error::info("Identified places: %d", places.size());
-    if (!places.empty()) {
-        const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
-        for (auto it = ++places.cbegin(); it != places.cend();) {
+    std::vector<struct OSMElement> globalPlaces = sweden->identifyPlaces(word_combinations);
+    Error::info("Identified global places: %d", globalPlaces.size());
+    if (!globalPlaces.empty()) {
+        const OSMElement::RealWorldType firstRwt = globalPlaces.front().realworld_type;
+        for (auto it = ++globalPlaces.cbegin(); it != globalPlaces.cend();) {
             if (it->realworld_type != firstRwt)
-                it = places.erase(it);
+                it = globalPlaces.erase(it);
             else
                 ++it;
         }
-        const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, places);
-        Error::info("Identified near places matches: %d", nearPlacesMatches.size());
-        for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
+        const std::vector<struct TokenProcessor::LocalPlaceMatch> localPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, globalPlaces);
+        Error::info("Identified local places matches: %d", localPlacesMatches.size());
+        for (const struct TokenProcessor::LocalPlaceMatch &localPlacesMatch : localPlacesMatches) {
             Coord c;
-            if (getCenterOfOSMElement(nearPlacesMatch.local, c)) {
-                Result r(c, nearPlacesMatch.quality * .75, std::string("Local/global places: ") + nearPlacesMatch.global.operator std::string() + " (" + nearPlacesMatch.global.name() + ") > " + nearPlacesMatch.local.operator std::string() + " (" + nearPlacesMatch.local.name() + ")");
-                r.elements.push_back(nearPlacesMatch.global);
-                r.elements.push_back(nearPlacesMatch.local);
+            if (getCenterOfOSMElement(localPlacesMatch.local, c)) {
+                Result r(c, localPlacesMatch.quality * .75, std::string("Local near global place: ") + localPlacesMatch.local.operator std::string() + " (" + localPlacesMatch.local.name() + ") near " + localPlacesMatch.global.operator std::string() + " (" + localPlacesMatch.global.name());
+                r.elements.push_back(localPlacesMatch.global);
+                r.elements.push_back(localPlacesMatch.local);
                 results.push_back(r);
                 if (verbosity > VerbositySilent)
-                    Error::debug("Got a result for place %s and local %s", nearPlacesMatch.global.operator std::string().c_str(), nearPlacesMatch.local.operator std::string().c_str());
+                    Error::debug("Got a result for global place '%s' and local place '%s'", localPlacesMatch.global.operator std::string().c_str(), localPlacesMatch.local.operator std::string().c_str());
             }
         }
     }
 #ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
-        Error::info("Spent CPU time to identify nearby places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+        Error::info("Spent CPU time to identify local/global places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
 #endif // CPUTIMER
 
@@ -245,7 +245,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
 
 
-    if (!places.empty()) {
+    if (!globalPlaces.empty()) {
         /// No good result found, but some places have been recognized in the process.
         /// Pick one of the larger places as result.
         if (verbosity > VerbositySilent) {
@@ -257,7 +257,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         // FIXME picking the right place from the list is rather ugly. Can do better?
         OSMElement bestPlace;
         OSMElement::RealWorldType rwt = OSMElement::PlaceSmall;
-        for (const OSMElement &place : places) {
+        for (const OSMElement &place : globalPlaces) {
             if (place.realworld_type == OSMElement::PlaceMedium && rwt >= OSMElement::PlaceSmall) {
                 bestPlace = place;
                 rwt = place.realworld_type;

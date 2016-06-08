@@ -47,8 +47,8 @@ public:
 
     std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads);
 
-    struct NearPlaceMatch {
-        NearPlaceMatch(const std::string &_word_combination, const struct OSMElement &_global, const struct OSMElement &_local, int _distance, double _quality = -1.0)
+    struct LocalPlaceMatch {
+        LocalPlaceMatch(const std::string &_word_combination, const struct OSMElement &_global, const struct OSMElement &_local, int _distance, double _quality = -1.0)
             : word_combination(_word_combination), global(_global), local(_local), distance(_distance), quality(_quality) {
             /// nothing
         }
@@ -79,7 +79,7 @@ public:
      * @param places Places of cities, towns, hamlets, ...
      * @return List of matching pairs of place-word combinations
      */
-    std::vector<struct NearPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
+    std::vector<struct LocalPlaceMatch> evaluateNearPlaces(const std::vector<std::string> &word_combinations, const std::vector<struct OSMElement> &places);
 
     struct UniqueMatch {
         UniqueMatch(std::string _combined, const OSMElement &_element, double _quality)
