@@ -393,7 +393,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
                         double quality = Private::qualityForRealWorldTypes(bestElement);
                         if (bestElementsDistanceToCentralNode > innerThreshold)
                             /// Scale quality from 0.0 (distance 10km and larger) to 1.0 (distance 317m and less)
-                            quality *= (4.5 - log10(bestElementsDistanceToCentralNode))/1.5;
+                            quality *= (4.5 - log10(bestElementsDistanceToCentralNode)) / 1.5;
 
                         result.push_back(UniqueMatch(combined, bestElement, quality));
                     }
