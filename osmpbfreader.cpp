@@ -179,6 +179,10 @@ void simplifyWay(const OSMWay &way) {
 /// This method will be run by the consumer thread which is
 /// processing (simplifying) ways
 void consumerWaySimplification(void) {
+#ifdef CPUTIMER
+    Timer consumerThreadTimer;
+#endif // CPUTIMER
+
     const OSMWay *way;
     while (!doneWaySimplification) {
         while (queueWaySimplification.pop(way)) {
@@ -195,6 +199,12 @@ void consumerWaySimplification(void) {
         simplifyWay(*way);
         delete way;
     }
+
+#ifdef CPUTIMER
+    int64_t cpuTime, wallTime;
+    consumerThreadTimer.elapsed(&cpuTime, &wallTime);
+    Error::debug("Time spent in consumer thread: cpu= %.3fms   wall= %.3fms", cpuTime / 1000.0, wallTime / 1000.0);
+#endif // CPUTIMER
 }
 
 /**
@@ -325,6 +335,11 @@ bool OsmPbfReader::parse(std::istream &input) {
     doneWaySimplification = false;
     boost::thread waySimplificationThread(consumerWaySimplification);
     size_t max_queue_size = 0;
+
+#ifdef CPUTIMER
+    Timer primitiveGroupTimer;
+    int64_t accumulatedPrimitiveGroupTime = 0;
+#endif // CPUTIMER
 
     /// Read while the file has not reached its end
     while (input.good()) {
@@ -486,6 +501,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                 bool found_items = false;
                 const double coord_scale = 0.000000001;
 
+#ifdef CPUTIMER
+                primitiveGroupTimer.start();
+#endif // CPUTIMER
                 if (pg.nodes_size() > 0) {
                     found_items = true;
 
@@ -859,6 +877,12 @@ bool OsmPbfReader::parse(std::istream &input) {
                     Error::warn("      contains no items");
                 }
             }
+
+#ifdef CPUTIMER
+            int64_t cpuTime;
+            primitiveGroupTimer.elapsed(&cpuTime);
+            accumulatedPrimitiveGroupTime += cpuTime;
+#endif // CPUTIMER
         }
 
         else {
@@ -870,6 +894,10 @@ bool OsmPbfReader::parse(std::istream &input) {
     /// Line break after series of dots
     if (isatty(1))
         std::cout << std::endl;
+
+#ifdef CPUTIMER
+    Error::debug("Time to process primitive groups: cpu= %.3fms", accumulatedPrimitiveGroupTime / 1000.0);
+#endif // CPUTIMER
 
     Timer joinTimer;
     int64_t wallTime, cpuTime;
