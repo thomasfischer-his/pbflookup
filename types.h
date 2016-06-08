@@ -43,6 +43,10 @@ struct OSMElement {
     operator std::string() const;
 
     bool isValid() const;
+
+    friend bool operator==(const OSMElement &a, const OSMElement &b);
 };
+
+bool operator==(const OSMElement &a, const OSMElement &b);
 
 #endif // TYPES_H

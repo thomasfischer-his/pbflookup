@@ -68,3 +68,9 @@ OSMElement::operator std::string() const {
 bool OSMElement::isValid() const {
     return id < UINT64_MAX && type != UnknownElementType;
 }
+
+/// Comparison operator, necessary e.g. for a std::find on a std::vector of OSMElement
+bool operator==(const OSMElement &a, const OSMElement &b) {
+    /// Do not compare for realworld_type, as it is not decisive and based on a heuristic only
+    return a.id == b.id && a.type == b.type;
+}
