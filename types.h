@@ -27,7 +27,7 @@ struct OSMElement {
     RealWorldType realworld_type;
 
     OSMElement()
-        : id(UINT64_MAX), type(UnknownElementType), realworld_type(UnknownRealWorldType)
+        : id(0), type(UnknownElementType), realworld_type(UnknownRealWorldType)
     {
         /// nothing -> invalid
     }

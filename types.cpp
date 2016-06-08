@@ -66,7 +66,7 @@ OSMElement::operator std::string() const {
 }
 
 bool OSMElement::isValid() const {
-    return id < UINT64_MAX && type != UnknownElementType;
+    return id > 0 && id < UINT64_MAX && type != UnknownElementType;
 }
 
 /// Comparison operator, necessary e.g. for a std::find on a std::vector of OSMElement
