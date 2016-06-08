@@ -568,7 +568,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
 #ifdef CPUTIMER
     timer.elapsed(&cputime, &walltime);
     sortingTime = cputime;
-    Error::info("evaluateAdministrativeRegions:  retrievalTime= %.3lf  insideTestTime= %.3lf  sortingTime= %.3lf", retrievalTime / 1000.0, insideTestTime / 1000.0, sortingTime / 1000.0);
+    Error::debug("evaluateAdministrativeRegions:  retrievalTime= %.3lf  insideTestTime= %.3lf  sortingTime= %.3lf", retrievalTime / 1000.0, insideTestTime / 1000.0, sortingTime / 1000.0);
 #endif //CPUTIMER
 
     return result;

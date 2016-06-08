@@ -108,9 +108,9 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     }
 
     const std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
-    Error::debug("Identified roads: %d", identifiedRoads.size());
+    Error::info("Identified roads: %d", identifiedRoads.size());
     const std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
-    Error::debug("Identified road matches: %d", roadMatches.size());
+    Error::info("Identified road matches: %d", roadMatches.size());
 
     for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
         const int distance = roadMatch.distance;
@@ -143,10 +143,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
-    Error::debug("Identified administrative regions: %d", adminReg.size());
+    Error::info("Identified administrative regions: %d", adminReg.size());
     if (!adminReg.empty()) {
         const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor->evaluateAdministrativeRegions(adminReg, word_combinations);
-        Error::debug("Identified administrative region matches: %d", adminReg.size());
+        Error::info("Identified administrative region matches: %d", adminReg.size());
         for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
             Coord c;
             if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
@@ -181,7 +181,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     std::vector<struct OSMElement> places = sweden->identifyPlaces(word_combinations);
-    Error::debug("Identified places: %d", places.size());
+    Error::info("Identified places: %d", places.size());
     if (!places.empty()) {
         const OSMElement::RealWorldType firstRwt = places.front().realworld_type;
         for (auto it = ++places.cbegin(); it != places.cend();) {
@@ -191,7 +191,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
                 ++it;
         }
         const std::vector<struct TokenProcessor::NearPlaceMatch> nearPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, places);
-        Error::debug("Identified near places matches: %d", nearPlacesMatches.size());
+        Error::info("Identified near places matches: %d", nearPlacesMatches.size());
         for (const struct TokenProcessor::NearPlaceMatch &nearPlacesMatch : nearPlacesMatches) {
             Coord c;
             if (getCenterOfOSMElement(nearPlacesMatch.local, c)) {
@@ -219,7 +219,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
-    Error::debug("Identified unique matches: %d", uniqueMatches.size());
+    Error::info("Identified unique matches: %d", uniqueMatches.size());
     for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
         Coord c;
         if (getCenterOfOSMElement(uniqueMatch.element, c)) {
@@ -280,6 +280,8 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
                 Result r(c, quality * .5, std::string("Large place: ") + bestPlace.name() + " (" + bestPlace.operator std::string() + ")");
                 r.elements.push_back(bestPlace);
                 results.push_back(r);
+                if (verbosity > VerbositySilent)
+                    Error::debug("Best place is %s (%s)", bestPlace.name().c_str(), bestPlace.operator std::string().c_str());
             }
         }
 #ifdef CPUTIMER
@@ -339,6 +341,9 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #else // CPUTIMER
     Error::debug("%d results", results.size());
 #endif // CPUTIMER
+
+    if (verbosity > VerbositySilent)
+        Error::info("=== Done generating results ===");
 
     return results;
 }
