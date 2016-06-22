@@ -40,29 +40,29 @@ std::string OSMElement::name() const {
 }
 
 OSMElement::operator std::string() const {
-    std::string typeString("UNSET-TYPE");
+    std::string typeString("UNSET-TYPE ");
     switch (type) {
     case UnknownElementType: typeString = "Unknown "; break;
     case Node: typeString = "Node "; break;
     case Way: typeString = "Way "; break;
     case Relation: typeString = "Relation "; break;
     }
-    std::string realWorldTypeString(" UNSET-RWT");
+    std::string realWorldTypeString("UNSET-RWT");
     switch (realworld_type) {
-    case PlaceLargeArea: realWorldTypeString = " PlaceLargeArea"; break;
-    case PlaceLarge: realWorldTypeString = " PlaceLarge"; break;
-    case PlaceMedium: realWorldTypeString = " PlaceMedium"; break;
-    case PlaceSmall: realWorldTypeString = " PlaceSmall"; break;
-    case RoadMajor: realWorldTypeString = " RoadMajor"; break;
-    case RoadMedium: realWorldTypeString = " RoadMedium"; break;
-    case RoadMinor: realWorldTypeString = " RoadMinor"; break;
-    case Building: realWorldTypeString = " Building"; break;
-    case Island: realWorldTypeString = " Island"; break;
-    case Water: realWorldTypeString = " Water"; break;
-    case UnknownRealWorldType: realWorldTypeString = " Unknown-Type"; break;
+    case PlaceLargeArea: realWorldTypeString = "PlaceLargeArea"; break;
+    case PlaceLarge: realWorldTypeString = "PlaceLarge"; break;
+    case PlaceMedium: realWorldTypeString = "PlaceMedium"; break;
+    case PlaceSmall: realWorldTypeString = "PlaceSmall"; break;
+    case RoadMajor: realWorldTypeString = "RoadMajor"; break;
+    case RoadMedium: realWorldTypeString = "RoadMedium"; break;
+    case RoadMinor: realWorldTypeString = "RoadMinor"; break;
+    case Building: realWorldTypeString = "Building"; break;
+    case Island: realWorldTypeString = "Island"; break;
+    case Water: realWorldTypeString = "Water"; break;
+    case UnknownRealWorldType: realWorldTypeString = "Unknown-Type"; break;
     }
 
-    return typeString + std::to_string(id) + "of type" + realWorldTypeString;
+    return typeString + std::to_string(id) + " of type " + realWorldTypeString;
 }
 
 bool OSMElement::isValid() const {

@@ -17,6 +17,7 @@
 #include "testset.h"
 
 #include <algorithm>
+#include <random>
 #ifdef LATEX_OUTPUT
 #include <fstream>
 #endif // LATEX_OUTPUT
@@ -34,6 +35,11 @@ void Testset::run() {
     std::ofstream texTable("/tmp/testsets.tex");
     texTable << "\\begin{description}" << std::endl;
 #endif // LATEX_OUTPUT
+
+    Error::info("Randomizing order of testsets");
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(testsets.begin(), testsets.end(), g);
 
     ResultGenerator resultGenerator;
     for (const auto &testset : testsets) {
