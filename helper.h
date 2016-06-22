@@ -32,3 +32,5 @@ std::vector<std::string> &split(const std::string &s, char delim, std::vector<st
 std::string teXify(const std::string &input);
 std::string rewrite_TeX_spaces(const std::string &input);
 #endif // LATEX_OUTPUT
+
+bool inSortedArray(const uint64_t *array, const size_t array_size, const uint64_t needle);

@@ -625,3 +625,21 @@ std::string rewrite_TeX_spaces(const std::string &input) {
     return output;
 }
 #endif // LATEX_OUTPUT
+
+bool inSortedArray(const uint64_t *array, const size_t array_size, const uint64_t needle) {
+    if (needle >= array[0] && needle <= array[array_size - 1]) {
+        size_t min = 0, max = array_size - 1;
+        while (min < max) {
+            const size_t pivot_idx = (max - min) / 2 + min;
+            if (array[pivot_idx] == needle) return true;
+            else if (array[pivot_idx] < needle)
+                min = pivot_idx + 1;
+            else /// array[pivot_idx] > needle
+                max = pivot_idx - 1;
+        }
+        /// Now: min == max
+        if (array[min] == needle) return true;
+    }
+
+    return false;
+}
