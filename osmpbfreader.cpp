@@ -756,9 +756,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                         ++queueWaySimplificationSize;
                         if (queueWaySimplificationSize > max_queue_size) max_queue_size = queueWaySimplificationSize;
                         if (queueWaySimplificationSize > queueWaySimplification_recommendedSize - 64) {
-                            std::cout << "#" << std::flush;
+                            std::cout << "#" << queueWaySimplificationSize << std::flush;
                             /// Give consumer thread time to catch up
                             boost::this_thread::sleep(boost::posix_time::milliseconds(500));
+                            std::cout << " " << queueWaySimplificationSize << std::flush;
                         }
 
                         if (way_size > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
