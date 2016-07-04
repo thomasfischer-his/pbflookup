@@ -775,6 +775,15 @@ bool OsmPbfReader::parse(std::istream &input) {
                     const int maxrelations = pg.relations_size();
                     for (int i = 0; i < maxrelations; ++i) {
                         const uint64_t relId = pg.relations(i).id();
+
+                        /// Some relations should be ignored, e.g. for roads outside of Sweden
+                        /// which just happend to be included in the map data
+                        /// To sort:  echo '3, 1, 2' | sed -e 's/ //g' | tr ',' '\n' | sort -u -n | tr '\n' ',' | sed -e 's/,/, /g'
+                        static const uint64_t blacklistedRelIds[] = {2545969, 3189514, 5518156, 5756777, 5794315, 5794316, 0};
+                        /// To count: echo '3, 1, 2' | sed -e 's/ //g' | tr ',' '\n' | wc -l
+                        static const size_t blacklistedRelIds_count = 6;
+                        if (inSortedArray(blacklistedRelIds, blacklistedRelIds_count, relId)) continue;
+
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
                         /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
                         std::map<std::string, std::string> name_set;
