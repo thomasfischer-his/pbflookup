@@ -600,7 +600,7 @@ std::string teXify(const std::string &input) {
     std::string output = input;
     std::string::size_type p = 0;
     while ((p = output.find("&", p)) != std::string::npos) {
-        output.replace(p, 2, "\\&");
+        output.replace(p, 1, "\\&");
         p += 2;
     }
     return output;
