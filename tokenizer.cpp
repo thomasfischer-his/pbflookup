@@ -101,10 +101,15 @@ public:
                     /// Trying to determine indefinite form, then adding it to word list
                     // FIXME are there better rules to determine the indefinite form of a definitive noun?
 
-                    /// Just remove the final 'n' or 't', for example for
-                    /// 'travbanan' -> 'travbana'
-                    std::string indefinite_form = word.substr(0, len - 1);
-                    it = ++words.insert(it, "_" + indefinite_form);
+                    /// Forbid removing e.g. single 't' from 'året', would result in 'åre'
+                    static const std::set<std::string> words_with_double_letter_endings = {"året"};
+
+                    if (words_with_double_letter_endings.find(word) == std::set<std::string>::cend()) {
+                        /// Just remove the final 'n' or 't', for example for
+                        /// 'travbanan' -> 'travbana'
+                        std::string indefinite_form = word.substr(0, len - 1);
+                        it = ++words.insert(it, "_" + indefinite_form);
+                    }
                     /// Remove the vocal as well, for example for
                     /// 'biblioteket' -> 'bibliotek'
                     indefinite_form = word.substr(0, len - 2);
