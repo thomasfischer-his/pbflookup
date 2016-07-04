@@ -233,7 +233,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #ifdef CPUTIMER
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
-        Error::info("Spent CPU time to identify nearby places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+        Error::info("Spent CPU time to identify unique places: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
 #endif // CPUTIMER
 
