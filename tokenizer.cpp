@@ -104,15 +104,15 @@ public:
                     /// Forbid removing e.g. single 't' from 'året', would result in 'åre'
                     static const std::set<std::string> words_with_double_letter_endings = {"året"};
 
-                    if (words_with_double_letter_endings.find(word) == std::set<std::string>::cend()) {
+                    if (words_with_double_letter_endings.find(word) == words_with_double_letter_endings.cend()) {
                         /// Just remove the final 'n' or 't', for example for
                         /// 'travbanan' -> 'travbana'
-                        std::string indefinite_form = word.substr(0, len - 1);
+                        const std::string indefinite_form = word.substr(0, len - 1);
                         it = ++words.insert(it, "_" + indefinite_form);
                     }
                     /// Remove the vocal as well, for example for
                     /// 'biblioteket' -> 'bibliotek'
-                    indefinite_form = word.substr(0, len - 2);
+                    const std::string indefinite_form = word.substr(0, len - 2);
                     it = ++words.insert(it, "_" + indefinite_form);
                 } else if (word[len - 1] == 's') {
                     /// This word could be a genetive (Karlsborgs -> Karlsborg)
