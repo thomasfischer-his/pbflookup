@@ -31,11 +31,6 @@
 #include "helper.h"
 
 void Testset::run() {
-#ifdef LATEX_OUTPUT
-    std::ofstream texTable("/tmp/testsets.tex");
-    texTable << "\\begin{description}" << std::endl;
-#endif // LATEX_OUTPUT
-
     Error::info("Randomizing order of testsets");
     std::random_device rd;
     std::mt19937 g(rd());
@@ -96,16 +91,38 @@ void Testset::run() {
         }
 
         Error::info("======================================================");
-#ifdef LATEX_OUTPUT
-        texTable << "\\item[\\begingroup\\selectlanguage{swedish}" << testset.name << "\\endgroup] at " << testset.coord.front().latitude() << "~N, " << testset.coord.front().longitude() << "~E";
-        if (testset.coord.size() > 1) texTable << " \\begingroup\\relsize{-1}(first of " << testset.coord.size() << " coordinates)\\endgroup";
-        texTable << std::endl << "consists of \\textbf{" << resultGeneratorStatistics.word_count << "}~words which gave \\textbf{" << resultGeneratorStatistics.word_combinations_count << "}~word combinations.";
-        if (testset.text.length() < 8192)
-            texTable << std::endl << "\\par\\begingroup\\slshape\\selectlanguage{swedish}\\relsize{-1}" << rewrite_TeX_spaces(teXify(testset.text)) << "\\par\\endgroup";
-        texTable << std::endl;
-#endif // LATEX_OUTPUT
     }
+
 #ifdef LATEX_OUTPUT
-    texTable << "\\end{description}" << std::endl;
+    /// Sort testsets by their names
+    std::sort(testsets.begin(), testsets.end(), [](struct testset & a, struct testset & b) {
+        return a.name < b.name;
+    });
+
+    std::ofstream texTable("/tmp/testsets.tex");
+    texTable << "\\begin{description}" << std::endl;
+    for (const auto &testset : testsets) {
+        texTable << "\\item[\\begingroup\\selectlanguage{swedish}" << testset.name << "\\endgroup] at " << testset.coord.front().latitude() << "~N, " << testset.coord.front().longitude() << "~E%";
+        if (testset.coord.size() > 1) texTable << " \\begingroup\\relsize{-1}(first of " << testset.coord.size() << " coordinates)\\endgroup";
+        texTable << std::endl << "\\par\\begingroup\\relsize{-1}\\begingroup\\slshape\\selectlanguage{swedish}%" << std::endl;
+        if (testset.text.length() < 2048)
+            texTable << rewrite_TeX_spaces(teXify(testset.text)) << "\\endgroup";
+        else {
+            std::istringstream iss(testset.text);
+            const std::vector<std::string> words{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+            size_t len = 0;
+            std::string text;
+            for (const std::string &w : words) {
+                if (len > 0) text.append(" ");
+                len += w.length();
+                text.append(w);
+                if (len > 2048 - 64) break;
+            }
+            texTable << rewrite_TeX_spaces(teXify(text));
+            texTable << "\\endgroup\\ \\hspace{1em plus 1em minus 0.9em}(remaining text omitted)";
+        }
+        texTable << "\\par\\endgroup" << std::endl;
+    }
 #endif // LATEX_OUTPUT
+    texTable << "\\end{description}" << std::endl;
 }
