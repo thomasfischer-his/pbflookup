@@ -624,7 +624,10 @@ public:
 HTTPServer::HTTPServer()
     : d(new Private(this))
 {
-    // TODO
+    /// Sort testsets by their names
+    std::sort(testsets.begin(), testsets.end(), [](struct testset & a, struct testset & b) {
+        return a.name < b.name;
+    });
 }
 
 HTTPServer::~HTTPServer() {
