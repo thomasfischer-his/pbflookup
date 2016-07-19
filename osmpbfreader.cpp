@@ -518,7 +518,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
                         node2Coord->insert(id, Coord::fromLonLat(lon, lat));
 
-                        bool node_is_county = false, node_is_municipality = false;
+                        bool node_is_county = false, node_is_municipality = false, node_is_traffic_sign = false;
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
                             const char *ckey = primblock.stringtable().s(pg.nodes(j).keys(k)).c_str();
                             if (strcmp("name", ckey) == 0) {
@@ -543,6 +543,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     /// representing an area
                                     // realworld_type = OSMElement::PlaceLargeArea;
                                     node_is_municipality = true;
+                                } else if (strcmp("traffic_sign", cvalue) == 0) {
+                                    /// Traffic signs may simply point to a location, but not be *at* this location.
+                                    /// Thus, their names (if set) may be misleading and so they should be ignored.
+                                    node_is_traffic_sign = true;
                                 }
 
                                 if (strcmp("city", cvalue) == 0 || strcmp("municipality", cvalue) == 0)
@@ -570,7 +574,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                             Error::info("Municipality '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), id);
                         else if (node_is_county)
                             Error::info("County '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), id);
-                        else if (!name_set.empty() /** implicitly: not node_is_municipality and not node_is_county */)
+                        else if (node_is_traffic_sign)
+                            Error::info("Node %llu with name '%s' is a traffic sign, not recoding node's name", id, name_set["name"].c_str());
+                        else if (!name_set.empty() /** implicitly: not node_is_municipality and not node_is_county and not node_is_traffic_sign */)
                             insertNames(id, OSMElement::Node, realworld_type, name_set);
                     }
                 }
@@ -594,7 +600,7 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                         bool isKey = true;
                         int key = 0, value = 0;
-                        bool node_is_county = false, node_is_municipality = false;
+                        bool node_is_county = false, node_is_municipality = false, node_is_traffic_sign = false;
                         while (last_keyvals_pos < pg.dense().keys_vals_size()) {
                             const int key_val = pg.dense().keys_vals(last_keyvals_pos);
                             ++last_keyvals_pos;
@@ -629,6 +635,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                                         /// representing an area
                                         // realworld_type = OSMElement::PlaceLargeArea;
                                         node_is_municipality = true;
+                                    } else if (strcmp("traffic_sign", cvalue) == 0) {
+                                        /// Traffic signs may simply point to a location, but not be *at* this location.
+                                        /// Thus, their names (if set) may be misleading and so they should be ignored.
+                                        node_is_traffic_sign = true;
                                     }
 
                                     if (strcmp("city", cvalue) == 0 || strcmp("municipality", cvalue) == 0)
@@ -657,7 +667,9 @@ bool OsmPbfReader::parse(std::istream &input) {
                             Error::info("Municipality '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), last_id);
                         else if (node_is_county)
                             Error::info("County '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), last_id);
-                        else if (!name_set.empty())
+                        else if (node_is_traffic_sign)
+                            Error::info("Node %llu with name '%s' is a traffic sign, not recoding node's name", last_id, name_set["name"].c_str());
+                        else if (!name_set.empty() /** implicitly: not node_is_municipality and not node_is_county and not node_is_traffic_sign */)
                             insertNames(last_id, OSMElement::Node, realworld_type, name_set);
                     }
                 }
