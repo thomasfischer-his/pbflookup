@@ -257,6 +257,9 @@ std::vector<struct TokenProcessor::LocalPlaceMatch> TokenProcessor::evaluateNear
 
         /// Retrieve all OSM elements matching a given word combination
         std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        static const size_t long_list_warning_threshold = 1000;
+        if (element_list.size() > long_list_warning_threshold)
+            Error::debug("Search for word combination '%s' returned %d results, requiring %d distance computations", combined_cstr, element_list.size(), element_list.size()*places.size());
         for (const OSMElement &element : element_list) {
             if (std::find(places.cbegin(), places.cend(), element) != places.cend())
                 continue; ///< skip elements that are contained in 'places' vector
