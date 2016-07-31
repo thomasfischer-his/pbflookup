@@ -109,7 +109,7 @@ void Testset::run() {
             texTable << rewrite_TeX_spaces(teXify(testset.text)) << "\\endgroup";
         else {
             std::istringstream iss(testset.text);
-            const std::vector<std::string> words{std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
+            const std::vector<std::string> words {std::istream_iterator<std::string>{iss}, std::istream_iterator<std::string>{}};
             size_t len = 0;
             std::string text;
             for (const std::string &w : words) {

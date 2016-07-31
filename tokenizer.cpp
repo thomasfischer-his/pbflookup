@@ -102,7 +102,7 @@ public:
                     // FIXME are there better rules to determine the indefinite form of a definitive noun?
 
                     /// Forbid removing e.g. single 't' from 'året', would result in 'åre'
-                    static const std::set<std::string> words_with_double_letter_endings = {"året"};
+                    static const std::set<std::string> words_with_double_letter_endings = {"\xc3\xa5ret", "\xc3\xa5ren"};
 
                     if (words_with_double_letter_endings.find(word) == words_with_double_letter_endings.cend()) {
                         /// Just remove the final 'n' or 't', for example for
