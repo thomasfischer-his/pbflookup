@@ -251,7 +251,7 @@ bool init_configuration(const char *configfilename) {
                                 throw libconfig::SettingTypeException(testsetSetting, "Latitude and/or longitude given in wrong format (need to be both scalar or both array)");
                             ts.text = testsetSetting.lookup("text").c_str();
                             /// "svgoutputfilename" is optional, so tolerate if it is not set
-                            if (configIfExistsLookup(config, "svgoutputfilename", ts.svgoutputfilename)) {
+                            if (configIfExistsLookup(testsetSetting, "svgoutputfilename", ts.svgoutputfilename)) {
                                 replacetildehome(ts.svgoutputfilename);
                                 replacevariablenames(ts.svgoutputfilename);
                                 makeabsolutepath(ts.svgoutputfilename);
