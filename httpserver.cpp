@@ -312,8 +312,10 @@ public:
         const std::string localfilename = http_public_files + filename;
         std::ifstream localfile(localfilename);
         if (localfile.good()) {
-            /// Important: file size is limited to maxBufferSize
             static char buffer[maxBufferSize];
+            localfile.seekg(0, std::ifstream::end);
+            const size_t filesize = localfile.tellg();
+            localfile.seekg(0, std::ifstream::beg);
             localfile.read(buffer, maxBufferSize - 2);
             const size_t data_count = localfile.gcount();
             buffer[data_count] = '\0';
@@ -341,9 +343,18 @@ public:
                 else
                     dprintf(fd, "Content-Type: application/octet-stream\r\n");
                 dprintf(fd, "Cache-Control: public\r\n");
-                dprintf(fd, "Content-Length: %ld\r\n", data_count);
+                dprintf(fd, "Content-Length: %ld\r\n", filesize);
                 dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n\r\n");
                 write(fd, buffer, data_count);
+                while (localfile.good()) {
+                    localfile.read(buffer, maxBufferSize - 2);
+                    const size_t data_count = localfile.gcount();
+                    buffer[data_count] = '\0';
+                    if (data_count > 0)
+                        write(fd, buffer, data_count);
+                    else
+                        break;
+                }
                 dprintf(fd, "\r\n");
             }
         } else {
