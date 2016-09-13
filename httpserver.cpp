@@ -382,7 +382,7 @@ public:
         if (!testsets.empty()) {
             html_stream << "<p>Either select a pre-configured text from this list of " << testsets.size() << " examples:" << std::endl << "<select onchange=\"testsetChanged(this)\" id=\"testsets\">" << std::endl;
             html_stream << "<option selected=\"selected\" disabled=\"disabled\" hidden=\"hidden\" value=\"\"></option>";
-            for (const struct testset &t : testsets)
+            for (const auto &t : testsets)
                 html_stream << "<option value=\"" << t.text << "\">" << t.name << "</option>";
             html_stream << "</select> or &hellip;</p>" << std::endl;
         }

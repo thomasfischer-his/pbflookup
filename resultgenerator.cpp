@@ -147,7 +147,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     if (!adminReg.empty()) {
         const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor->evaluateAdministrativeRegions(adminReg, word_combinations);
         Error::info("Identified administrative region matches: %d", adminReg.size());
-        for (const struct TokenProcessor::AdminRegionMatch &adminRegionMatch : adminRegionMatches) {
+        for (const auto &adminRegionMatch : adminRegionMatches) {
             Coord c;
             if (getCenterOfOSMElement(adminRegionMatch.match, c)) {
                 WriteableString matchName("UNSET");
@@ -192,7 +192,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         }
         const std::vector<struct TokenProcessor::LocalPlaceMatch> localPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, globalPlaces);
         Error::info("Identified local places matches: %d", localPlacesMatches.size());
-        for (const struct TokenProcessor::LocalPlaceMatch &localPlacesMatch : localPlacesMatches) {
+        for (const auto &localPlacesMatch : localPlacesMatches) {
             Coord c;
             if (getCenterOfOSMElement(localPlacesMatch.local, c)) {
                 Result r(c, localPlacesMatch.quality * .75, std::string("Local near global place: ") + localPlacesMatch.local.operator std::string() + " ('" + localPlacesMatch.local.name() + "') near " + localPlacesMatch.global.operator std::string() + " ('" + localPlacesMatch.global.name() + "')");
@@ -220,7 +220,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     }
     std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
     Error::info("Identified unique matches: %d", uniqueMatches.size());
-    for (const struct TokenProcessor::UniqueMatch &uniqueMatch : uniqueMatches) {
+    for (const auto &uniqueMatch : uniqueMatches) {
         Coord c;
         if (getCenterOfOSMElement(uniqueMatch.element, c)) {
             Result r(c, uniqueMatch.quality * .8, std::string("Unique name '") + uniqueMatch.element.name().c_str() + "' (" + uniqueMatch.element.operator std::string() + ") found via '" + uniqueMatch.combined + "'");
