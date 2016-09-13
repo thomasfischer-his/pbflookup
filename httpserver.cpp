@@ -21,6 +21,7 @@
 #include <sstream>
 #include <cstring>
 #include <cstdlib>
+#include <unistd.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -248,6 +249,18 @@ public:
         html_stream << "</p>" << std::endl;
     }
 
+    void writeLinkToReport(std::ostream &html_stream) const {
+        static const std::string filename = "osmgeoref-final.pdf";
+        static const std::string localfilename = http_public_files + "/" + filename;
+        static const int access_result = access(localfilename.c_str(), R_OK);
+        if (access_result == 0) {
+            html_stream << "<h2>Project Report</h2>" << std::endl;
+            html_stream << "<p>The project's report is available for download:<br/>" << std::endl;
+            html_stream << "<a style=\"padding-left:1.25em; background-image: url('application-pdf.png'); background-repeat: no-repeat; background-size: contain;\" href=\"" << filename << "\" target=\"_top\">" << filename << "</a> (3.2&thinsp;MB)" << std::endl;
+            html_stream << "</p>" << std::endl;
+        }
+    }
+
     void writeHTTPError(int fd, unsigned int error_code, const std::string &msg = std::string(), const std::string &filename = std::string()) {
         std::string error_code_message("Unknown Error");
         if (error_code == 100)
@@ -273,6 +286,7 @@ public:
             html_stream << "<pre>" << filename << "</pre>" << std::endl;
         html_stream << "<p>Server is running since: " << start_time << "</p>" << std::endl;
         writeFinancialSupportStatement(html_stream);
+        writeLinkToReport(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl;
 
         const auto html_code = html_stream.str();
@@ -406,6 +420,7 @@ public:
         html_stream << "</select></p></form>" << std::endl;
         printTimer(html_stream, &timerServer, nullptr);
         writeFinancialSupportStatement(html_stream);
+        writeLinkToReport(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
 
         const auto html_code = html_stream.str();
@@ -483,6 +498,7 @@ public:
         }
         printTimer(html_stream, &timerServer, &timerSearch);
         writeFinancialSupportStatement(html_stream);
+        writeLinkToReport(html_stream);
         html_stream << "</body>" << std::endl << "</html>";
 
         const auto html_code = html_stream.str();
