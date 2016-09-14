@@ -261,6 +261,18 @@ public:
         }
     }
 
+    void writeLinkToGithub(std::ostream &html_stream) const {
+        html_stream << "<h2>Source Code</h2>" << std::endl;
+        html_stream << "<p>The project's source code is available at GitHub:<br/>" << std::endl;
+        html_stream << "<a style=\"padding-left:1.5em; background-image: url('/git.png'); background-repeat: no-repeat; background-size: contain;\" href=\"https://github.com/thomasfischer-his/pbflookup\" target=\"_top\">https://github.com/thomasfischer-his/pbflookup</a>" << std::endl;
+        html_stream << "</p>" << std::endl;
+    }
+
+    void writeContactDetails(std::ostream &html_stream) const {
+        html_stream << "<hr/>" << std::endl << "<h2>Contact Details</h2>" << std::endl;
+        html_stream << "<p><a href=\"https://www.his.se/fish\" target=\"_top\">Thomas Fischer</a> (<a href=\"https://www.his.se/\" target=\"_top\">H&ouml;gskolan i Sk&ouml;vde</a>)</p>" << std::endl;
+    }
+
     void writeHTTPError(int fd, unsigned int error_code, const std::string &msg = std::string(), const std::string &filename = std::string()) {
         std::string error_code_message("Unknown Error");
         if (error_code == 100)
@@ -287,6 +299,8 @@ public:
         html_stream << "<p>Server is running since: " << start_time << "</p>" << std::endl;
         writeFinancialSupportStatement(html_stream);
         writeLinkToReport(html_stream);
+        writeLinkToGithub(html_stream);
+        writeContactDetails(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl;
 
         const auto html_code = html_stream.str();
@@ -421,6 +435,8 @@ public:
         printTimer(html_stream, &timerServer, nullptr);
         writeFinancialSupportStatement(html_stream);
         writeLinkToReport(html_stream);
+        writeLinkToGithub(html_stream);
+        writeContactDetails(html_stream);
         html_stream << "</body>" << std::endl << "</html>" << std::endl << std::endl;
 
         const auto html_code = html_stream.str();
@@ -499,6 +515,8 @@ public:
         printTimer(html_stream, &timerServer, &timerSearch);
         writeFinancialSupportStatement(html_stream);
         writeLinkToReport(html_stream);
+        writeLinkToGithub(html_stream);
+        writeContactDetails(html_stream);
         html_stream << "</body>" << std::endl << "</html>";
 
         const auto html_code = html_stream.str();
