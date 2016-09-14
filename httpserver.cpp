@@ -256,7 +256,7 @@ public:
         if (access_result == 0) {
             html_stream << "<h2>Project Report</h2>" << std::endl;
             html_stream << "<p>The project's report is available for download:<br/>" << std::endl;
-            html_stream << "<a style=\"padding-left:1.25em; background-image: url('application-pdf.png'); background-repeat: no-repeat; background-size: contain;\" href=\"" << filename << "\" target=\"_top\">" << filename << "</a> (3.2&thinsp;MB)" << std::endl;
+            html_stream << "<a style=\"padding-left:1.5em; background-image: url('/application-pdf.png'); background-repeat: no-repeat; background-size: contain;\" href=\"" << filename << "\" target=\"_top\">" << filename << "</a> (3.2&thinsp;MB)" << std::endl;
             html_stream << "</p>" << std::endl;
         }
     }
@@ -292,7 +292,10 @@ public:
         Error::debug("Sending HTTP status %d: %s", error_code, error_code_message.c_str());
 
         std::ostringstream html_stream;
-        html_stream << "<!DOCTYPE html>" << std::endl << "<html>" << std::endl << "<head>" << std::endl << "<meta charset=\"UTF-8\">\n<title>PBFLookup: " << error_code << " &ndash; " << error_code_message << "</title>\n<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />\n</head>\n<body><h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />";
+        html_stream << "<!DOCTYPE html>" << std::endl << "<html>" << std::endl << "<head>" << std::endl << "<link rel=\"stylesheet\" type=\"text/css\" href=\"/default.css\" />" << std::endl;
+        html_stream << "<meta charset=\"UTF-8\">" << std::endl << "<title>PBFLookup: Error " << error_code << " &ndash; " << error_code_message << "</title>" << std::endl;
+        html_stream << "<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
+        html_stream << "<h1 style=\"padding-left:1.5em; background-image: url('/favicon.ico'); background-repeat: no-repeat; background-size: contain;\">Error " << error_code << " &ndash; " << error_code_message << "</h1>" << std::endl;
         html_stream << "<p>" << internal_msg << "</p>" << std::endl;
         if (!filename.empty())
             html_stream << "<pre>" << filename << "</pre>" << std::endl;
@@ -416,7 +419,7 @@ public:
         html_stream << "function resultMimetypeChanged(combo) {" << std::endl << "  document.getElementById('queryForm').setAttribute(\"action\",\"/?accept=\"+combo.value);" << std::endl << "}" << std::endl << "</script>" << std::endl;
         html_stream << "<link rel=\"icon\" type=\"image/x-icon\" href=\"/favicon.ico\" />" << std::endl << "</head>" << std::endl;
         html_stream << "<body>" << std::endl;
-        html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Search for Locations described in Swedish Text</h1>" << std::endl;
+        html_stream << "<h1 style=\"padding-left:1.5em; background-image: url('/favicon.ico'); background-repeat: no-repeat; background-size: contain;\">Search for Locations described in Swedish Text</h1>" << std::endl;
         html_stream << "<form enctype=\"text/plain\" accept-charset=\"utf-8\" action=\".\" method=\"post\" id=\"queryForm\">" << std::endl;
         if (!testsets.empty()) {
             html_stream << "<p>Either select a pre-configured text from this list of " << testsets.size() << " examples:" << std::endl << "<select onchange=\"testsetChanged(this)\" id=\"testsets\">" << std::endl;
@@ -457,7 +460,7 @@ public:
 
         if (!results.empty()) {
             html_stream << "<title>PBFLookup: " << results.size() << " Results</title>" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
-            html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>For the following input of " << textToLocalize.length() << "&nbsp;Bytes, <strong>" << results.size() << " results</strong> were located:</p>" << std::endl;
+            html_stream << "<h1 style=\"padding-left:1.5em; background-image: url('/favicon.ico'); background-repeat: no-repeat; background-size: contain;\">Results</h1><p>For the following input of " << textToLocalize.length() << "&nbsp;Bytes, <strong>" << results.size() << " results</strong> were located:</p>" << std::endl;
             html_stream << "<p><tt>" << XMLize(textToLocalize) << "</tt></p>" << std::endl;
             html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
 
@@ -508,7 +511,7 @@ public:
             html_stream << "<p>Map data license: &copy; OpenStreetMap contributors, licensed under the <a href=\"http://opendatacommons.org/licenses/odbl/\" target=\"_top\">Open Data Commons Open Database License</a> (OBdL)<br/>Map tiles: OpenStreetMap, licensed under the <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\" target=\"_top\">Creative Commons Attribution-ShareAlike&nbsp;2.0 License</a> (CC BY-SA 2.0)<br/>See <a target=\"_top\" href=\"www.openstreetmap.org/copyright\">www.openstreetmap.org/copyright</a> and <a target=\"_top\" href=\"http://wiki.openstreetmap.org/wiki/Legal_FAQ\">http://wiki.openstreetmap.org/wiki/Legal_FAQ</a> for details.</p>" << std::endl;
         } else {
             html_stream << "<title>PBFLookup: No Results</title>" << std::endl << "</head>" << std::endl << "<body>" << std::endl;
-            html_stream << "<h1><img src=\"/favicon.ico\" style=\"width:0.8em;height:0.8em;margin-right:0.5em;\" />Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>" << std::endl;
+            html_stream << "<h1 style=\"padding-left:1.5em; background-image: url('/favicon.ico'); background-repeat: no-repeat; background-size: contain;\">Results</h1><p>Sorry, <strong>no results</strong> could be found for the following input:</p>" << std::endl;
             html_stream << "<p><tt>" << XMLize(textToLocalize) << "</tt></p>" << std::endl;
             html_stream << "<p><a href=\".\">New search</a></p>" << std::endl;
         }
