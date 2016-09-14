@@ -402,11 +402,11 @@ public:
                 html_stream << "<h3>Search</h3>" << std::endl;
                 timerSearch->elapsed(&cputime, &walltime);
                 html_stream << "<p>CPU Time: " << (cputime / 1000.0) << "&thinsp;ms<br/>";
-                html_stream << "Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>\n";
+                html_stream << "Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>" << std::endl;
             }
             html_stream << "<h3>HTTP Server</h3>" << std::endl;
             timerServer->elapsed(&cputime, &walltime);
-            html_stream << "<p>Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>" << std::endl;;
+            html_stream << "<p>Wall Time: " << (walltime / 1000.0) << "&thinsp;ms</p>" << std::endl;
         }
         html_stream << "<p>Server is running since: " << start_time << "</p>" << std::endl;
     }
@@ -445,7 +445,7 @@ public:
         const auto html_code = html_stream.str();
         const auto html_code_size = html_code.length();
 
-        dprintf(fd, "HTTP/1.1 200 OKv\n");
+        dprintf(fd, "HTTP/1.1 200 OK\n");
         dprintf(fd, "Content-Type: text/html; charset=utf-8\r\n");
         dprintf(fd, "Cache-Control: publicv\n");
         dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
@@ -525,7 +525,7 @@ public:
         const auto html_code = html_stream.str();
         const auto html_code_size = html_code.length();
 
-        dprintf(fd, "HTTP/1.1 200 OKv\n");
+        dprintf(fd, "HTTP/1.1 200 OK\n");
         dprintf(fd, "Content-Type: text/html; charset=utf-8\r\n");
         dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\r\n");
         dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
@@ -597,7 +597,7 @@ public:
         const auto html_code_size = html_code.length();
 
         dprintf(fd, "HTTP/1.1 200 OK\r\n");
-        dprintf(fd, "Content-Type: application/json; charset=utf-8v\n");
+        dprintf(fd, "Content-Type: application/json; charset=utf-8\n");
         dprintf(fd, "Cache-Control: private, max-age=0, no-cache, no-store\r\n");
         dprintf(fd, "Content-Transfer-Encoding: 8bit\r\n");
         dprintf(fd, "Content-Length: %ld\r\n", html_code_size);
