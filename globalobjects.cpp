@@ -230,10 +230,15 @@ GlobalObjectManager::GlobalObjectManager() {
     relationNames = nullptr;
     sweden = nullptr;
 
+    /// One example file to look for to learn if there are
+    /// temporary files left from previous program runs that
+    /// would allow startup much faster by skipping parsing
+    /// the .osm.pbf file
     const std::string filename = tempdir + "/" + mapname + ".texttree";
     if (testNonEmptyFile(filename)) {
         load();
     } else if (testNonEmptyFile(osmpbffilename)) {
+        /// Need to parse .osm.pbf data to get geodata into main memory
         std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
         if (fp) {
             Timer timer;
@@ -378,7 +383,7 @@ bool GlobalObjectManager::testNonEmptyFile(const std::string &filename, unsigned
         const std::istream::pos_type length = fileteststream.tellg();
         fileteststream.seekg(0, fileteststream.beg);
         fileteststream.close();
-        if (length >= minimumSize) return true; ///< file can be read and is at least 16 bytes large
+        if (length >= minimumSize) return true; ///< file can be read and is at least minimumSize bytes large
     }
 
     return false; ///< fail by default
@@ -398,6 +403,7 @@ PidFile::PidFile()
         Error::err("Cannot open/write to pidfile: %s", pidfilename.c_str());
     }
 
+    /// Get process id from system library or operating system
     const int pid = getpid();
     pidfile << pid << std::endl;
     if (!pidfile.good()) {
@@ -411,5 +417,6 @@ PidFile::PidFile()
 }
 
 PidFile::~PidFile() {
+    /// Remove PID file
     unlink(pidfilename.c_str());
 }

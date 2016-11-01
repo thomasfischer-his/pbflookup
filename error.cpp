@@ -43,14 +43,11 @@ const bool Error::useColor = isatty(1);
 
 /// Prints a formatted message to stdout, optionally color coded
 void Error::msg(MessageType messageType, const char *format, int color, va_list args) {
-    /// Skip messages where level is lower than minimum logging level
-
     static char message[maxStringLen];
     vsnprintf(message, maxStringLen - 1, format, args);
 
-
+    /// Skip messages where level is lower than minimum logging level
     if ((int)messageType >= (int)minimumLoggingLevel) {
-        ;
         if (useColor) {
             fprintf(stderr, "\x1b[0;%dm", color);
         }
@@ -62,6 +59,7 @@ void Error::msg(MessageType messageType, const char *format, int color, va_list 
         }
     }
 
+    /// Still log all messages to log file irrespective of logging level
     if (logfile.good()) {
         switch (messageType) {
         case MessageError: logfile << "ERR: "; break;
