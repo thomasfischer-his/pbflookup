@@ -23,8 +23,6 @@
 class Error
 {
 public:
-    static bool useColor;
-
     /// Prints a formatted message to stderr, color coded to red
     static void err(const char *format, ...);
     /// Prints a formatted message to stderr, color coded to yellow
@@ -35,6 +33,8 @@ public:
     static void debug(const char *format, ...);
 
 private:
+    static const bool useColor;
+
     enum MessageType {MessageDebug = 0, MessageInfo = 1, MessageWarn = 2, MessageError = 3};
 
     Error();

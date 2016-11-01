@@ -108,8 +108,6 @@ int main(int argc, char *argv[]) {
     /// Omit debug output if in server mode and not attached to terminal and not debugged,
     /// i.e. when started as a systemd service
     if (server_mode() && !isatty(1) && !debugged_with_gdb() && minimumLoggingLevel < LevelInfo) minimumLoggingLevel = LevelInfo;
-    /// Use colors only in terminal
-    Error::useColor = isatty(1);
 
     PidFile pidfile;
     GlobalObjectManager gom;

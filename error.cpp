@@ -20,6 +20,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include <unistd.h>
+
 #include <fstream>
 
 /// For std::exit
@@ -36,7 +38,8 @@ Error::Error()
     /// nothing
 }
 
-bool Error::useColor = true;
+/// Use colors only in terminal
+const bool Error::useColor = isatty(1);
 
 /// Prints a formatted message to stdout, optionally color coded
 void Error::msg(MessageType messageType, const char *format, int color, va_list args) {
