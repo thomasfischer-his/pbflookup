@@ -100,14 +100,10 @@ int main(int argc, char *argv[]) {
         strncat(configfile, "/sweden.config", maxStringLen - strlen(configfile) - 2);
 
     }
-    if (!file_exists_readable(configfile)) {
+    if (!file_exists_readable(configfile))
         Error::err("Provided configuration file '%s' does not exist or is not readable", configfile);
-        return 1;
-    }
-    if (!init_configuration(configfile)) {
+    if (!init_configuration(configfile))
         Error::err("Cannot continue without properly parsing configuration file '%s'", configfile);
-        return 1;
-    }
 
     /// Omit debug output if in server mode and not attached to terminal and not debugged,
     /// i.e. when started as a systemd service
