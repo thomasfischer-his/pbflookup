@@ -263,9 +263,9 @@ GlobalObjectManager::GlobalObjectManager() {
 
             save();
         } else
-            Error::err("Loading .osm.pbf file failed");
+            Error::err("Opening .osm.pbf file failed");
     } else
-        Error::err("Can neither load internal files from /tmp, nor .osm.pbf file");
+        Error::err("Can neither load internal files from %s, nor .osm.pbf file", tempdir.c_str());
 }
 
 GlobalObjectManager::~GlobalObjectManager() {
