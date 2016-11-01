@@ -27,8 +27,6 @@
 #include "httpserver.h"
 #include "testset.h"
 
-#define MAX_STR_LEN 1024
-
 inline bool ends_with(std::string const &value, std::string const &ending)
 {
     if (ending.size() > value.size()) return false;
@@ -87,19 +85,20 @@ int main(int argc, char *argv[]) {
 #endif // DEBUG
     init_rand();
 
-    char configfile[MAX_STR_LEN];
-    memset(configfile, 0, MAX_STR_LEN);
+    char configfile[maxStringLen];
+    memset(configfile, 0, maxStringLen);
     if (argc >= 2) {
         if (argv[argc - 1][0] != '/') {
-            getcwd(configfile, MAX_STR_LEN / 2 - 10);
+            getcwd(configfile, maxStringLen / 2 - 10);
             strncat(configfile, "/", 1);
         }
-        strncat(configfile, argv[argc - 1], MAX_STR_LEN / 2 - 10);
+        strncat(configfile, argv[argc - 1], maxStringLen / 2 - 10);
         if (strstr(argv[argc - 1], ".config") == NULL)
-            strncat(configfile, ".config", MAX_STR_LEN - strlen(configfile) - 2);
+            strncat(configfile, ".config", maxStringLen - strlen(configfile) - 2);
     } else {
-        getcwd(configfile, MAX_STR_LEN - 20);
-        strncat(configfile, "/sweden.config", MAX_STR_LEN - strlen(configfile) - 2);
+        getcwd(configfile, maxStringLen - 20);
+        strncat(configfile, "/sweden.config", maxStringLen - strlen(configfile) - 2);
+
     }
     if (!file_exists_readable(configfile)) {
         Error::err("Provided configuration file '%s' does not exist or is not readable", configfile);

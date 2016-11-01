@@ -41,7 +41,6 @@
 #include "helper.h"
 
 static const size_t maxBufferSize = 131072;
-static const size_t maxStringLen = 1024;
 
 int serverSocket;
 

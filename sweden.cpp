@@ -48,8 +48,6 @@ const double decimeterDegreeLatitude = 1114122.402; ///< declared in 'global.h'
 const size_t reasonableLargeSizeT = 0x3fffff;
 const uint16_t reasonableLargeUInt16 = 0x3fff;
 
-#define STRING_BUFFER_SIZE     1024
-
 bool startsWith(const std::string &haystack, const std::string &needle) {
     if (haystack.length() >= needle.length())
         return haystack.compare(0, needle.length(), needle) == 0;
@@ -583,8 +581,8 @@ public:
             buildPolygonForRelation(relId);
             const Region &region = relationId_to_polygons[relId];
 
-            char buffer[STRING_BUFFER_SIZE];
-            snprintf(buffer, STRING_BUFFER_SIZE, "area code: %i", code);
+            char buffer[maxStringLen];
+            snprintf(buffer, maxStringLen, "area code: %i", code);
             for (const std::deque<Coord> dequeCoord : region.polygons) {
                 std::vector<int> x, y;
                 for (auto itC = dequeCoord.cbegin(); itC != dequeCoord.cend(); ++itC) {
@@ -1339,7 +1337,7 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
     WayNodes wn;
     Coord c;
     std::vector<int> x, y;
-    char buffer[STRING_BUFFER_SIZE];
+    char buffer[maxStringLen];
 
     /// European roads
     for (size_t i = 0; i < Private::EuropeanRoadNumbers.size(); ++i) {
@@ -1354,7 +1352,7 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
                         x.push_back(c.x);
                         y.push_back(c.y);
                     }
-                snprintf(buffer, STRING_BUFFER_SIZE, "E%d  segm %lu of %lu with %d nodes, way id %lu", d->EuropeanRoadNumbers[i], r, count, wn.num_nodes, wayid);
+                snprintf(buffer, maxStringLen, "E%d  segm %lu of %lu with %d nodes, way id %lu", d->EuropeanRoadNumbers[i], r, count, wn.num_nodes, wayid);
                 svgWriter.drawRoad(x, y, SvgWriter::RoadMajorImportance, std::string(buffer));
             }
         }
@@ -1373,7 +1371,7 @@ void Sweden::drawRoads(SvgWriter &svgWriter) {
                             x.push_back(c.x);
                             y.push_back(c.y);
                         }
-                    snprintf(buffer, STRING_BUFFER_SIZE, "R%lu  segm %d of %lu with %d nodes, way id %lu", i, j, d->roads.national[i].size(), wn.num_nodes, wayid);
+                    snprintf(buffer, maxStringLen, "R%lu  segm %d of %lu with %d nodes, way id %lu", i, j, d->roads.national[i].size(), wn.num_nodes, wayid);
                     svgWriter.drawRoad(x, y, SvgWriter::RoadAvgImportance, std::string(buffer));
                 }
             }

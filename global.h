@@ -17,6 +17,8 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
+static const size_t maxStringLen = 1024;
+
 /// Minimum latitude and longitude for Sweden
 extern const double minlon, minlat; ///< defined in 'sweden.cpp'
 extern const double maxlon, maxlat; ///< defined in 'sweden.cpp'

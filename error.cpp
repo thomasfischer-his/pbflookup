@@ -26,8 +26,7 @@
 #include <cstdlib>
 
 #include "config.h"
-
-#define MAX_STRING_LEN 1024
+#include "global.h"
 
 std::ofstream logfile; ///< declared in 'config.h'
 LoggingLevel minimumLoggingLevel = LevelDebug;
@@ -43,8 +42,9 @@ bool Error::useColor = true;
 void Error::msg(MessageType messageType, const char *format, int color, va_list args) {
     /// Skip messages where level is lower than minimum logging level
 
-    static char message[MAX_STRING_LEN];
-    vsnprintf(message, MAX_STRING_LEN - 1, format, args);
+    static char message[maxStringLen];
+    vsnprintf(message, maxStringLen - 1, format, args);
+
 
     if ((int)messageType >= (int)minimumLoggingLevel) {
         ;

@@ -27,8 +27,7 @@
 #include "error.h"
 #include "idtree.h"
 #include "helper.h"
-
-#define MAX_STRING_LEN 1024
+#include "global.h"
 
 std::string tempdir;
 std::string mapname;
@@ -87,8 +86,8 @@ void makeabsolutepath(std::string &text, const std::string &relative_to_file = s
     if (!text.empty() && text[0] != '/') {
         if (relative_to_file.empty()) {
             /// no relative-to specified, use current working directory
-            char cwd[MAX_STRING_LEN];
-            if (getcwd(cwd, MAX_STRING_LEN - 1) != NULL) {
+            char cwd[maxStringLen];
+            if (getcwd(cwd, maxStringLen - 1) != NULL) {
                 /// Insert current working directory in front of relative path
                 /// Requires some copying of strings ...
                 text.insert(0, "/").insert(0, cwd);
