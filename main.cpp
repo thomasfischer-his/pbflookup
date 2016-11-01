@@ -125,6 +125,8 @@ int main(int argc, char *argv[]) {
     if (relMembers != nullptr && wayNodes != nullptr && node2Coord != nullptr && nodeNames != nullptr && wayNames != nullptr && relationNames != nullptr && swedishTextTree != nullptr && sweden != nullptr) {
         /// If software started in 'server mode', create a TCP server socket
         serverSocket = server_mode() ? socket(PF_INET, SOCK_STREAM, IPPROTO_TCP) : -1;
+        if (serverSocket < 0 && server_mode())
+            Error::err("Despite server mode configuration, creating a TCP socket failed");
         if (serverSocket >= 0) {
             /// If a server socket was successfully created,
             /// start HTTP server to listen on this socket
