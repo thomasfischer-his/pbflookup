@@ -21,6 +21,7 @@
 
 class Tokenizer;
 class TokenProcessor;
+class MapAnalysis;
 
 struct Result {
     Result(const Coord &_coord, double _quality, const std::string &_origin)
@@ -58,6 +59,7 @@ public:
 private:
     Tokenizer *tokenizer;
     TokenProcessor *tokenProcessor;
+    MapAnalysis *mapAnalysis;
 };
 
 #endif // RESULTGENERATOR_H

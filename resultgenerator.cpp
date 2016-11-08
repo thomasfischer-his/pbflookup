@@ -21,6 +21,7 @@
 
 #include "tokenizer.h"
 #include "tokenprocessor.h"
+#include "mapanalysis.h"
 #include "globalobjects.h"
 #include "helper.h"
 #include "timer.h"
@@ -62,11 +63,13 @@ public:
 ResultGenerator::ResultGenerator() {
     tokenizer = new Tokenizer();
     tokenProcessor = new TokenProcessor();
+    mapAnalysis = new MapAnalysis(tokenizer);
 }
 
 ResultGenerator::~ResultGenerator() {
-    delete tokenizer;
     delete tokenProcessor;
+    delete mapAnalysis;
+    delete tokenizer; ///< mapAnalysis makes use of tokenizer, so destroy only after mapAnalysis
 }
 
 std::vector<Result> ResultGenerator::findResults(const std::string &text, int duplicateProximity, ResultGenerator::Verbosity verbosity, ResultGenerator::Statistics *statistics) {
@@ -132,6 +135,39 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     if (verbosity > VerbositySilent) {
         timer.elapsed(&cputime, &walltime);
         Error::info("Spent CPU time to identify roads close to cities/towns: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+    }
+#endif // CPUTIMER
+
+
+    if (verbosity > VerbositySilent) {
+        Error::info("=== Testing for crossing roads ===");
+#ifdef CPUTIMER
+        timer.start();
+#endif // CPUTIMER
+    }
+    static const size_t max_words_per_combination = 3;
+    const std::vector<struct MapAnalysis::RoadCrossing> crossingRoads = mapAnalysis->identifyCrossingRoads(words, max_words_per_combination);
+    size_t max_word_fragment_size_squared = 0;
+    for (const MapAnalysis::RoadCrossing &roadCrossing : crossingRoads)
+        if (roadCrossing.word_fragment_size_squared > max_word_fragment_size_squared)
+            max_word_fragment_size_squared = roadCrossing.word_fragment_size_squared;
+    Error::info("Identified road crossings: %d", crossingRoads.size());
+    for (const MapAnalysis::RoadCrossing &roadCrossing : crossingRoads) {
+        const double quality = 0.8 * roadCrossing.word_fragment_size_squared / max_word_fragment_size_squared;
+        Coord c;
+        if (node2Coord->retrieve(roadCrossing.overlapNodeId, c)) {
+            Result r(c, quality, std::string("Crossing road '") + roadCrossing.word_match_A + "' and '" + roadCrossing.word_match_B + "' at node id " + std::to_string(roadCrossing.overlapNodeId));
+            const OSMElement crossingRoadElement(roadCrossing.overlapNodeId, OSMElement::Node, OSMElement::RoadMedium);
+            r.elements.push_back(crossingRoadElement);
+            results.push_back(r);
+            if (verbosity > VerbositySilent)
+                Error::debug("Got a result of quality %.4lf for road crossing between '%s' and '%s' at %s", quality, roadCrossing.word_match_A.c_str(), roadCrossing.word_match_B.c_str(), crossingRoadElement.operator std::string().c_str());
+        }
+    }
+#ifdef CPUTIMER
+    if (verbosity > VerbositySilent) {
+        timer.elapsed(&cputime, &walltime);
+        Error::info("Spent CPU time to testing for crossing roads: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
     }
 #endif // CPUTIMER
 
