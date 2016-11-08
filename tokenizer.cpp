@@ -29,6 +29,7 @@
 #include "helper.h"
 
 #define min(a,b) ((b)>(a)?(a):(b))
+#define max(a,b) ((b)<(a)?(a):(b))
 
 class Tokenizer::Private
 {
@@ -89,13 +90,25 @@ public:
      * Check the list of words for nouns in definitive form.
      * For each word in definitive form, use a heuristic to determine
      * its indefinitive form and this form to the list of words as well.
-     * @param words List of words where indefinitive forms have to be added for definitive form words
+     *
+     * This functions takes a vector of vectors of strings as input.
+     * A typical use case is that a Swedish sentence is broken into single words.
+     * Each word (as std::string) is put as the single element into a vector, and this
+     * vector is appended to an 'outer' vector that forms the parameter 'words'.
+     * Therefore, vector 'words' has as many elements as the broken-down sentence
+     * had words.
+     *
+     * As output, the vector of vectors of strings is manipulated: where
+     * initially only a single string was in each inner vector, now the generated
+     * grammatical alternatives have been added to the same inner vector.
      */
-    void add_grammar_cases(std::vector<std::string> &words) const {
-        for (auto it = words.cbegin(); it != words.cend(); ++it) {
-            const std::string word = *it;
+    void add_grammar_cases(std::vector<std::vector<std::string> > &word_alternatives_list) const {
+        for (std::vector<std::string> &world_alternatives : word_alternatives_list) {
+            /// Assumption: initially, each 'inner vector' has exactly one string as its only element
+            const std::string word = world_alternatives.front(); ///< this single string is the base for the generation of grammatical alternatives
             const size_t len = word.length();
-            if (len > 4) {
+
+            if (len > 4 /** skip words shorter than four characters */) {
                 if ((word[len - 1] == 't' || word[len - 1] == 'n') && (word[len - 2] == 'a' || word[len - 2] == 'e')) {
                     /// This word is most likely a noun in definite form
                     /// Trying to determine indefinite form, then adding it to word list
@@ -108,16 +121,16 @@ public:
                         /// Just remove the final 'n' or 't', for example for
                         /// 'travbanan' -> 'travbana'
                         const std::string indefinite_form = word.substr(0, len - 1);
-                        it = ++words.insert(it, "_" + indefinite_form);
+                        world_alternatives.push_back(indefinite_form);
                     }
                     /// Remove the vocal as well, for example for
                     /// 'biblioteket' -> 'bibliotek'
                     const std::string indefinite_form = word.substr(0, len - 2);
-                    it = ++words.insert(it, "_" + indefinite_form);
+                    world_alternatives.push_back(indefinite_form);
                 } else if (word[len - 1] == 's') {
                     /// This word could be a genetive (Karlsborgs -> Karlsborg)
                     const std::string nominative = word.substr(0, len - 1);
-                    it = ++words.insert(it, "_" + nominative);
+                    world_alternatives.push_back(nominative);
                 }
             }
         }
@@ -172,6 +185,8 @@ std::vector<std::string> Tokenizer::read_words(std::istream &input, Multiplicity
 }
 
 std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination) {
+    std::vector<std::string> combinations;
+
     /// There are words that are often part of a valid name, but by itself
     /// are rather meaningless, i.e. cause too many false hits:
     static const std::unordered_set<std::string> blacklistedSingleWords = {
@@ -204,51 +219,57 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
     };
 
     std::unordered_set<std::string> known_combinations;
-    std::vector<std::string> internal_words = words;
-    d->add_grammar_cases(internal_words);
 
-    for (int s = min(words_per_combination, internal_words.size()); s >= 1; --s) {
-        for (size_t i = 0; i <= internal_words.size() - s; ++i) {
-            const bool added_grammar_case = internal_words[i][0] == '_';
-            /// Added grammar cases can never start a word combination,
-            /// unless it is the single word in this combination
-            if (added_grammar_case && s > 1) continue;
-            const std::string current_word = added_grammar_case ? internal_words[i].substr(1) : internal_words[i];
+    /// Generate a vector of vectors of strings that will be used to accumulate grammatical alternatives
+    /// for words as given by the parameter 'words'
+    std::vector<std::vector<std::string> > word_alternatives_list;
+    for (const std::string &word : words) {
+        /// Skip single letter words that do not represent a valid sentence in Swedish
+        if (word[1] == '\0' && word[0] >= 'a' && word[0] <= 'z') continue; // FIXME what about words starting with a-ring?
 
-            /// Skip single letter words that do not represent a valid sentence in Swedish
-            if (current_word[1] == '\0' && current_word[0] >= 'a' && current_word[0] <= 'z') continue;
-            /// Single words that may be misleading, such as 'nya'
-            if (s == 1 && blacklistedSingleWords.find(current_word) != blacklistedSingleWords.end()) continue;
-            /// Free-standing numbers should be skipped as well (won't affect search for e.g. 'väg 53')
-            bool isNumber = true;
-            for (int p = current_word.length() - 1; isNumber && p >= 0; --p)
-                isNumber &= current_word[p] >= '0' && current_word[p] <= '9';
-            if (isNumber) continue;
-            /// Skip added grammar cases unless they would be last word in a sequence
+        /// Free-standing numbers should be skipped as well (won't affect search for e.g. 'väg 53')
+        bool isNumber = true;
+        for (int p = word.length() - 1; isNumber && p >= 0; --p)
+            isNumber &= word[p] >= '0' && word[p] <= '9';
+        if (isNumber) continue;
 
-            std::string combined_word = current_word;
-            int offset = 0;
-            for (int k = 1; k < s && i + k + offset < internal_words.size();) {
-                const bool added_grammar_case = internal_words[i + k + offset][0] == '_';
-                if (added_grammar_case && k < s - 1) {
-                    /// Words that are added grammar cases may only be
-                    /// the last word in a word combination
-                    ++offset;
-                    continue;
-                }
+        /// Create a new, 'inner vector' that will contain only a single word
+        std::vector<std::string> word_alternatives;
+        word_alternatives.push_back(word);
+        /// Add 'inner vector' to 'outer vector'
+        word_alternatives_list.push_back(word_alternatives);
+    }
+    if (word_alternatives_list.empty()) return combinations; ///< argument 'words' may have contained only forbidden words, such as numbers
+    d->add_grammar_cases(word_alternatives_list);
 
+    /// Iterate over all word combination sizes, e.g. 3 down to 1
+    for (size_t s = max(1, min(words_per_combination, word_alternatives_list.size())); s >= 1; --s) {
+        /// Go over all words that may start a word combination
+        for (size_t i = 0; i <= word_alternatives_list.size() - s; ++i) {
+            /// Assemble word combination, taking care of special cases
+
+            std::string combined_word = s > 1 ? word_alternatives_list[i].front() : std::string(""); ///< initialize only with first word if more words will follow
+            for (size_t k = 1; k < s - 1; ++k) {
+                /// All all words except for first and last word
                 combined_word.append(" ", 1);
-                const std::string current_word = added_grammar_case ? internal_words[i + k + offset].substr(1) : internal_words[i + k + offset];
-                combined_word.append(current_word);
-
-                ++k;
+                combined_word.append(word_alternatives_list[i + k].front());
             }
+            if (s > 1)
+                combined_word.append(" ", 1); ///< add space only when needed
 
-            known_combinations.insert(combined_word);
+            /// Only for the last word in a word combination consider all
+            /// available grammatical alternatives; previous words in the
+            /// combination only used the 'base' variant
+            /// (as seen by the usage of 'front()' above)
+            for (std::string &last_alternative : word_alternatives_list[i + s - 1]) {
+                /// Single words that may be misleading, such as 'nya'
+                if (s == 1 && blacklistedSingleWords.find(last_alternative) != blacklistedSingleWords.end()) continue;
+
+                known_combinations.insert(combined_word + last_alternative);
+            }
         }
     }
 
-    std::vector<std::string> combinations;
     std::copy(known_combinations.cbegin(), known_combinations.cend(), std::back_inserter(combinations));
     return combinations;
 }
