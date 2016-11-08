@@ -155,8 +155,6 @@ std::vector<std::string> Tokenizer::read_words(const std::string &text, Multipli
 std::vector<std::string> Tokenizer::read_words(std::istream &input, Multiplicity multiplicity) {
     std::string line;
     std::vector<std::string> words;
-    static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
-    std::unordered_set<std::string> known_words;
     d->input_lines.clear();
 
     while (getline(input, line))
@@ -287,7 +285,7 @@ std::string Tokenizer::input_text() const {
 }
 
 size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::string> &words, Multiplicity multiplicity, bool *warnings) {
-    static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t");
+    static const std::string gap(" ?!\"'#%*&()=,;._\n\r\t/");
     if (warnings != nullptr) *warnings = false;
 
     size_t number_of_words_added = 0;
