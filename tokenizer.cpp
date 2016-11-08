@@ -184,7 +184,7 @@ std::vector<std::string> Tokenizer::read_words(std::istream &input, Multiplicity
     return words;
 }
 
-std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination) {
+std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector<std::string> &words, const size_t max_words_per_combination, const size_t min_words_per_combination) const {
     std::vector<std::string> combinations;
 
     /// There are words that are often part of a valid name, but by itself
@@ -243,7 +243,7 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
     d->add_grammar_cases(word_alternatives_list);
 
     /// Iterate over all word combination sizes, e.g. 3 down to 1
-    for (size_t s = max(1, min(words_per_combination, word_alternatives_list.size())); s >= 1; --s) {
+    for (size_t s = max(1, min(max_words_per_combination, word_alternatives_list.size())); s >= max(1, min_words_per_combination); --s) {
         /// Go over all words that may start a word combination
         for (size_t i = 0; i <= word_alternatives_list.size() - s; ++i) {
             /// Assemble word combination, taking care of special cases

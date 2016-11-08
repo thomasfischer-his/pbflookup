@@ -31,7 +31,7 @@ public:
     std::vector<std::string> read_words(const std::string &text, Multiplicity multiplicity);
     std::vector<std::string> read_words(std::istream &input, Multiplicity multiplicity);
 
-    std::vector<std::string> generate_word_combinations(const std::vector<std::string> &words, const size_t words_per_combination);
+    std::vector<std::string> generate_word_combinations(const std::vector<std::string> &words, const size_t max_words_per_combination, const size_t min_words_per_combination = 1) const;
 
     std::string input_text() const;
 
