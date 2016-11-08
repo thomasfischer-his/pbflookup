@@ -194,6 +194,8 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
         "v\xc3\xa4stra", "\xc3\xb6stra", "norra", "s\xc3\xb6""dra",
         "v\xc3\xa4ster", "\xc3\xb6ster", "norr", "s\xc3\xb6""der",
         "inre", "yttre",
+        "lilla", "stora",
+        "n\xc3\xa4sta", "f\xc3\xb6rre",
         "vita", "gr\xc3\xb6na", "r\xc3\xb6""da", "bl\xc3\xa5""a", "svarta", // TODO more colors
         "pappa", "mamma", "son", "dotter",
         /** The following list has been manually assembled, based on existing testsets.
@@ -203,12 +205,13 @@ std::vector<std::string> Tokenizer::generate_word_combinations(const std::vector
           */
         "bil", "bo" /** such as in 'Bo Widerbergs plats' */, "bron", "bruk", "b\xc3\xa5""de", "by",
         "center", "centrala", "centrum", "city",
-        "dahl" /** such as in 'Dahl Sverige' */,
+        "dahl" /** such as in 'Dahl Sverige' */, "daglig",
         "g\xc3\xa5rd", "g\xc3\xb6ta",
         "hamn", "halv", "hitta", "hos", "hus", "h\xc3\xb6jd",
         "kl" /** as used for time: 'kl. 14' */, "km", "kommun", "kyrka"
         "l\xc3\xa4n",
         "m\xc3\xa4n",
+        "n\xc3\xa4ra",
         "plats", "platsen", "pris",
         "region", "regionens", "runt", "r\xc3\xb6r" /** such as in 'Herberts rör' */,
         "sankt", "s:t", "ser", "slott", "sp\xc3\xa5r", "stad", "staden", "station", "svea", "sverige", "s\xc3\xa5g",
