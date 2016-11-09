@@ -46,7 +46,6 @@ const double decimeterDegreeLongitude = 557999.790; ///< declared in 'global.h'
 const double decimeterDegreeLatitude = 1114122.402; ///< declared in 'global.h'
 
 const size_t reasonableLargeSizeT = 0x3fffff;
-const uint16_t reasonableLargeUInt16 = 0x3fff;
 
 bool startsWith(const std::string &haystack, const std::string &needle) {
     if (haystack.length() >= needle.length())
@@ -230,11 +229,6 @@ const std::string AdministrativeRegion::region_endings[] = {"s l\xc3\xa4n", " l\
 class Sweden::Private {
 private:
     static const int INT_RANGE;
-
-#ifdef CPUTIMER
-    int64_t buildingTime, nodeInsideTime;
-    int callToNodeInsideRelationRegion;
-#endif // CPUTIMER
 
 public:
     static const uint16_t terminator16bit;
