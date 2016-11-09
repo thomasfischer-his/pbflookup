@@ -231,8 +231,6 @@ class Sweden::Private {
 private:
     static const int INT_RANGE;
 
-    Sweden *p;
-
 #ifdef CPUTIMER
     int64_t buildingTime, nodeInsideTime;
     int callToNodeInsideRelationRegion;
@@ -261,8 +259,8 @@ public:
 
     AdministrativeRegion administrativeRegion;
 
-    explicit Private(Sweden *parent)
-        : p(parent) {
+    explicit Private()
+    {
         roads.regional = (std::vector<uint64_t> ** **)calloc(regional_len, sizeof(std::vector<uint64_t> ** *));
     }
 
@@ -708,13 +706,13 @@ Sweden::Road::operator std::string() const {
 }
 
 Sweden::Sweden()
-    : d(new Sweden::Private(this))
+    : d(new Sweden::Private())
 {
     /// nothing
 }
 
 Sweden::Sweden(std::istream &input)
-    : d(new Sweden::Private(this))
+    : d(new Sweden::Private())
 {
     char chr = '\0';
     input.read((char *)&chr, sizeof(chr));

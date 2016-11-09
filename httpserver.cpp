@@ -71,9 +71,6 @@ int lat2tiley(double lat, int z)
 }
 
 class HTTPServer::Private {
-private:
-    HTTPServer *p;
-
 public:
     Timer timerServer, timerSearch;
     const char *start_time;
@@ -89,8 +86,8 @@ public:
         size_t pos;
     };
 
-    Private(HTTPServer *parent)
-        : p(parent) {
+    Private()
+    {
         const time_t curtime = time(NULL);
         struct tm *brokentime = localtime(&curtime);
         start_time = asctime(brokentime);
@@ -669,7 +666,7 @@ public:
 };
 
 HTTPServer::HTTPServer()
-    : d(new Private(this))
+    : d(new Private())
 {
     /// Sort testsets by their names
     std::sort(testsets.begin(), testsets.end(), [](struct testset & a, struct testset & b) {

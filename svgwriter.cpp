@@ -25,7 +25,6 @@
 
 class SvgWriter::Private {
 private:
-    SvgWriter *p;
     std::ofstream svgGzFile;
 
 public:
@@ -33,8 +32,8 @@ public:
     const double zoom;
     SvgWriter::Group previousGroup;
 
-    Private(const std::string &filename, double _zoom, SvgWriter *parent)
-        : p(parent), svgGzFile(filename, std::ios_base::out), zoom(_zoom), previousGroup(SvgWriter::InvalidGroup) {
+    Private(const std::string &filename, double _zoom)
+        : svgGzFile(filename, std::ios_base::out), zoom(_zoom), previousGroup(SvgWriter::InvalidGroup) {
         const size_t filename_len = filename.length();
         if (filename[filename_len - 3] == '.' && filename[filename_len - 2] == 'g' && filename[filename_len - 1] == 'z') {
             /// Do compress SVG file if filename ends with '.gz'
@@ -169,7 +168,7 @@ public:
 
 
 SvgWriter::SvgWriter(const std::string &filename, double zoom)
-    : d(new Private(filename, zoom, this))
+    : d(new Private(filename, zoom))
 {
     /// nothing
 }

@@ -34,8 +34,6 @@
 class Tokenizer::Private
 {
 private:
-    Tokenizer *p;
-
     std::vector<std::string> stopwords;
 
     void load_stopwords() {
@@ -59,8 +57,8 @@ private:
 public:
     std::vector<std::string> input_lines;
 
-    Private(Tokenizer *parent)
-        : p(parent) {
+    Private()
+    {
         load_stopwords();
     }
 
@@ -138,7 +136,7 @@ public:
 };
 
 Tokenizer::Tokenizer()
-    : d(new Tokenizer::Private(this)) {
+    : d(new Tokenizer::Private()) {
     if (d == nullptr)
         Error::err("Could not allocate memory for Tokenizer::Private");
 }
