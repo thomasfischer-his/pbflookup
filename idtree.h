@@ -115,14 +115,15 @@ struct RelationMem {
 
     RelationMem(int num)
         : num_members(num), members(nullptr), member_flags(nullptr) {
-        if (num_members > 0) {
-            members = (OSMElement *)calloc(num, sizeof(OSMElement));
-            if (members == nullptr)
-                Error::err("Could not allocate memory for RelationMem::members");
-            member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
-            if (member_flags == nullptr)
-                Error::err("Could not allocate memory for RelationMem::member_flags");
-        }
+        if (num_members <= 0)
+            Error::err("Creating relation without members");
+
+        members = (OSMElement *)calloc(num, sizeof(OSMElement));
+        if (members == nullptr)
+            Error::err("Could not allocate memory for RelationMem::members");
+        member_flags = (uint16_t *)calloc(num, sizeof(uint16_t));
+        if (member_flags == nullptr)
+            Error::err("Could not allocate memory for RelationMem::member_flags");
     }
 
     RelationMem &operator=(const RelationMem &other) {
