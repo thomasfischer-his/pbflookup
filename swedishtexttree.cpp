@@ -166,7 +166,7 @@ bool SwedishTextTree::insert(const std::string &input, const OSMElement &element
 }
 
 bool SwedishTextTree::internal_insert(const char *word, const OSMElement &element) {
-    code_word code = to_code_word(word);
+    const code_word &code = to_code_word(word);
     if (code.empty())
         return false;
 
@@ -200,7 +200,7 @@ bool SwedishTextTree::internal_insert(const char *word, const OSMElement &elemen
 }
 
 std::vector<OSMElement> SwedishTextTree::retrieve(const char *word, Warnings warnings) {
-    code_word code = to_code_word(word);
+    const code_word &code = to_code_word(word);
     std::vector<OSMElement> result;
 
     SwedishTextNode *cur = root;

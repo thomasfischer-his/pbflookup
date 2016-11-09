@@ -168,7 +168,7 @@ std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        const std::vector<OSMElement> &element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         if (!element_list.empty()) {
             Error::debug("Got %i hits for word '%s'", element_list.size(), combined_cstr);
 
@@ -256,7 +256,7 @@ std::vector<struct TokenProcessor::LocalPlaceMatch> TokenProcessor::evaluateNear
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        const std::vector<OSMElement> &element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         static const size_t long_list_warning_threshold = 1000;
         if (element_list.size() > long_list_warning_threshold)
             Error::debug("Search for word combination '%s' returned %d results, requiring %d distance computations", combined_cstr, element_list.size(), element_list.size()*places.size());
@@ -362,7 +362,7 @@ std::vector<struct TokenProcessor::UniqueMatch> TokenProcessor::evaluateUniqueMa
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        std::vector<OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        const std::vector<OSMElement> &element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         /// Even 'unique' locations may consist of multiple nodes or ways,
         /// such as the shape of a single building
         if (element_list.size() > 0 && element_list.size() < 30 /** arbitrarily chosen value */) {
@@ -429,7 +429,7 @@ std::vector<struct TokenProcessor::AdminRegionMatch> TokenProcessor::evaluateAdm
 #ifdef CPUTIMER
         timer.start();
 #endif // CPUTIMER
-        const std::vector<struct OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        const std::vector<struct OSMElement> &element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
 #ifdef CPUTIMER
         timer.elapsed(&cputime, &walltime);
         retrievalTime += cputime;

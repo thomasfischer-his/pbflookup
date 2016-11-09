@@ -1828,7 +1828,7 @@ std::vector<struct OSMElement> Sweden::identifyPlaces(const std::vector<std::str
         const char *combined_cstr = combined.c_str();
 
         /// Retrieve all OSM elements matching a given word combination
-        const std::vector<struct OSMElement> element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
+        const std::vector<struct OSMElement> &element_list = swedishTextTree->retrieve(combined_cstr, (SwedishTextTree::Warnings)(SwedishTextTree::WarningsAll & (~SwedishTextTree::WarningWordNotInTree)));
         for (const OSMElement &element : element_list) {
             if (element.realworld_type == OSMElement::PlaceLargeArea || element.realworld_type == OSMElement::PlaceLarge || element.realworld_type == OSMElement::PlaceMedium || element.realworld_type == OSMElement::PlaceSmall)
                 result.push_back(element);

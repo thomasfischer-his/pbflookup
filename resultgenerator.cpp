@@ -83,8 +83,8 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
     timer.start();
     timerOverFunction.start();
 #endif // CPUTIMER
-    const std::vector<std::string> words = tokenizer->read_words(text, Tokenizer::Duplicates);
-    const std::vector<std::string> word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */);
+    const std::vector<std::string> &words = tokenizer->read_words(text, Tokenizer::Duplicates);
+    const std::vector<std::string> &word_combinations = tokenizer->generate_word_combinations(words, 3 /** TODO configurable */);
     Error::info("Identified %d words, resulting in %d word combinations", words.size(), word_combinations.size());
     if (statistics != nullptr) {
         statistics->word_count = words.size();
@@ -110,9 +110,9 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
 
-    const std::vector<struct Sweden::Road> identifiedRoads = sweden->identifyRoads(words);
+    const std::vector<struct Sweden::Road> &identifiedRoads = sweden->identifyRoads(words);
     Error::info("Identified roads: %d", identifiedRoads.size());
-    const std::vector<struct TokenProcessor::RoadMatch> roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
+    const std::vector<struct TokenProcessor::RoadMatch> &roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
     Error::info("Identified road matches: %d", roadMatches.size());
 
     for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {
@@ -146,7 +146,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 #endif // CPUTIMER
     }
     static const size_t max_words_per_combination = 3;
-    const std::vector<struct MapAnalysis::RoadCrossing> crossingRoads = mapAnalysis->identifyCrossingRoads(words, max_words_per_combination);
+    const std::vector<struct MapAnalysis::RoadCrossing> &crossingRoads = mapAnalysis->identifyCrossingRoads(words, max_words_per_combination);
     size_t max_word_fragment_size_squared = 0;
     for (const MapAnalysis::RoadCrossing &roadCrossing : crossingRoads)
         if (roadCrossing.word_fragment_size_squared > max_word_fragment_size_squared)
@@ -178,10 +178,10 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         timer.start();
 #endif // CPUTIMER
     }
-    const std::vector<struct Sweden::KnownAdministrativeRegion> adminReg = sweden->identifyAdministrativeRegions(word_combinations);
+    const std::vector<struct Sweden::KnownAdministrativeRegion> &adminReg = sweden->identifyAdministrativeRegions(word_combinations);
     Error::info("Identified administrative regions: %d", adminReg.size());
     if (!adminReg.empty()) {
-        const std::vector<struct TokenProcessor::AdminRegionMatch> adminRegionMatches = tokenProcessor->evaluateAdministrativeRegions(adminReg, word_combinations);
+        const std::vector<struct TokenProcessor::AdminRegionMatch> &adminRegionMatches = tokenProcessor->evaluateAdministrativeRegions(adminReg, word_combinations);
         Error::info("Identified administrative region matches: %d", adminReg.size());
         for (const auto &adminRegionMatch : adminRegionMatches) {
             Coord c;
@@ -226,7 +226,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
             else
                 ++it;
         }
-        const std::vector<struct TokenProcessor::LocalPlaceMatch> localPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, globalPlaces);
+        const std::vector<struct TokenProcessor::LocalPlaceMatch> &localPlacesMatches = tokenProcessor->evaluateNearPlaces(word_combinations, globalPlaces);
         Error::info("Identified local places matches: %d", localPlacesMatches.size());
         for (const auto &localPlacesMatch : localPlacesMatches) {
             Coord c;
@@ -254,7 +254,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
         timer.start();
 #endif // CPUTIMER
     }
-    std::vector<struct TokenProcessor::UniqueMatch> uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
+    const std::vector<struct TokenProcessor::UniqueMatch> &uniqueMatches = tokenProcessor->evaluateUniqueMatches(word_combinations);
     Error::info("Identified unique matches: %d", uniqueMatches.size());
     for (const auto &uniqueMatch : uniqueMatches) {
         Coord c;
