@@ -40,18 +40,27 @@ Sweden *sweden = nullptr; ///< declared in 'globalobjects.h'
 
 
 void loadSwedishTextTree() {
-    const std::string filename = tempdir + "/" + mapname + ".texttree";
+    const std::string filename = tempdir + "/" + mapname + ".tt";
     Error::debug("Reading from '%s' (mapping text to element ids)", filename.c_str());
     std::ifstream swedishtexttreefile(filename);
+    if (!swedishtexttreefile.good()) {
+        Error::warn("Data for mapping text to element ids does not exist or is invalid");
+        swedishTextTree = nullptr;
+        return;
+    }
     swedishTextTree = new SwedishTextTree(swedishtexttreefile);
     swedishtexttreefile.close();
 }
 
 void saveSwedishTextTree() {
     if (swedishTextTree != nullptr) {
-        const std::string filename = tempdir + "/" + mapname + ".texttree";
+        const std::string filename = tempdir + "/" + mapname + ".tt";
         Error::debug("Writing to '%s' (mapping text to element ids)", filename.c_str());
         std::ofstream swedishtexttreefile(filename);
+        if (!swedishtexttreefile.good()) {
+            Error::warn("Cannot write .tt file");
+            return;
+        }
         swedishTextTree->write(swedishtexttreefile);
         swedishtexttreefile.close();
     } else
@@ -62,6 +71,11 @@ void loadNode2Coord() {
     const std::string filename = tempdir + "/" + mapname + ".n2c";
     Error::debug("Reading from '%s' (mapping nodes to coordinates)", filename.c_str());
     std::ifstream node2CoordFile(filename);
+    if (!node2CoordFile.good()) {
+        Error::warn("Data for mapping nodes to coordinates does not exist or is invalid");
+        node2Coord = nullptr;
+        return;
+    }
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(node2CoordFile);
@@ -73,6 +87,10 @@ void saveNode2Coord() {
         const std::string filename = tempdir + "/" + mapname + ".n2c";
         Error::debug("Writing to '%s' (mapping nodes to coordinates)", filename.c_str());
         std::ofstream node2CoordFile(filename);
+        if (!node2CoordFile.good()) {
+            Error::warn("Cannot write .n2c file");
+            return;
+        }
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(node2CoordFile);
@@ -85,6 +103,11 @@ void loadNodeNames() {
     const std::string filename = tempdir + "/" + mapname + ".nn";
     Error::debug("Reading from '%s' (mapping nodes to their names)", filename.c_str());
     std::ifstream nnfile(filename);
+    if (!nnfile.good()) {
+        Error::warn("Data for mapping nodes to their names does not exist or is invalid");
+        nodeNames = nullptr;
+        return;
+    }
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(nnfile);
@@ -96,6 +119,10 @@ void saveNodeNames() {
         const std::string filename = tempdir + "/" + mapname + ".nn";
         Error::debug("Writing to '%s' (mapping nodes to their names)", filename.c_str());
         std::ofstream nnfile(filename);
+        if (!nnfile.good()) {
+            Error::warn("Cannot write .nn file");
+            return;
+        }
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(nnfile);
@@ -108,6 +135,11 @@ void loadWayNames() {
     const std::string filename = tempdir + "/" + mapname + ".wn";
     Error::debug("Reading from '%s' (mapping ways to their names)", filename.c_str());
     std::ifstream wnfile(filename);
+    if (!wnfile.good()) {
+        Error::warn("Data for mapping ways to their names does not exist or is invalid");
+        wayNames = nullptr;
+        return;
+    }
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(wnfile);
@@ -119,6 +151,10 @@ void saveWayNames() {
         const std::string filename = tempdir + "/" + mapname + ".wn";
         Error::debug("Writing to '%s' (mapping ways to their names)", filename.c_str());
         std::ofstream wnfile(filename);
+        if (!wnfile.good()) {
+            Error::warn("Cannot write .wn file");
+            return;
+        }
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(wnfile);
@@ -131,6 +167,11 @@ void loadRelationNames() {
     const std::string filename = tempdir + "/" + mapname + ".rn";
     Error::debug("Reading from '%s' (mapping relations to their names)", filename.c_str());
     std::ifstream rnfile(filename);
+    if (!rnfile.good()) {
+        Error::warn("Data for mapping relations to their names does not exist or is invalid");
+        relationNames = nullptr;
+        return;
+    }
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(rnfile);
@@ -142,6 +183,10 @@ void saveRelationNames() {
         const std::string filename = tempdir + "/" + mapname + ".rn";
         Error::debug("Writing to '%s' (mapping relations to their names)", filename.c_str());
         std::ofstream rnfile(filename);
+        if (!rnfile.good()) {
+            Error::warn("Cannot write .rn file");
+            return;
+        }
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(rnfile);
@@ -154,6 +199,11 @@ void loadWayNodes() {
     const std::string filename = tempdir + "/" + mapname + ".w2n";
     Error::debug("Reading from '%s' (mapping ways to nodes they span over)", filename.c_str());
     std::ifstream wayNodeFile(filename);
+    if (!wayNodeFile.good()) {
+        Error::warn("Data set for mapping ways to nodes they span over does not exist or is invalid");
+        wayNodes = nullptr;
+        return;
+    }
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(wayNodeFile);
@@ -165,6 +215,10 @@ void saveWayNodes() {
         const std::string filename = tempdir + "/" + mapname + ".w2n";
         Error::debug("Writing to '%s' (mapping ways to nodes they span over)", filename.c_str());
         std::ofstream wayNodeFile(filename);
+        if (!wayNodeFile.good()) {
+            Error::warn("Cannot write .w2n file");
+            return;
+        }
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(wayNodeFile);
@@ -177,6 +231,11 @@ void loadRelMem() {
     const std::string filename = tempdir + "/" + mapname + ".relmem";
     Error::debug("Reading from '%s' (mapping relations to their members)", filename.c_str());
     std::ifstream relmemfile(filename);
+    if (!relmemfile.good()) {
+        Error::warn("Data set for mapping relations to their members does not exist or is invalid");
+        relMembers = nullptr;
+        return;
+    }
     relMembers = new IdTree<RelationMem>(relmemfile);
     relmemfile.close();
 }
@@ -186,6 +245,10 @@ void saveRelMem() {
         const std::string filename = tempdir + "/" + mapname + ".relmem";
         Error::debug("Writing to '%s' (mapping relations to their members)", filename.c_str());
         std::ofstream relmemfile(filename);
+        if (!relmemfile.good()) {
+            Error::warn("Cannot write .relmem file");
+            return;
+        }
         relMembers->write(relmemfile);
         relmemfile.close();
     } else
@@ -201,6 +264,11 @@ void loadSweden() {
     const std::string filename = tempdir + "/" + mapname + ".sweden";
     Error::debug("Reading from '%s'", filename.c_str());
     std::ifstream swedenfile(filename);
+    if (!swedenfile.good()) {
+        Error::warn("Cannot load .sweden file");
+        sweden = nullptr;
+        return;
+    }
     boost::iostreams::filtering_istream in;
     in.push(boost::iostreams::gzip_decompressor());
     in.push(swedenfile);
@@ -212,6 +280,10 @@ void saveSweden() {
         const std::string filename = tempdir + "/" + mapname + ".sweden";
         Error::debug("Writing to '%s'", filename.c_str());
         std::ofstream swedenfile(filename);
+        if (!swedenfile.good()) {
+            Error::warn("Cannot write .sweden file");
+            return;
+        }
         boost::iostreams::filtering_ostream out;
         out.push(boost::iostreams::gzip_compressor());
         out.push(swedenfile);
@@ -234,7 +306,7 @@ GlobalObjectManager::GlobalObjectManager() {
     /// temporary files left from previous program runs that
     /// would allow startup much faster by skipping parsing
     /// the .osm.pbf file
-    const std::string filename = tempdir + "/" + mapname + ".texttree";
+    const std::string filename = tempdir + "/" + mapname + ".tt";
     if (testNonEmptyFile(filename)) {
         load();
     } else if (testNonEmptyFile(osmpbffilename)) {
