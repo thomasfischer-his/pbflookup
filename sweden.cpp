@@ -24,6 +24,7 @@
 
 #include <cmath>
 
+#include <memory>
 #include <iostream>
 #include <fstream>
 #include <deque>
@@ -384,7 +385,7 @@ public:
             std::vector<std::deque<Coord> > polygonlist;
 
             /// Keep track of which ways of a relation have already been added to one of the polygons
-            bool *wayattached = new bool[rel.num_members];
+            std::unique_ptr<bool[]> wayattached(new bool[rel.num_members]);
             uint32_t expected_outer_members = 0;
             for (int i = rel.num_members - 1; i >= 0; --i) {
                 wayattached[i] = false; ///< initially, no way is added to any polygon
@@ -446,8 +447,6 @@ public:
             if (successful_additions < expected_outer_members) {
                 Error::warn("Only %i out of %i elements could not be attached to polygon for relation %llu", successful_additions, expected_outer_members, relid);
             }
-
-            delete[] wayattached;
 
             bool stillMatchingPolygons = true;
             while (stillMatchingPolygons && polygonlist.size() > 1) {
