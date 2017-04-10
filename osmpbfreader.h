@@ -55,7 +55,7 @@ public:
     OsmPbfReader();
     ~OsmPbfReader();
 
-    bool parse(std::istream &input);
+    bool parse(std::istream &input, bool allow_overlapping_ids);
 
 private:
     /// Buffer for reading a compressed blob from file
@@ -76,6 +76,11 @@ private:
     OSMPBF::PrimitiveBlock primblock;
 
     static const uint64_t exclaveInclaveWays[];
+
+    /// If loading multiple .osm.pbf files that *may* have overlapping
+    /// id spaces, add an offset to node/way/relation ids to avoid such
+    /// an overlap.
+    uint64_t id_offset;
 };
 
 #endif // OSMPBFREADER_H

@@ -25,7 +25,7 @@ struct Coord;
 extern std::string tempdir;
 extern std::string mapname;
 extern std::string pidfilename;
-extern std::string osmpbffilename;
+extern std::vector<std::string> osmpbffilenames;
 extern std::string stopwordfilename;
 extern unsigned int http_port;
 extern std::string http_interface;

@@ -46,14 +46,14 @@
 /// Data structure for producer-consumer threads
 /// which will simplify ways before storing them
 struct OSMWay {
-    OSMWay(const ::OSMPBF::Way &way)
-        : id(way.id()), size(way.refs_size()) {
+    OSMWay(const ::OSMPBF::Way &way, uint64_t id_offset)
+        : id(way.id() + id_offset), size(way.refs_size()) {
         nodes = (uint64_t *)malloc(size * sizeof(uint64_t));
 
         uint64_t node_id = 0;
         for (size_t i = 0; i < size; ++i) {
             node_id += way.refs(i);
-            nodes[i] = node_id;
+            nodes[i] = node_id + id_offset;
         }
     }
 
@@ -276,8 +276,24 @@ void insertNames(uint64_t id, OSMElement::ElementType element_type, OSMElement::
     }
 }
 
+inline uint64_t record_max_id(const uint64_t current_id, uint64_t &variable_for_max) {
+    if (current_id > variable_for_max)
+        variable_for_max = current_id;
+    return current_id;
+}
+
 OsmPbfReader::OsmPbfReader()
+    : id_offset(0)
 {
+    swedishTextTree = nullptr;
+    node2Coord = nullptr;
+    nodeNames = nullptr;
+    wayNames = nullptr;
+    relationNames = nullptr;
+    wayNodes = nullptr;
+    relMembers = nullptr;
+    sweden = nullptr;
+
     buffer = new char[OSMPBF::max_uncompressed_blob_size];
     if (buffer == nullptr)
         Error::err("Could not allocate memory for OsmPbfReader::buffer");
@@ -292,43 +308,44 @@ OsmPbfReader::~OsmPbfReader()
     delete[] unpack_buffer;
 }
 
-bool OsmPbfReader::parse(std::istream &input) {
+bool OsmPbfReader::parse(std::istream &input, bool allow_overlapping_ids) {
     std::vector<std::pair<uint64_t, std::string> > roadsWithoutRef;
-    swedishTextTree = nullptr;
-    node2Coord = nullptr;
-    nodeNames = nullptr;
-    wayNames = nullptr;
-    relationNames = nullptr;
-    wayNodes = nullptr;
-    relMembers = nullptr;
-    sweden = nullptr;
     size_t count_named_nodes = 0, count_named_ways = 0, count_named_relations = 0;
+    uint64_t largest_observed_id = 0;
 
     if (!input || !input.good())
         return false;
 
-    swedishTextTree = new SwedishTextTree();
+    if (swedishTextTree == nullptr)
+        swedishTextTree = new SwedishTextTree();
     if (swedishTextTree == nullptr)
         Error::err("Could not allocate memory for swedishTextTree");
-    node2Coord = new IdTree<Coord>();
+    if (node2Coord == nullptr)
+        node2Coord = new IdTree<Coord>();
     if (node2Coord == nullptr)
         Error::err("Could not allocate memory for node2Coord");
-    nodeNames = new IdTree<WriteableString>();
+    if (nodeNames == nullptr)
+        nodeNames = new IdTree<WriteableString>();
     if (nodeNames == nullptr)
         Error::err("Could not allocate memory for nodeNames");
-    wayNames = new IdTree<WriteableString>();
+    if (wayNames == nullptr)
+        wayNames = new IdTree<WriteableString>();
     if (wayNames == nullptr)
         Error::err("Could not allocate memory for wayNames");
-    relationNames = new IdTree<WriteableString>();
+    if (relationNames == nullptr)
+        relationNames = new IdTree<WriteableString>();
     if (relationNames == nullptr)
         Error::err("Could not allocate memory for relationNames");
-    wayNodes = new IdTree<WayNodes>();
+    if (wayNodes == nullptr)
+        wayNodes = new IdTree<WayNodes>();
     if (wayNodes == nullptr)
         Error::err("Could not allocate memory for wayNodes");
-    relMembers = new IdTree<RelationMem>();
+    if (relMembers == nullptr)
+        relMembers = new IdTree<RelationMem>();
     if (relMembers == nullptr)
         Error::err("Could not allocate memory for relmem");
-    sweden = new Sweden();
+    if (sweden == nullptr)
+        sweden = new Sweden();
     if (sweden == nullptr)
         Error::err("Could not allocate memory for Sweden");
 
@@ -509,14 +526,14 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                     const int maxnodes = pg.nodes_size();
                     for (int j = 0; j < maxnodes; ++j) {
-                        const uint64_t id = pg.nodes(j).id();
+                        const uint64_t id = record_max_id(pg.nodes(j).id(), largest_observed_id);
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
                         /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
                         std::map<std::string, std::string> name_set;
 
                         const double lat = coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.nodes(j).lat()));
                         const double lon = coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.nodes(j).lon()));
-                        node2Coord->insert(id, Coord::fromLonLat(lon, lat));
+                        node2Coord->insert(id + (allow_overlapping_ids ? 0 : id_offset), Coord::fromLonLat(lon, lat));
 
                         bool node_is_county = false, node_is_municipality = false, node_is_traffic_sign = false;
                         for (int k = 0; k < pg.nodes(j).keys_size(); ++k) {
@@ -571,13 +588,13 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
 
                         if (node_is_municipality)
-                            Error::info("Municipality '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), id);
+                            Error::info("Municipality '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), id + (allow_overlapping_ids ? 0 : id_offset));
                         else if (node_is_county)
-                            Error::info("County '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), id);
+                            Error::info("County '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), id + (allow_overlapping_ids ? 0 : id_offset));
                         else if (node_is_traffic_sign)
-                            Error::info("Node %llu with name '%s' is a traffic sign, not recoding node's name", id, name_set["name"].c_str());
+                            Error::info("Node %llu with name '%s' is a traffic sign, not recoding node's name", id + (allow_overlapping_ids ? 0 : id_offset), name_set["name"].c_str());
                         else if (!name_set.empty() /** implicitly: not node_is_municipality and not node_is_county and not node_is_traffic_sign */)
-                            insertNames(id, OSMElement::Node, realworld_type, name_set);
+                            insertNames(id + (allow_overlapping_ids ? 0 : id_offset), OSMElement::Node, realworld_type, name_set);
                     }
                 }
 
@@ -594,9 +611,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                         std::map<std::string, std::string> name_set;
 
                         last_id += pg.dense().id(j);
+                        record_max_id(last_id, largest_observed_id);
                         last_lat += coord_scale * (primblock.lat_offset() + (primblock.granularity() * pg.dense().lat(j)));
                         last_lon += coord_scale * (primblock.lon_offset() + (primblock.granularity() * pg.dense().lon(j)));
-                        node2Coord->insert(last_id, Coord::fromLonLat(last_lon, last_lat));
+                        node2Coord->insert(last_id + (allow_overlapping_ids ? 0 : id_offset), Coord::fromLonLat(last_lon, last_lat));
 
                         bool isKey = true;
                         int key = 0, value = 0;
@@ -664,13 +682,13 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
 
                         if (node_is_municipality)
-                            Error::info("Municipality '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), last_id);
+                            Error::info("Municipality '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), last_id + (allow_overlapping_ids ? 0 : id_offset));
                         else if (node_is_county)
-                            Error::info("County '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), last_id);
+                            Error::info("County '%s' is represented by node %llu, not recoding node's name", name_set["name"].c_str(), last_id + (allow_overlapping_ids ? 0 : id_offset));
                         else if (node_is_traffic_sign)
-                            Error::info("Node %llu with name '%s' is a traffic sign, not recoding node's name", last_id, name_set["name"].c_str());
+                            Error::info("Node %llu with name '%s' is a traffic sign, not recoding node's name", last_id + (allow_overlapping_ids ? 0 : id_offset), name_set["name"].c_str());
                         else if (!name_set.empty() /** implicitly: not node_is_municipality and not node_is_county and not node_is_traffic_sign */)
-                            insertNames(last_id, OSMElement::Node, realworld_type, name_set);
+                            insertNames(last_id + (allow_overlapping_ids ? 0 : id_offset), OSMElement::Node, realworld_type, name_set);
                     }
                 }
 
@@ -680,13 +698,13 @@ bool OsmPbfReader::parse(std::istream &input) {
                     char buffer_ref[SHORT_STRING_BUFFER_SIZE], buffer_highway[SHORT_STRING_BUFFER_SIZE];
                     const int maxways = pg.ways_size();
                     for (int w = 0; w < maxways; ++w) {
-                        const uint64_t wayId = pg.ways(w).id();
+                        const uint64_t wayId = record_max_id(pg.ways(w).id(), largest_observed_id);
                         const int way_size = pg.ways(w).refs_size();
 
                         if (way_size < 2) {
                             /// Rare but exists in map: a node with only one node (or no node?)
                             /// -> ignore those artefacts
-                            Error::warn("Way %llu has only %d node(s)", wayId, way_size);
+                            Error::warn("Way %llu has only %d node(s)", wayId + (allow_overlapping_ids ? 0 : id_offset), way_size);
                             continue;
                         }
 
@@ -742,14 +760,14 @@ bool OsmPbfReader::parse(std::istream &input) {
                         /// If 'ref' string is not empty and 'highway' string is 'primary', 'secondary', or 'tertiary' ...
                         if (buffer_ref[0] != '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
                             /// ... assume that this way is part of a national or primary regional road
-                            sweden->insertWayAsRoad(wayId, buffer_ref);
+                            sweden->insertWayAsRoad(wayId + (allow_overlapping_ids ? 0 : id_offset), buffer_ref);
 
                         /// This main thread is the 'producer' of ways,
                         /// pushing ways into a queue. Another thread,
                         /// the consumer, will pop ways, simplify them
                         /// (removing superfluous nodes), and store them
                         /// for searches later.
-                        queueWaySimplification.push(new OSMWay(pg.ways(w)));
+                        queueWaySimplification.push(new OSMWay(pg.ways(w), allow_overlapping_ids ? 0 : id_offset));
                         /// Keep track of queue size for statistical purposes
                         ++queueWaySimplificationSize;
                         if (queueWaySimplificationSize > max_queue_size) max_queue_size = queueWaySimplificationSize;
@@ -759,10 +777,10 @@ bool OsmPbfReader::parse(std::istream &input) {
                         }
 
                         if (way_size > 3 && buffer_ref[0] == '\0' && buffer_highway[0] != '\0' && (strcmp(buffer_highway, "primary") == 0 || strcmp(buffer_highway, "secondary") == 0 || strcmp(buffer_highway, "tertiary") == 0 || strcmp(buffer_highway, "trunk") == 0 || strcmp(buffer_highway, "motorway") == 0))
-                            roadsWithoutRef.push_back(std::make_pair(wayId, std::string(buffer_highway)));
+                            roadsWithoutRef.push_back(std::make_pair(wayId + (allow_overlapping_ids ? 0 : id_offset), std::string(buffer_highway)));
 
                         if (!name_set.empty())
-                            insertNames(wayId, OSMElement::Way, realworld_type, name_set);
+                            insertNames(wayId + (allow_overlapping_ids ? 0 : id_offset), OSMElement::Way, realworld_type, name_set);
                     }
                 }
 
@@ -771,7 +789,7 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                     const int maxrelations = pg.relations_size();
                     for (int i = 0; i < maxrelations; ++i) {
-                        const uint64_t relId = pg.relations(i).id();
+                        const uint64_t relId = record_max_id(pg.relations(i).id(), largest_observed_id);
 
                         /// Some relations should be ignored, e.g. for roads outside of Sweden
                         /// which just happend to be included in the map data
@@ -779,7 +797,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                         static const uint64_t blacklistedRelIds[] = {2545969, 3189514, 5518156, 5756777, 5794315, 5794316, 0};
                         /// To count: echo '3, 1, 2' | sed -e 's/ //g' | tr ',' '\n' | wc -l
                         static const size_t blacklistedRelIds_count = 6;
-                        if (inSortedArray(blacklistedRelIds, blacklistedRelIds_count, relId)) continue;
+                        if (inSortedArray(blacklistedRelIds, blacklistedRelIds_count, relId + (allow_overlapping_ids ? 0 : id_offset))) continue;
 
                         OSMElement::RealWorldType realworld_type = OSMElement::UnknownRealWorldType;
                         /// Track various names like 'name', 'name:en', or 'name:bridge:dk'
@@ -808,7 +826,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                 errno = 0;
                                 const long int v = strtol(s, NULL, 10);
                                 if (errno == 0)
-                                    sweden->insertSCBarea(v, relId);
+                                    sweden->insertSCBarea(v, relId + (allow_overlapping_ids ? 0 : id_offset));
                                 else
                                     Error::warn("Cannot convert '%s' to a number", s);
                             } else if (strcmp("ref:nuts:3", ckey) == 0) {
@@ -818,7 +836,7 @@ bool OsmPbfReader::parse(std::istream &input) {
                                     errno = 0;
                                     const long int v = strtol(s + 2 /** adding 2 to skip 'SE' prefix */, NULL, 10);
                                     if (errno == 0 && v > 0)
-                                        sweden->insertNUTS3area(v, relId);
+                                        sweden->insertNUTS3area(v, relId + (allow_overlapping_ids ? 0 : id_offset));
                                     else
                                         Error::warn("Cannot convert '%s' to a number", s + 2);
                                 }
@@ -851,7 +869,7 @@ bool OsmPbfReader::parse(std::istream &input) {
 
                         const auto name(name_set["name"]);
                         if (admin_level > 0 && name.length() > 1 && (boundary.compare("administrative") == 0 || boundary.compare("historic") == 0))
-                            sweden->insertAdministrativeRegion(name, admin_level, relId);
+                            sweden->insertAdministrativeRegion(name, admin_level, relId + (allow_overlapping_ids ? 0 : id_offset));
 
                         RelationMem rm(pg.relations(i).memids_size());
                         uint64_t memId = 0;
@@ -870,14 +888,14 @@ bool OsmPbfReader::parse(std::istream &input) {
                             else if (pg.relations(i).types(k) == 2)
                                 type = OSMElement::Relation;
                             else
-                                Error::warn("Unknown relation type for member %llu in relation %llu : type=%d", memId, relId, pg.relations(i).types(k));
+                                Error::warn("Unknown relation type for member %llu in relation %llu : type=%d", memId, relId + (allow_overlapping_ids ? 0 : id_offset), pg.relations(i).types(k));
                             rm.members[k] = OSMElement(memId, type, OSMElement::UnknownRealWorldType);
                             rm.member_flags[k] = flags;
                         }
-                        relMembers->insert(relId, rm);
+                        relMembers->insert(relId + (allow_overlapping_ids ? 0 : id_offset), rm);
 
                         if (!name_set.empty())
-                            insertNames(relId, OSMElement::Relation, realworld_type, name_set);
+                            insertNames(relId + (allow_overlapping_ids ? 0 : id_offset), OSMElement::Relation, realworld_type, name_set);
                     }
                 }
 
@@ -920,5 +938,10 @@ bool OsmPbfReader::parse(std::istream &input) {
     Error::info("Number of named relations: %d", count_named_relations);
     Error::info("Number of named elements (sum): %d", count_named_nodes + count_named_ways + count_named_relations);
 
+    if (!allow_overlapping_ids) {
+        /// Value of 'largest_observed_id' is without any previous id_offset applied
+        id_offset += largest_observed_id + 1;
+        Error::debug("Setting id_offset = %llu", id_offset);
+    }
     return true;
 }

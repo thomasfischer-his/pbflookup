@@ -24,6 +24,9 @@
 /// see http://www.hyperrealm.com/libconfig/
 #include <libconfig.h++>
 
+#include <boost/algorithm/string/classification.hpp> /// Include boost::for is_any_of
+#include <boost/algorithm/string/split.hpp> /// Include for boost::split
+
 #include "error.h"
 #include "idtree.h"
 #include "helper.h"
@@ -32,7 +35,7 @@
 std::string tempdir;
 std::string mapname;
 std::string pidfilename;
-std::string osmpbffilename;
+std::vector<std::string> osmpbffilenames;
 std::string inputextfilename;
 std::string stopwordfilename;
 unsigned int http_port;
@@ -203,17 +206,25 @@ bool init_configuration(const char *configfilename) {
         Error::debug("  pidfilename = '%s'", pidfilename.c_str());
 #endif // DEBUG
 
-        if (!configIfExistsLookup(config, "osmpbffilename", osmpbffilename)) {
-            if (!mapname.empty())
-                osmpbffilename = mapname + "-latest.osm.pbf";
-            else
-                Error::err("No filename for .osm.pbf file set and cannot determine automatically");
+        std::string single_osmpbffilename, osmpbffilenames_commaseparated;
+        if (configIfExistsLookup(config, "osmpbffilenames", osmpbffilenames_commaseparated))
+            boost::split(osmpbffilenames, osmpbffilenames_commaseparated, boost::is_any_of(", "), boost::token_compress_on);
+        else if (configIfExistsLookup(config, "osmpbffilename", single_osmpbffilename))
+            osmpbffilenames = {single_osmpbffilename};
+        else if (!mapname.empty())
+            osmpbffilenames = {mapname + "-latest.osm.pbf"};
+        else
+            Error::err("No filename for .osm.pbf file set and cannot determine automatically");
+
+        for (auto &osmpbffilename : osmpbffilenames) {
+            replacetildehome(osmpbffilename);
+            replacevariablenames(osmpbffilename);
+            makeabsolutepath(osmpbffilename, internal_configfilename);
         }
-        replacetildehome(osmpbffilename);
-        replacevariablenames(osmpbffilename);
-        makeabsolutepath(osmpbffilename, internal_configfilename);
 #ifdef DEBUG
-        Error::debug("  osmpbffilename = '%s'", osmpbffilename.c_str());
+        int dataset_index = 0;
+        for (const auto &osmpbffilename : osmpbffilenames)
+            Error::debug("  osmpbffilename[%d] = '%s'", dataset_index++, osmpbffilename.c_str());
 #endif // DEBUG
 
         if (!configIfExistsLookup(config, "stopwordfilename", stopwordfilename)) {

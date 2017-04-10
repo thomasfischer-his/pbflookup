@@ -309,35 +309,38 @@ GlobalObjectManager::GlobalObjectManager() {
     const std::string filename = tempdir + "/" + mapname + ".tt";
     if (testNonEmptyFile(filename)) {
         load();
-    } else if (testNonEmptyFile(osmpbffilename)) {
-        /// Need to parse .osm.pbf data to get geodata into main memory
-        std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
-        if (fp) {
-            Timer timer;
-            try
-            {
-                OsmPbfReader osmPbfReader;
-                osmPbfReader.parse(fp);
-            } catch (std::exception const &ex) {
-                Error::err("Exception during thread processing while parsing .osm.pbf: %s", ex.what());
-            }
+    } else {
+        OsmPbfReader osmPbfReader;
 
-            /// Clean up the protobuf lib
-            google::protobuf::ShutdownProtobufLibrary();
-            fp.close();
+        for (const auto &osmpbffilename : osmpbffilenames) {
+            Error::info("Trying to load .osm.pbf file '%s'", osmpbffilename.c_str());
 
-            if (sweden != nullptr)
-                sweden->fixUnlabeledRegionalRoads();
+            /// Need to parse .osm.pbf data to get geodata into main memory
+            std::ifstream fp(osmpbffilename, std::ifstream::in | std::ifstream::binary);
+            if (fp) {
+                Timer timer;
+                try
+                {
+                    osmPbfReader.parse(fp, false);
+                } catch (std::exception const &ex) {
+                    Error::err("Exception during thread processing while parsing .osm.pbf: %s", ex.what());
+                }
 
-            int64_t cputime, walltime;
-            timer.elapsed(&cputime, &walltime);
-            Error::info("Spent CPU time to parse .osm.pbf file: %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+                int64_t cputime, walltime;
+                timer.elapsed(&cputime, &walltime);
+                Error::info("Spent CPU time to parse .osm.pbf file '%s': %.1fms == %.1fs  (wall time: %.1fms == %.1fs)", osmpbffilename.c_str(), cputime / 1000.0, cputime / 1000000.0, walltime / 1000.0, walltime / 1000000.0);
+            } else
+                Error::err("Opening .osm.pbf file failed");
+        }
 
-            save();
-        } else
-            Error::err("Opening .osm.pbf file failed");
-    } else
-        Error::err("Can neither load internal files from %s, nor .osm.pbf file", tempdir.c_str());
+        /// Clean up the protobuf lib
+        google::protobuf::ShutdownProtobufLibrary();
+
+        if (sweden != nullptr)
+            sweden->fixUnlabeledRegionalRoads();
+
+        save();
+    }
 }
 
 GlobalObjectManager::~GlobalObjectManager() {

@@ -103,6 +103,7 @@ The most common configuration options include:
 * `mapname` should be set to `sweden` (default), no need to be changed.
 * `osmpbffilename` is the relative (to the configuration file) or absolute filename of the map file.
 The default for this value is the `mapname` followed by `-latest.osm.pbf`, i. e. exactly the name as the OpenStreetMap data downloaded from GeoFabrik.
+* `osmpbffilenames` is similar to `osmpbffilename', but accepts a comma-separated list of filenames.
 * `tempdir` where temporary files are stored. By default `/tmp` is used.
 * `pidfile` where a text file containing the current process's PID will be written to, which is necessary for some cases where PBFLookup is started as a system service.
 By default, the PID file is placed inside the directory specified in the environment variable `XDG_RUNTIME_DIR`; the temporary directory is used as a fall-back.
