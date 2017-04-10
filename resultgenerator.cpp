@@ -112,7 +112,7 @@ std::vector<Result> ResultGenerator::findResults(const std::string &text, int du
 
     const std::vector<struct Sweden::Road> &identifiedRoads = sweden->identifyRoads(words);
     Error::info("Identified roads: %d", identifiedRoads.size());
-    const std::vector<struct TokenProcessor::RoadMatch> &roadMatches = tokenProcessor->evaluteRoads(word_combinations, identifiedRoads);
+    const std::vector<struct TokenProcessor::RoadMatch> &roadMatches = tokenProcessor->evaluateRoads(word_combinations, identifiedRoads);
     Error::info("Identified road matches: %d", roadMatches.size());
 
     for (const TokenProcessor::RoadMatch &roadMatch : roadMatches) {

@@ -158,7 +158,7 @@ TokenProcessor::~TokenProcessor() {
     delete d;
 }
 
-std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads) {
+std::vector<struct TokenProcessor::RoadMatch> TokenProcessor::evaluateRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads) {
     std::vector<struct RoadMatch> result;
     if (knownRoads.empty()) return result; /// No roads known? Nothing to do -> return
 

@@ -224,7 +224,7 @@ const std::string AdministrativeRegion::region_beginnings[] = {"landskapet ", ""
 /// Some names have a genitiv-s, some names simply have 's' as the last character.
 /// This wil lbe no problem for the purpose of matching known counties or municipality
 /// to queried text strings.
-const std::string AdministrativeRegion::region_endings[] = {"s l\xc3\xa4n", " l\xc3\xa4n", "s kommun", " kommun" , ""};
+const std::string AdministrativeRegion::region_endings[] = {"s l\xc3\xa4n", " l\xc3\xa4n", "s kommun", " kommun", ""};
 
 class Sweden::Private {
 private:

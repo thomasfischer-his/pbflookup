@@ -34,12 +34,15 @@ inline bool ends_with(std::string const &value, std::string const &ending)
 }
 
 void init_rand() {
+    /// Use time and process id as default random seed
     unsigned int seed = time(NULL) ^ (getpid() << 8);
 
+    /// Even better: try to read a random seed value from '/dev/urandom'
     std::ifstream devrandom("/dev/urandom");
     if (devrandom.good())
         devrandom.read((char *)&seed, sizeof(seed));
 
+    /// Initialize pseudo random number generator
     srand(seed);
 }
 

@@ -45,7 +45,7 @@ public:
         double quality;
     };
 
-    std::vector<struct RoadMatch> evaluteRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads);
+    std::vector<struct RoadMatch> evaluateRoads(const std::vector<std::string> &word_combinations, const std::vector<struct Sweden::Road> knownRoads);
 
     struct LocalPlaceMatch {
         LocalPlaceMatch(const std::string &_word_combination, const struct OSMElement &_global, const struct OSMElement &_local, int _distance, double _quality = -1.0)
