@@ -112,6 +112,17 @@ public:
      */
     static std::string roadTypeToString(RoadType roadType);
 
+    /**
+     * Determine a longer textual representation for a road type.
+     * Example: LanAB will return 'Stockholms County'.
+     * If no long textual representation is defined for a given
+     * road type, the result of @see roadTypeToString will be used
+     * as fallback.
+     * @param roadType road type to represent
+     * @return longer text string
+     */
+    static std::string roadTypeToDisplayString(RoadType roadType);
+
     /** Handle the case that E may be used for European roads
     * or roads in East Gothland
     */

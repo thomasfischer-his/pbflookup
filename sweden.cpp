@@ -1489,7 +1489,7 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
 
     /// Check for invalid parameters
     if (wayid == 0 || roadType >= UnknownRoadType || roadNumber > 9999) {
-        Error::warn("Combination of way id %llu, road number %d, and road type %d (%s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str());
+        Error::warn("Combination of way id %llu, road number %d, and road type %d (%s, %s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str(), roadTypeToDisplayString(roadType).c_str());
         return;
     }
 
@@ -1519,7 +1519,7 @@ void Sweden::insertWayAsRoad(uint64_t wayid, RoadType roadType, uint16_t roadNum
                 d->roads.regional[idx][firstIndex][secondIndex] = new std::vector<uint64_t>();
             d->roads.regional[idx][firstIndex][secondIndex]->push_back(wayid);
         } else
-            Error::warn("Combination of way id %llu, road number %d, and road type %d (%s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str());
+            Error::warn("Combination of way id %llu, road number %d, and road type %d (%s, %s) is invalid", wayid, roadNumber, roadType, roadTypeToString(roadType).c_str(), roadTypeToDisplayString(roadType).c_str());
     }
     }
 }
@@ -1576,6 +1576,35 @@ std::string Sweden::roadTypeToString(Sweden::RoadType roadType) {
     case LanBD: return std::string("BD");
     case LanUnknown: return std::string("Reg");
     default: return std::string("???");
+    }
+}
+
+std::string Sweden::roadTypeToDisplayString(Sweden::RoadType roadType) {
+    switch (roadType) {
+    case Europe: return std::string("European Road");
+    case National: return std::string("National Road");
+    case LanM: return std::string("Sk\xc3\xa5ne L\xc3\xa4n");
+    case LanK: return std::string("Blekinge L\xc3\xa4n");
+    case LanI: return std::string("Gotlands L\xc3\xa4n");
+    case LanH: return std::string("Kalmar L\xc3\xa4n");
+    case LanG: return std::string("Kronobergs L\xc3\xa4n");
+    case LanN: return std::string("Hallands L\xc3\xa4n");
+    case LanO: return std::string("V\xc3\xa4stra G\xc3\xb6talands L\xc3\xa4n");
+    case LanF: return std::string("J\xc3\xb6nk\xc3\xb6pings L\xc3\xa4n");
+    case LanE: return std::string("\xc3\x96sterg\xc3\xb6tlands L\xc3\xa4n");
+    case LanD: return std::string("S\xc3\xb6""dermanlands L\xc3\xa4n");
+    case LanAB: return std::string("Stockholms L\xc3\xa4n");
+    case LanC: return std::string("Uppsala L\xc3\xa4n");
+    case LanU: return std::string("V\xc3\xa4stmanlands L\xc3\xa4n");
+    case LanT: return std::string("\xc3\x96rebro L\xc3\xa4n");
+    case LanS: return std::string("V\xc3\xa4rmlands L\xc3\xa4n");
+    case LanW: return std::string("Dalarnas L\xc3\xa4n");
+    case LanX: return std::string("G\xc3\xa4vleborgs L\xc3\xa4n");
+    case LanZ: return std::string("J\xc3\xa4mtlands L\xc3\xa4n");
+    case LanY: return std::string("V\xc3\xa4sternorrlands L\xc3\xa4n");
+    case LanAC: return std::string("V\xc3\xa4sterbottens L\xc3\xa4n");
+    case LanBD: return std::string("Norrbottens L\xc3\xa4n");
+    default: return roadTypeToString(roadType);
     }
 }
 
@@ -1777,7 +1806,7 @@ void Sweden::fixUnlabeledRegionalRoads() {
                                         d->roads.regional[properLanIdx][outer][inner] = new std::vector<uint64_t>();
                                     d->roads.regional[properLanIdx][outer][inner]->push_back(*it);
 
-                                    Error::debug("Setting region %s to way %llu with road number %d", roadTypeToString(properLan).c_str(), *it, outer * Private::regional_inner_len + inner);
+                                    Error::debug("Setting region %s (%s) to way %llu with road number %d", roadTypeToString(properLan).c_str(), roadTypeToDisplayString(properLan).c_str(), *it, outer * Private::regional_inner_len + inner);
 
                                     it = wayIds->erase(it);
                                     continue;
