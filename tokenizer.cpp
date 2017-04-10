@@ -300,7 +300,7 @@ size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::strin
             /// detected by as the three most significant bits are set
             unsigned char utf8char[] = {'\0', '\0', '\0', '\0', '\0', '\0', '\0', '\0'};
             size_t utf8char_pos = 0;
-            while (it != internal_line.cend() && ((*it) & 128) == 128 && utf8char_pos < 7) {
+            while (it != internal_line.cend() && (utf8char_pos == 0 || (*it & 192) == 128) && utf8char_pos < 7) {
                 utf8char[utf8char_pos++] = *it;
                 ++it;
             }
@@ -310,8 +310,19 @@ size_t Tokenizer::tokenize_input(const std::string &line, std::vector<std::strin
             else if ((c & 248) == 240) ///< Four-byte sequence
                 unicode = (utf8char[0] & 7) << 18 | (utf8char[1] & 63) << 12 | (utf8char[2] & 63) << 6 | (utf8char[3] & 63);
             --it; ///< One step back, as for-loop will step for forward again
-            Error::warn("Skipping UTF-8 sequence of three or more bytes, but not supported: %s (U+%04X)", utf8char, unicode);
-            if (warnings != nullptr) *warnings = true;
+
+            static const std::set<uint32_t> tolerated_unicode {0x2764 /** heart */};
+            if ((unicode < 0xfe00 /** Variation Selector 1 */ || unicode > 0xfe0f /** VS-16 */)
+                    && (unicode < 0xe0100 /** VS-17 */ || unicode > 0xe01ef /** VS-256 */)
+                    && tolerated_unicode.find(unicode) == tolerated_unicode.end()) {
+                static char buffer[64];
+                for (size_t p = 0; p < utf8char_pos; ++p)
+                    /// Write each byte of UTF-8 sequence as two-digit hex number into buffer
+                    sprintf(buffer + p * 3, "%02x ", utf8char[p]);
+                /// Only show warnings about non-tolerated Unicode symbols
+                Error::warn("Skipping unsupported UTF-8 sequence of three or more bytes: %s (%s= U+%04X)", utf8char, buffer, unicode);
+                if (warnings != nullptr) *warnings = true;
+            }
             prev_c = 0; ///< Do not remember this UTF-8 sequence
             continue; ///< Continue with next character
         } else if ((prev_c & 224) == 192) {
